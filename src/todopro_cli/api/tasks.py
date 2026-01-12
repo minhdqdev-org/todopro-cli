@@ -1,0 +1,116 @@
+"""Tasks API endpoints."""
+
+from typing import Any, Optional
+
+from todopro_cli.api.client import APIClient
+
+
+class TasksAPI:
+    """Tasks API client."""
+
+    def __init__(self, client: APIClient):
+        self.client = client
+
+    async def list_tasks(
+        self,
+        *,
+        status: Optional[str] = None,
+        project_id: Optional[str] = None,
+        priority: Optional[int] = None,
+        search: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        sort: Optional[str] = None,
+        **filters: Any,
+    ) -> dict:
+        """List tasks with optional filters."""
+        params: dict[str, Any] = {}
+
+        if status:
+            params["status"] = status
+        if project_id:
+            params["project_id"] = project_id
+        if priority is not None:
+            params["priority"] = priority
+        if search:
+            params["search"] = search
+        if limit is not None:
+            params["limit"] = limit
+        if offset is not None:
+            params["offset"] = offset
+        if sort:
+            params["sort"] = sort
+
+        # Add any additional filters
+        params.update(filters)
+
+        response = await self.client.get("/tasks", params=params)
+        return response.json()
+
+    async def get_task(self, task_id: str) -> dict:
+        """Get a specific task by ID."""
+        response = await self.client.get(f"/tasks/{task_id}")
+        return response.json()
+
+    async def create_task(
+        self,
+        content: str,
+        *,
+        description: Optional[str] = None,
+        project_id: Optional[str] = None,
+        due_date: Optional[str] = None,
+        priority: Optional[int] = None,
+        labels: Optional[list[str]] = None,
+        **kwargs: Any,
+    ) -> dict:
+        """Create a new task."""
+        data: dict[str, Any] = {"content": content}
+
+        if description:
+            data["description"] = description
+        if project_id:
+            data["project_id"] = project_id
+        if due_date:
+            data["due_date"] = due_date
+        if priority is not None:
+            data["priority"] = priority
+        if labels:
+            data["labels"] = labels
+
+        # Add any additional fields
+        data.update(kwargs)
+
+        response = await self.client.post("/tasks", json=data)
+        return response.json()
+
+    async def update_task(self, task_id: str, **updates: Any) -> dict:
+        """Update a task."""
+        response = await self.client.patch(f"/tasks/{task_id}", json=updates)
+        return response.json()
+
+    async def delete_task(self, task_id: str) -> None:
+        """Delete a task."""
+        await self.client.delete(f"/tasks/{task_id}")
+
+    async def complete_task(self, task_id: str) -> dict:
+        """Mark a task as completed."""
+        response = await self.client.post(f"/tasks/{task_id}/complete")
+        return response.json()
+
+    async def reopen_task(self, task_id: str) -> dict:
+        """Reopen a completed task."""
+        response = await self.client.post(f"/tasks/{task_id}/reopen")
+        return response.json()
+
+    async def get_task_comments(self, task_id: str) -> dict:
+        """Get comments for a task."""
+        response = await self.client.get(f"/tasks/{task_id}/comments")
+        return response.json()
+
+    async def add_comment(self, task_id: str, text: str) -> dict:
+        """Add a comment to a task."""
+        response = await self.client.post(
+            f"/tasks/{task_id}/comments",
+            json={"text": text},
+        )
+        return response.json()
