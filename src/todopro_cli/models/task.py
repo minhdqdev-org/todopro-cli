@@ -3,11 +3,15 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Task(BaseModel):
     """Task model."""
+
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()},
+    )
 
     id: str
     content: str
@@ -20,6 +24,3 @@ class Task(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
-
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}

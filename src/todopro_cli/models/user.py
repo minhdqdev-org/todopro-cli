@@ -2,17 +2,18 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class User(BaseModel):
     """User model."""
+
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()},
+    )
 
     id: str
     email: EmailStr
     name: str
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
