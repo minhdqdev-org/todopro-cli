@@ -4,7 +4,7 @@ import typer
 from rich.console import Console
 
 from todopro_cli import __version__
-from todopro_cli.commands import auth, config, projects, tasks
+from todopro_cli.commands import auth, config, labels, projects, tasks, utils
 
 # Create main app
 app = typer.Typer(
@@ -21,7 +21,9 @@ app.add_typer(auth.app, name="login", help="Login to TodoPro")
 app.add_typer(auth.app, name="auth", help="Authentication commands")
 app.add_typer(tasks.app, name="tasks", help="Task management commands")
 app.add_typer(projects.app, name="projects", help="Project management commands")
+app.add_typer(labels.app, name="labels", help="Label management commands")
 app.add_typer(config.app, name="config", help="Configuration management")
+app.add_typer(utils.app, name="utils", help="Utility commands")
 
 
 # Add top-level commands
@@ -49,6 +51,16 @@ def logout(
     """Logout from TodoPro."""
     # Delegate to auth command
     auth.logout(profile=profile, all_profiles=all_profiles)
+
+
+@app.command()
+def health(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Check API connectivity and health."""
+    # Delegate to utils command
+    utils.health(verbose=verbose, profile=profile)
 
 
 # Main entry point
