@@ -17,7 +17,6 @@ console = Console()
 
 
 # Add subcommands
-app.add_typer(auth.app, name="login", help="Login to TodoPro")
 app.add_typer(auth.app, name="auth", help="Authentication commands")
 app.add_typer(tasks.app, name="tasks", help="Task management commands")
 app.add_typer(projects.app, name="projects", help="Project management commands")
@@ -31,6 +30,27 @@ app.add_typer(utils.app, name="utils", help="Utility commands")
 def version() -> None:
     """Show version information."""
     console.print(f"[bold]TodoPro CLI[/bold] version [cyan]{__version__}[/cyan]")
+
+
+@app.command()
+def login(
+    email: str | None = typer.Option(None, "--email", "-e", help="Email address"),
+    password: str | None = typer.Option(None, "--password", "-p", help="Password"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+    endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    save_profile: bool = typer.Option(
+        False, "--save-profile", help="Save as default profile"
+    ),
+) -> None:
+    """Login to TodoPro."""
+    # Delegate to auth command
+    auth.login(
+        email=email,
+        password=password,
+        profile=profile,
+        endpoint=endpoint,
+        save_profile=save_profile,
+    )
 
 
 @app.command()

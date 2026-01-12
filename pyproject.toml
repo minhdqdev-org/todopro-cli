@@ -39,8 +39,8 @@ dev = [
 ]
 
 [project.scripts]
-todopro = "todopro_cli.main:app"
-tp = "todopro_cli.main:app"
+todopro = "todopro_cli.main:main"
+tp = "todopro_cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
