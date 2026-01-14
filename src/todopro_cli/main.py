@@ -83,6 +83,50 @@ def health(
     utils.health(verbose=verbose, profile=profile)
 
 
+@app.command()
+def today(
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    compact: bool = typer.Option(False, "--compact", help="Compact output"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Show tasks for today (overdue + today's tasks)."""
+    tasks.today(output=output, compact=compact, profile=profile)
+
+
+@app.command()
+def next(
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Show the next task to do right now."""
+    tasks.next_task(output=output, profile=profile)
+
+
+@app.command()
+def complete(
+    task_id: str = typer.Argument(..., help="Task ID"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Mark a task as completed."""
+    tasks.complete_task(task_id=task_id, output=output, profile=profile)
+
+
+@app.command()
+def describe(
+    resource_type: str = typer.Argument(..., help="Resource type (project)"),
+    resource_id: str = typer.Argument(..., help="Resource ID"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Describe a resource in detail."""
+    if resource_type.lower() == "project":
+        projects.describe_project(project_id=resource_id, output=output, profile=profile)
+    else:
+        console.print(f"[red]Unknown resource type: {resource_type}[/red]")
+        raise typer.Exit(1)
+
+
 # Main entry point
 def main() -> None:
     """Main entry point."""

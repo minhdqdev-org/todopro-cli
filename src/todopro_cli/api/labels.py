@@ -13,12 +13,12 @@ class LabelsAPI:
 
     async def list_labels(self) -> dict:
         """List all labels."""
-        response = await self.client.get("/labels")
+        response = await self.client.get("/v1/labels")
         return response.json()
 
     async def get_label(self, label_id: str) -> dict:
         """Get a specific label by ID."""
-        response = await self.client.get(f"/labels/{label_id}")
+        response = await self.client.get(f"/v1/labels/{label_id}")
         return response.json()
 
     async def create_label(
@@ -36,14 +36,14 @@ class LabelsAPI:
 
         data.update(kwargs)
 
-        response = await self.client.post("/labels", json=data)
+        response = await self.client.post("/v1/labels", json=data)
         return response.json()
 
     async def update_label(self, label_id: str, **updates: Any) -> dict:
         """Update a label."""
-        response = await self.client.patch(f"/labels/{label_id}", json=updates)
+        response = await self.client.patch(f"/v1/labels/{label_id}", json=updates)
         return response.json()
 
     async def delete_label(self, label_id: str) -> None:
         """Delete a label."""
-        await self.client.delete(f"/labels/{label_id}")
+        await self.client.delete(f"/v1/labels/{label_id}")

@@ -44,12 +44,12 @@ class TasksAPI:
         # Add any additional filters
         params.update(filters)
 
-        response = await self.client.get("/tasks", params=params)
+        response = await self.client.get("/v1/tasks", params=params)
         return response.json()
 
     async def get_task(self, task_id: str) -> dict:
         """Get a specific task by ID."""
-        response = await self.client.get(f"/tasks/{task_id}")
+        response = await self.client.get(f"/v1/tasks/{task_id}")
         return response.json()
 
     async def create_task(
@@ -80,37 +80,47 @@ class TasksAPI:
         # Add any additional fields
         data.update(kwargs)
 
-        response = await self.client.post("/tasks", json=data)
+        response = await self.client.post("/v1/tasks", json=data)
         return response.json()
 
     async def update_task(self, task_id: str, **updates: Any) -> dict:
         """Update a task."""
-        response = await self.client.patch(f"/tasks/{task_id}", json=updates)
+        response = await self.client.patch(f"/v1/tasks/{task_id}", json=updates)
         return response.json()
 
     async def delete_task(self, task_id: str) -> None:
         """Delete a task."""
-        await self.client.delete(f"/tasks/{task_id}")
+        await self.client.delete(f"/v1/tasks/{task_id}")
 
     async def complete_task(self, task_id: str) -> dict:
         """Mark a task as completed."""
-        response = await self.client.post(f"/tasks/{task_id}/complete")
+        response = await self.client.post(f"/v1/tasks/{task_id}/close")
         return response.json()
 
     async def reopen_task(self, task_id: str) -> dict:
         """Reopen a completed task."""
-        response = await self.client.post(f"/tasks/{task_id}/reopen")
+        response = await self.client.post(f"/v1/tasks/{task_id}/reopen")
         return response.json()
 
     async def get_task_comments(self, task_id: str) -> dict:
         """Get comments for a task."""
-        response = await self.client.get(f"/tasks/{task_id}/comments")
+        response = await self.client.get(f"/v1/tasks/{task_id}/comments")
         return response.json()
 
     async def add_comment(self, task_id: str, text: str) -> dict:
         """Add a comment to a task."""
         response = await self.client.post(
-            f"/tasks/{task_id}/comments",
+            f"/v1/tasks/{task_id}/comments",
             json={"text": text},
         )
+        return response.json()
+
+    async def today_tasks(self) -> dict:
+        """Get tasks for today (overdue + today's tasks)."""
+        response = await self.client.get("/v1/tasks/today")
+        return response.json()
+
+    async def next_task(self) -> dict:
+        """Get the next task to do right now."""
+        response = await self.client.get("/v1/tasks/next")
         return response.json()

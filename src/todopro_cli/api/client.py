@@ -20,28 +20,31 @@ class APIClient:
         self.timeout = self.config.api.timeout
         self._client: Optional[httpx.AsyncClient] = None
 
-    def _get_headers(self) -> dict[str, str]:
+    def _get_headers(self, skip_auth: bool = False) -> dict[str, str]:
         """Get HTTP headers with authentication."""
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
 
-        # Add authentication token if available
-        credentials = self.config_manager.load_credentials()
-        if credentials and "token" in credentials:
-            headers["Authorization"] = f"Bearer {credentials['token']}"
+        # Add authentication token if available and not skipped
+        if not skip_auth:
+            credentials = self.config_manager.load_credentials()
+            if credentials and "token" in credentials:
+                headers["Authorization"] = f"Bearer {credentials['token']}"
 
         return headers
 
-    async def _get_client(self) -> httpx.AsyncClient:
+    async def _get_client(self, skip_auth: bool = False) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
         if self._client is None:
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
                 timeout=self.timeout,
-                headers=self._get_headers(),
+                follow_redirects=True,
             )
+        # Always update headers to include latest auth token
+        self._client.headers.update(self._get_headers(skip_auth=skip_auth))
         return self._client
 
     async def close(self) -> None:
@@ -58,12 +61,13 @@ class APIClient:
         json: Optional[dict[str, Any]] = None,
         params: Optional[dict[str, Any]] = None,
         retry: Optional[int] = None,
+        skip_auth: bool = False,
     ) -> httpx.Response:
         """Make an HTTP request to the API."""
         if retry is None:
             retry = self.config.api.retry
 
-        client = await self._get_client()
+        client = await self._get_client(skip_auth=skip_auth)
         url = f"{path}" if path.startswith("/") else f"/{path}"
 
         last_exception: Optional[Exception] = None
@@ -103,10 +107,10 @@ class APIClient:
         return await self.request("GET", path, params=params)
 
     async def post(
-        self, path: str, *, json: Optional[dict[str, Any]] = None
+        self, path: str, *, json: Optional[dict[str, Any]] = None, skip_auth: bool = False
     ) -> httpx.Response:
         """Make a POST request."""
-        return await self.request("POST", path, json=json)
+        return await self.request("POST", path, json=json, skip_auth=skip_auth)
 
     async def put(
         self, path: str, *, json: Optional[dict[str, Any]] = None

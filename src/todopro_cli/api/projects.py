@@ -25,12 +25,12 @@ class ProjectsAPI:
         if favorites is not None:
             params["favorites"] = favorites
 
-        response = await self.client.get("/projects", params=params)
+        response = await self.client.get("/v1/projects", params=params)
         return response.json()
 
     async def get_project(self, project_id: str) -> dict:
         """Get a specific project by ID."""
-        response = await self.client.get(f"/projects/{project_id}")
+        response = await self.client.get(f"/v1/projects/{project_id}")
         return response.json()
 
     async def create_project(
@@ -49,24 +49,24 @@ class ProjectsAPI:
 
         data.update(kwargs)
 
-        response = await self.client.post("/projects", json=data)
+        response = await self.client.post("/v1/projects", json=data)
         return response.json()
 
     async def update_project(self, project_id: str, **updates: Any) -> dict:
         """Update a project."""
-        response = await self.client.patch(f"/projects/{project_id}", json=updates)
+        response = await self.client.patch(f"/v1/projects/{project_id}", json=updates)
         return response.json()
 
     async def delete_project(self, project_id: str) -> None:
         """Delete a project."""
-        await self.client.delete(f"/projects/{project_id}")
+        await self.client.delete(f"/v1/projects/{project_id}")
 
     async def archive_project(self, project_id: str) -> dict:
         """Archive a project."""
-        response = await self.client.post(f"/projects/{project_id}/archive")
+        response = await self.client.post(f"/v1/projects/{project_id}/archive")
         return response.json()
 
     async def unarchive_project(self, project_id: str) -> dict:
         """Unarchive a project."""
-        response = await self.client.post(f"/projects/{project_id}/unarchive")
+        response = await self.client.post(f"/v1/projects/{project_id}/unarchive")
         return response.json()

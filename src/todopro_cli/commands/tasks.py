@@ -32,11 +32,19 @@ def list_tasks(
     search: Optional[str] = typer.Option(None, "--search", "-s", help="Search tasks"),
     limit: int = typer.Option(30, "--limit", "-n", help="Limit results"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output format"),
+    compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """List tasks."""
     check_auth(profile)
+
+    # Get output format from config if not specified
+    if output is None:
+        config_manager = get_config_manager(profile)
+        output = config_manager.get("output.format") or "pretty"
+        if not compact:
+            compact = config_manager.get("output.compact") or False
 
     try:
 
@@ -53,7 +61,7 @@ def list_tasks(
                     limit=limit,
                     offset=offset,
                 )
-                format_output(result, output)
+                format_output(result, output, compact=compact)
             finally:
                 await client.close()
 
@@ -275,4 +283,84 @@ def reopen_task(
 
     except Exception as e:
         format_error(f"Failed to reopen task: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("today")
+def today(
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    compact: bool = typer.Option(False, "--compact", help="Compact output"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Show tasks for today (overdue + today's tasks)."""
+    check_auth(profile)
+
+    try:
+
+        async def do_today() -> None:
+            client = get_client(profile)
+            tasks_api = TasksAPI(client)
+
+            try:
+                result = await tasks_api.today_tasks()
+                
+                # Display overdue tasks
+                if result.get("overdue_count", 0) > 0:
+                    console.print("\n[bold red]Overdue Tasks:[/bold red]")
+                    format_output(result["overdue"], output, compact=compact)
+                
+                # Display today's tasks
+                if result.get("today_count", 0) > 0:
+                    console.print("\n[bold blue]Today's Tasks:[/bold blue]")
+                    format_output(result["today"], output, compact=compact)
+                
+                # Summary
+                console.print(
+                    f"\n[bold]Summary:[/bold] {result.get('overdue_count', 0)} overdue, "
+                    f"{result.get('today_count', 0)} due today"
+                )
+                
+                if result.get("overdue_count", 0) == 0 and result.get("today_count", 0) == 0:
+                    console.print("[green]No tasks due today! 🎉[/green]")
+                    
+            finally:
+                await client.close()
+
+        asyncio.run(do_today())
+
+    except Exception as e:
+        format_error(f"Failed to get today's tasks: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("next")
+def next_task(
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Show the next task to do right now."""
+    check_auth(profile)
+
+    try:
+
+        async def do_next() -> None:
+            client = get_client(profile)
+            tasks_api = TasksAPI(client)
+
+            try:
+                result = await tasks_api.next_task()
+                
+                if "message" in result:
+                    console.print(f"[green]{result['message']}[/green]")
+                else:
+                    console.print("\n[bold cyan]Next Task:[/bold cyan]")
+                    format_output(result, output)
+                    
+            finally:
+                await client.close()
+
+        asyncio.run(do_next())
+
+    except Exception as e:
+        format_error(f"Failed to get next task: {str(e)}")
         raise typer.Exit(1)

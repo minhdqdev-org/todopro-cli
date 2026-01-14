@@ -28,11 +28,19 @@ def check_auth(profile: str = "default") -> None:
 def list_projects(
     archived: bool = typer.Option(False, "--archived", help="Show archived projects"),
     favorites: bool = typer.Option(False, "--favorites", help="Show only favorites"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output format"),
+    compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """List projects."""
     check_auth(profile)
+
+    # Get output format from config if not specified
+    if output is None:
+        config_manager = get_config_manager(profile)
+        output = config_manager.get("output.format") or "pretty"
+        if not compact:
+            compact = config_manager.get("output.compact") or False
 
     try:
 
@@ -45,7 +53,7 @@ def list_projects(
                     archived=archived if archived else None,
                     favorites=favorites if favorites else None,
                 )
-                format_output(result, output)
+                format_output(result, output, compact=compact)
             finally:
                 await client.close()
 
@@ -248,4 +256,54 @@ def unarchive_project(
 
     except Exception as e:
         format_error(f"Failed to unarchive project: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("describe")
+def describe_project(
+    project_id: str = typer.Argument(..., help="Project ID"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Get detailed information about a project."""
+    check_auth(profile)
+
+    try:
+
+        async def do_describe() -> None:
+            client = get_client(profile)
+            projects_api = ProjectsAPI(client)
+
+            try:
+                project = await projects_api.get_project(project_id)
+                
+                # Display project details
+                console.print(f"\n[bold cyan]Project Details:[/bold cyan]")
+                format_output(project, output)
+                
+                # Get project stats if available
+                try:
+                    stats_response = await client.get(f"/v1/projects/{project_id}/stats")
+                    stats = stats_response.json()
+                    
+                    console.print("\n[bold]Statistics:[/bold]")
+                    console.print(f"  Total tasks: {stats.get('total_tasks', 0)}")
+                    console.print(f"  Completed: {stats.get('completed_tasks', 0)}")
+                    console.print(f"  Pending: {stats.get('pending_tasks', 0)}")
+                    console.print(f"  Overdue: {stats.get('overdue_tasks', 0)}")
+                    
+                    if stats.get('completion_rate') is not None:
+                        console.print(f"  Completion rate: {stats.get('completion_rate')}%")
+                        
+                except Exception:
+                    # Stats endpoint might not exist, ignore
+                    pass
+                    
+            finally:
+                await client.close()
+
+        asyncio.run(do_describe())
+
+    except Exception as e:
+        format_error(f"Failed to describe project: {str(e)}")
         raise typer.Exit(1)

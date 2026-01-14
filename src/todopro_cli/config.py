@@ -25,9 +25,11 @@ class AuthConfig(BaseModel):
 class OutputConfig(BaseModel):
     """Output configuration."""
 
-    format: str = Field(default="table")
+    format: str = Field(default="pretty")
     color: bool = Field(default=True)
-    wide: bool = Field(default=False)
+    icons: bool = Field(default=True)
+    icon_style: str = Field(default="emoji")  # emoji, nerd-font, ascii
+    compact: bool = Field(default=False)
 
 
 class UIConfig(BaseModel):
