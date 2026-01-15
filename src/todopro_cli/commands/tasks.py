@@ -421,3 +421,115 @@ def reschedule(
     except Exception as e:
         format_error(f"Failed to reschedule tasks: {str(e)}")
         raise typer.Exit(1)
+
+
+@app.command("add")
+def quick_add(
+    text: Optional[str] = typer.Argument(None, help="Task text in natural language"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """
+    Quick add a task using natural language.
+    
+    Examples:
+      todopro add "Review PR tomorrow at 2pm #Work p1 @urgent"
+      todopro add "Buy groceries every Friday @Shopping"
+      todopro add "Team standup every monday at 9am #Work"
+    
+    Syntax:
+      #ProjectName - Assign to project
+      @label - Add label
+      p1-p4 - Set priority (p1=urgent, p4=low)
+      Natural dates - tomorrow, next monday, at 3pm
+      Recurrence - every day/week/monday, etc.
+    """
+    check_auth(profile)
+    
+    # If no text provided, prompt for input
+    if not text:
+        console.print("[cyan]Enter task (use Ctrl+C to cancel):[/cyan]")
+        try:
+            text = console.input("[yellow]> [/yellow]").strip()
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Cancelled.[/yellow]")
+            raise typer.Exit(0)
+        
+        if not text:
+            format_error("Task text is required")
+            raise typer.Exit(1)
+    
+    try:
+        async def do_quick_add():
+            client = get_client(profile)
+            try:
+                tasks_api = TasksAPI(client)
+                
+                # Show parsing preview
+                console.print(f"\n[cyan]Parsing:[/cyan] {text}")
+                
+                response = await tasks_api.quick_add(text)
+                
+                # Check if project not found error
+                if "error" in response:
+                    error_msg = response["error"]
+                    format_error(error_msg)
+                    
+                    # Show suggestions if available
+                    if "suggestions" in response:
+                        suggestions = response["suggestions"]
+                        if suggestions.get("create_project"):
+                            console.print("\n[yellow]Tip:[/yellow] Create the project first:")
+                            console.print(f"  todopro projects create \"{response['parsed']['project_name']}\"")
+                        
+                        if suggestions.get("available_projects"):
+                            console.print("\n[cyan]Available projects:[/cyan]")
+                            for proj in suggestions["available_projects"]:
+                                console.print(f"  • {proj}")
+                    
+                    raise typer.Exit(1)
+                
+                task = response.get("task", {})
+                parsed = response.get("parsed", {})
+                
+                # Show parsed elements
+                console.print("\n[bold green]✓[/bold green] Task created successfully!")
+                console.print(f"\n[bold cyan]Task:[/bold cyan] {task.get('content', '')}")
+                
+                # Show parsed details
+                details = []
+                if parsed.get("due_date"):
+                    from datetime import datetime
+                    due = datetime.fromisoformat(parsed["due_date"].replace("Z", "+00:00"))
+                    details.append(f"[blue]📅 {due.strftime('%b %d, %Y at %I:%M %p')}[/blue]")
+                
+                if parsed.get("project_name"):
+                    details.append(f"[magenta]📁 #{parsed['project_name']}[/magenta]")
+                
+                if parsed.get("labels"):
+                    labels_str = " ".join([f"@{l}" for l in parsed["labels"]])
+                    details.append(f"[yellow]🏷️  {labels_str}[/yellow]")
+                
+                priority_map = {4: "p1 (Urgent)", 3: "p2 (High)", 2: "p3 (Medium)", 1: "p4 (Low)"}
+                if parsed.get("priority") and parsed["priority"] > 1:
+                    priority_display = priority_map.get(parsed["priority"], str(parsed["priority"]))
+                    details.append(f"[red]⚡ {priority_display}[/red]")
+                
+                if parsed.get("recurrence_rule"):
+                    details.append(f"[green]🔄 Recurring[/green]")
+                
+                if details:
+                    console.print()
+                    for detail in details:
+                        console.print(f"  {detail}")
+                
+                console.print(f"\n[dim]Task ID: {task.get('id', '')}[/dim]")
+                    
+            finally:
+                await client.close()
+
+        asyncio.run(do_quick_add())
+
+    except Exception as e:
+        format_error(f"Failed to add task: {str(e)}")
+        raise typer.Exit(1)

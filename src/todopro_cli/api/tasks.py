@@ -129,3 +129,11 @@ class TasksAPI:
         """Reschedule all overdue tasks to today."""
         response = await self.client.post("/v1/tasks/reschedule-overdue")
         return response.json()
+    
+    async def quick_add(self, input_text: str) -> dict:
+        """Quick add a task using natural language parsing."""
+        response = await self.client.post(
+            "/v1/tasks/quick-add",
+            json={"input": input_text}
+        )
+        return response.json()
