@@ -151,3 +151,46 @@ def whoami(
     except Exception as e:
         format_error(f"Failed to get user information: {str(e)}")
         raise typer.Exit(1)
+
+
+@app.command()
+def timezone(
+    new_timezone: Optional[str] = typer.Argument(None, help="New timezone (IANA format, e.g., 'Asia/Ho_Chi_Minh')"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Get or set user timezone."""
+    try:
+        config_manager = get_config_manager(profile)
+
+        # Check if logged in
+        credentials = config_manager.load_credentials()
+        if not credentials:
+            format_error("Not logged in. Use 'todopro login' to authenticate.")
+            raise typer.Exit(1)
+
+        async def handle_timezone() -> None:
+            client = get_client(profile)
+            auth_api = AuthAPI(client)
+
+            try:
+                if new_timezone:
+                    # Set new timezone
+                    await auth_api.update_profile(timezone=new_timezone)
+                    format_success(f"Timezone updated to: {new_timezone}")
+                else:
+                    # Get current timezone
+                    user = await auth_api.get_profile()
+                    current_tz = user.get("timezone", "UTC")
+                    console.print(f"[bold]Current timezone:[/bold] [cyan]{current_tz}[/cyan]")
+                    console.print()
+                    console.print("[dim]To set a new timezone, use:[/dim]")
+                    console.print("[dim]  todopro auth timezone <IANA_TIMEZONE>[/dim]")
+                    console.print("[dim]  Example: todopro auth timezone Asia/Ho_Chi_Minh[/dim]")
+            finally:
+                await client.close()
+
+        asyncio.run(handle_timezone())
+
+    except Exception as e:
+        format_error(f"Failed to handle timezone: {str(e)}")
+        raise typer.Exit(1)

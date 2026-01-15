@@ -9,7 +9,7 @@ from rich.console import Console
 from todopro_cli.api.client import get_client
 from todopro_cli.api.tasks import TasksAPI
 from todopro_cli.config import get_config_manager
-from todopro_cli.ui.formatters import format_error, format_output, format_success
+from todopro_cli.ui.formatters import format_error, format_output, format_success, format_info
 
 app = typer.Typer(help="Task management commands")
 console = Console()
@@ -360,4 +360,64 @@ def next_task(
 
     except Exception as e:
         format_error(f"Failed to get next task: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("reschedule")
+def reschedule(
+    target: str = typer.Argument("overdue", help="What to reschedule (overdue)"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Reschedule tasks to today."""
+    check_auth(profile)
+
+    if target != "overdue":
+        format_error(f"Unknown target: {target}. Only 'overdue' is supported.")
+        raise typer.Exit(1)
+
+    try:
+
+        async def do_reschedule() -> None:
+            client = get_client(profile)
+            tasks_api = TasksAPI(client)
+
+            try:
+                # Get overdue count first
+                result = await tasks_api.today_tasks()
+                overdue_count = result.get("overdue_count", 0)
+                
+                if overdue_count == 0:
+                    console.print("[green]No overdue tasks to reschedule! 🎉[/green]")
+                    return
+                
+                # Confirm
+                if not yes:
+                    confirm = typer.confirm(
+                        f"Reschedule {overdue_count} overdue task(s) to today?"
+                    )
+                    if not confirm:
+                        format_info("Cancelled")
+                        raise typer.Exit(0)
+                
+                # Reschedule
+                response = await tasks_api.reschedule_overdue()
+                
+                count = response.get("rescheduled_count", 0)
+                format_success(f"Rescheduled {count} overdue task(s) to today")
+                
+                # Show rescheduled tasks
+                tasks = response.get("tasks", [])
+                if tasks:
+                    console.print()
+                    console.print("[bold cyan]Rescheduled Tasks:[/bold cyan]")
+                    format_output(tasks, "pretty", compact=True)
+                    
+            finally:
+                await client.close()
+
+        asyncio.run(do_reschedule())
+
+    except Exception as e:
+        format_error(f"Failed to reschedule tasks: {str(e)}")
         raise typer.Exit(1)

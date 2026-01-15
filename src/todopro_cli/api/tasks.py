@@ -124,3 +124,8 @@ class TasksAPI:
         """Get the next task to do right now."""
         response = await self.client.get("/v1/tasks/next")
         return response.json()
+
+    async def reschedule_overdue(self) -> dict:
+        """Reschedule all overdue tasks to today."""
+        response = await self.client.post("/v1/tasks/reschedule-overdue")
+        return response.json()
