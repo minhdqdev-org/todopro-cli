@@ -85,7 +85,7 @@ def health(
 
 @app.command()
 def today(
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:

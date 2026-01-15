@@ -288,7 +288,7 @@ def reopen_task(
 
 @app.command("today")
 def today(
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -304,23 +304,20 @@ def today(
             try:
                 result = await tasks_api.today_tasks()
                 
-                # Display overdue tasks
-                if result.get("overdue_count", 0) > 0:
-                    console.print("\n[bold red]Overdue Tasks:[/bold red]")
-                    format_output(result["overdue"], output, compact=compact)
+                # Combine overdue and today tasks for pretty output
+                all_tasks = result.get("overdue", []) + result.get("today", [])
                 
-                # Display today's tasks
-                if result.get("today_count", 0) > 0:
-                    console.print("\n[bold blue]Today's Tasks:[/bold blue]")
-                    format_output(result["today"], output, compact=compact)
-                
-                # Summary
-                console.print(
-                    f"\n[bold]Summary:[/bold] {result.get('overdue_count', 0)} overdue, "
-                    f"{result.get('today_count', 0)} due today"
-                )
-                
-                if result.get("overdue_count", 0) == 0 and result.get("today_count", 0) == 0:
+                if all_tasks:
+                    # Display with pretty format by default
+                    format_output(all_tasks, output, compact=compact)
+                    
+                    # Summary
+                    console.print()
+                    console.print(
+                        f"[bold]Summary:[/bold] {result.get('overdue_count', 0)} overdue, "
+                        f"{result.get('today_count', 0)} due today"
+                    )
+                else:
                     console.print("[green]No tasks due today! 🎉[/green]")
                     
             finally:
