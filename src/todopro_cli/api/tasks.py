@@ -137,3 +137,39 @@ class TasksAPI:
             json={"input": input_text}
         )
         return response.json()
+    
+    async def eisenhower_matrix(self) -> dict:
+        """Get Eisenhower Matrix view with insights."""
+        response = await self.client.get("/v1/tasks/eisenhower")
+        return response.json()
+    
+    async def classify_task(self, task_id: str, is_urgent: bool = None, is_important: bool = None) -> dict:
+        """Classify a task in the Eisenhower Matrix."""
+        data = {}
+        if is_urgent is not None:
+            data["is_urgent"] = is_urgent
+        if is_important is not None:
+            data["is_important"] = is_important
+        
+        response = await self.client.patch(
+            f"/v1/tasks/{task_id}/eisenhower",
+            json=data
+        )
+        return response.json()
+    
+    async def bulk_classify(self, task_ids: list[str], quadrant: str = None, 
+                           is_urgent: bool = None, is_important: bool = None) -> dict:
+        """Bulk classify tasks."""
+        data = {"task_ids": task_ids}
+        if quadrant:
+            data["quadrant"] = quadrant
+        if is_urgent is not None:
+            data["is_urgent"] = is_urgent
+        if is_important is not None:
+            data["is_important"] = is_important
+        
+        response = await self.client.post(
+            "/v1/tasks/eisenhower/classify",
+            json=data
+        )
+        return response.json()

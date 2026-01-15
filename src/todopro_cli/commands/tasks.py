@@ -533,3 +533,215 @@ def quick_add(
     except Exception as e:
         format_error(f"Failed to add task: {str(e)}")
         raise typer.Exit(1)
+
+
+@app.command("matrix")
+def eisenhower_matrix(
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """
+    View tasks organized by Eisenhower Matrix (Urgent-Important).
+    
+    Quadrants:
+      Q1 (Do First)    - Urgent & Important
+      Q2 (Schedule)    - Important, Not Urgent  
+      Q3 (Delegate)    - Urgent, Not Important
+      Q4 (Eliminate)   - Neither
+    """
+    check_auth(profile)
+    
+    try:
+        async def get_matrix():
+            client = get_client(profile)
+            try:
+                tasks_api = TasksAPI(client)
+                matrix_data = await tasks_api.eisenhower_matrix()
+                
+                matrix = matrix_data.get("matrix", {})
+                insights = matrix_data.get("insights", {})
+                
+                # Display matrix
+                console.print()
+                console.print("[bold cyan]═" * 60 + "[/bold cyan]")
+                console.print(f"[bold cyan]{'Eisenhower Matrix':^60}[/bold cyan]")
+                console.print("[bold cyan]═" * 60 + "[/bold cyan]")
+                console.print()
+                
+                # Display quadrants in 2x2 grid
+                _display_quadrant_pair(matrix, "Q1", "Q2")
+                console.print()
+                _display_quadrant_pair(matrix, "Q3", "Q4")
+                
+                # Display insights
+                console.print()
+                console.print("[bold cyan]" + "─" * 60 + "[/bold cyan]")
+                console.print("[bold]📊 Insights:[/bold]")
+                console.print(f"  • Total tasks: {insights.get('total_tasks', 0)}")
+                console.print(f"  • Q2 (Strategic work): {insights.get('q2_percentage', 0)}%")
+                
+                score = insights.get('health_score', 0)
+                score_color = "green" if score >= 70 else "yellow" if score >= 50 else "red"
+                stars = "⭐" * (score // 20)
+                console.print(f"  • Health Score: [{score_color}]{score}/100 {stars}[/{score_color}]")
+                console.print(f"  • {insights.get('message', '')}")
+                console.print()
+                    
+            finally:
+                await client.close()
+
+        asyncio.run(get_matrix())
+
+    except Exception as e:
+        format_error(f"Failed to get matrix: {str(e)}")
+        raise typer.Exit(1)
+
+
+def _display_quadrant_pair(matrix, q1_key, q2_key):
+    """Display two quadrants side by side."""
+    q1 = matrix.get(q1_key, {})
+    q2 = matrix.get(q2_key, {})
+    
+    # Header
+    console.print("[bold]╔" + "═" * 58 + "╗[/bold]")
+    console.print(f"[bold]║ {q1_key}: {q1.get('label', '')} ({q1.get('count', 0)})".ljust(58) + " ║ " + 
+                  f"{q2_key}: {q2.get('label', '')} ({q2.get('count', 0)})".ljust(58) + " ║[/bold]")
+    console.print(f"[dim]║ {q1.get('description', '')}".ljust(58) + " ║ " +
+                  f"{q2.get('description', '')}".ljust(58) + " ║[/dim]")
+    console.print("[bold]╠" + "═" * 58 + "╬" + "═" * 58 + "╣[/bold]")
+    
+    # Tasks
+    q1_tasks = q1.get("tasks", [])[:5]  # Show max 5 per quadrant
+    q2_tasks = q2.get("tasks", [])[:5]
+    
+    max_rows = max(len(q1_tasks), len(q2_tasks), 3)
+    
+    for i in range(max_rows):
+        left_content = ""
+        right_content = ""
+        
+        if i < len(q1_tasks):
+            task = q1_tasks[i]
+            icon = _get_quadrant_icon(q1_key)
+            left_content = f"{icon} {task.get('content', '')[:50]}"
+            if task.get('due_date'):
+                from datetime import datetime
+                due = datetime.fromisoformat(task['due_date'].replace('Z', '+00:00'))
+                left_content += f" [dim]({due.strftime('%m/%d')})[/dim]"
+        
+        if i < len(q2_tasks):
+            task = q2_tasks[i]
+            icon = _get_quadrant_icon(q2_key)
+            right_content = f"{icon} {task.get('content', '')[:50]}"
+            if task.get('due_date'):
+                from datetime import datetime
+                due = datetime.fromisoformat(task['due_date'].replace('Z', '+00:00'))
+                right_content += f" [dim]({due.strftime('%m/%d')})[/dim]"
+        
+        console.print(f"║ {left_content}".ljust(66) + "║ " + f"{right_content}".ljust(66) + "║")
+    
+    # Show recommendation for top row
+    if q1_key in ["Q1", "Q3"]:
+        console.print("[bold]╠" + "═" * 58 + "╬" + "═" * 58 + "╣[/bold]")
+        q1_rec = q1.get("recommendation", "")[:55]
+        q2_rec = q2.get("recommendation", "")[:55]
+        console.print(f"[dim]║ {q1_rec}".ljust(66) + "║ " + f"{q2_rec}".ljust(66) + "║[/dim]")
+    
+    console.print("[bold]╚" + "═" * 58 + "╩" + "═" * 58 + "╝[/bold]")
+
+
+def _get_quadrant_icon(quadrant):
+    """Get emoji icon for quadrant."""
+    icons = {
+        "Q1": "🔴",  # Red - Urgent & Important
+        "Q2": "🟢",  # Green - Important
+        "Q3": "🟡",  # Yellow - Urgent
+        "Q4": "🔵",  # Blue - Neither
+    }
+    return icons.get(quadrant, "•")
+
+
+@app.command("classify")
+def classify_task_cmd(
+    task_id: str = typer.Argument(..., help="Task ID to classify"),
+    urgent: bool = typer.Option(None, "--urgent/--not-urgent", help="Mark as urgent"),
+    important: bool = typer.Option(None, "--important/--not-important", help="Mark as important"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Classify a task in the Eisenhower Matrix."""
+    check_auth(profile)
+    
+    # Interactive mode if no flags provided
+    if urgent is None and important is None:
+        try:
+            urgent_input = console.input("[cyan]Is this task urgent? (y/n):[/cyan] ").strip().lower()
+            urgent = urgent_input == 'y'
+            
+            important_input = console.input("[cyan]Is this task important? (y/n):[/cyan] ").strip().lower()
+            important = important_input == 'y'
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Cancelled.[/yellow]")
+            raise typer.Exit(0)
+    
+    try:
+        async def do_classify():
+            client = get_client(profile)
+            try:
+                tasks_api = TasksAPI(client)
+                result = await tasks_api.classify_task(task_id, urgent, important)
+                
+                task = result.get("task", {})
+                quadrant = result.get("quadrant", "")
+                
+                icon = _get_quadrant_icon(quadrant)
+                console.print(f"\n[bold green]✓[/bold green] Task classified as {icon} {quadrant}")
+                console.print(f"  {task.get('content', '')}")
+                console.print(f"  [dim]Urgent: {urgent}, Important: {important}[/dim]")
+                    
+            finally:
+                await client.close()
+
+        asyncio.run(do_classify())
+
+    except Exception as e:
+        format_error(f"Failed to classify task: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("focus")
+def focus_on_q2(
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Show Q2 tasks (Important but Not Urgent) - Strategic work."""
+    check_auth(profile)
+    
+    try:
+        async def get_focus_tasks():
+            client = get_client(profile)
+            try:
+                tasks_api = TasksAPI(client)
+                matrix_data = await tasks_api.eisenhower_matrix()
+                
+                q2 = matrix_data.get("matrix", {}).get("Q2", {})
+                tasks = q2.get("tasks", [])
+                
+                console.print()
+                console.print(f"[bold green]🟢 Q2: {q2.get('label', '')} ({len(tasks)} tasks)[/bold green]")
+                console.print(f"[dim]{q2.get('description', '')}[/dim]")
+                console.print()
+                
+                if tasks:
+                    format_output(tasks, "pretty", compact=False)
+                    console.print()
+                    console.print(f"[cyan]💡 Tip: {q2.get('recommendation', '')}[/cyan]")
+                else:
+                    console.print("[yellow]No Q2 tasks found. Add some strategic, long-term work![/yellow]")
+                console.print()
+                    
+            finally:
+                await client.close()
+
+        asyncio.run(get_focus_tasks())
+
+    except Exception as e:
+        format_error(f"Failed to get focus tasks: {str(e)}")
+        raise typer.Exit(1)
