@@ -4,7 +4,7 @@ import typer
 from rich.console import Console
 
 from todopro_cli import __version__
-from todopro_cli.commands import auth, config, labels, projects, tasks, utils
+from todopro_cli.commands import analytics, auth, config, labels, projects, tasks, utils
 
 # Create main app
 app = typer.Typer(
@@ -22,6 +22,7 @@ app.add_typer(tasks.app, name="tasks", help="Task management commands")
 app.add_typer(projects.app, name="projects", help="Project management commands")
 app.add_typer(labels.app, name="labels", help="Label management commands")
 app.add_typer(config.app, name="config", help="Configuration management")
+app.add_typer(analytics.app, name="analytics", help="Analytics and productivity insights")
 app.add_typer(utils.app, name="utils", help="Utility commands")
 
 
