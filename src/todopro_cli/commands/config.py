@@ -115,3 +115,161 @@ def list_profiles(
     except Exception as e:
         format_error(f"Failed to list profiles: {str(e)}")
         raise typer.Exit(1)
+
+
+@app.command("use-context")
+def use_context(
+    context_name: str = typer.Argument(..., help="Context name (dev/staging/prod)"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Switch to a different context (environment)."""
+    try:
+        config_manager = get_config_manager(profile)
+
+        # Initialize contexts if they don't exist
+        if not config_manager.config.contexts:
+            config_manager.init_default_contexts()
+
+        config_manager.use_context(context_name)
+        context = config_manager.get_current_context()
+
+        if context:
+            format_success(
+                f"Switched to context '{context.name}'\n"
+                f"Endpoint: {context.endpoint}\n"
+                f"Description: {context.description}"
+            )
+    except ValueError as e:
+        format_error(str(e))
+        raise typer.Exit(1)
+    except Exception as e:
+        format_error(f"Failed to switch context: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("current-context")
+def current_context(
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+) -> None:
+    """Show the current context."""
+    try:
+        config_manager = get_config_manager(profile)
+
+        # Initialize contexts if they don't exist
+        if not config_manager.config.contexts:
+            config_manager.init_default_contexts()
+
+        context = config_manager.get_current_context()
+
+        if not context:
+            format_error("No current context set")
+            raise typer.Exit(1)
+
+        if output == "table":
+            from rich.table import Table
+
+            table = Table(title="Current Context")
+            table.add_column("Property", style="cyan")
+            table.add_column("Value", style="green")
+
+            table.add_row("Name", context.name)
+            table.add_row("Endpoint", context.endpoint)
+            table.add_row("Description", context.description)
+
+            console.print(table)
+        else:
+            format_output(context.model_dump(), output)
+
+    except Exception as e:
+        format_error(f"Failed to get current context: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("get-contexts")
+def get_contexts(
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+) -> None:
+    """List all available contexts."""
+    try:
+        config_manager = get_config_manager(profile)
+
+        # Initialize contexts if they don't exist
+        if not config_manager.config.contexts:
+            config_manager.init_default_contexts()
+
+        contexts = config_manager.list_contexts()
+        current = config_manager.config.current_context
+
+        if output == "table":
+            from rich.table import Table
+
+            table = Table(title="Available Contexts")
+            table.add_column("Current", style="yellow")
+            table.add_column("Name", style="cyan")
+            table.add_column("Endpoint", style="green")
+            table.add_column("Description", style="white")
+
+            for name, ctx in contexts.items():
+                marker = "*" if name == current else ""
+                table.add_row(marker, ctx.name, ctx.endpoint, ctx.description)
+
+            console.print(table)
+        else:
+            format_output([ctx.model_dump() for ctx in contexts.values()], output)
+
+    except Exception as e:
+        format_error(f"Failed to list contexts: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("set-context")
+def set_context(
+    name: str = typer.Argument(..., help="Context name"),
+    endpoint: str = typer.Option(..., "--endpoint", "-e", help="API endpoint URL"),
+    description: str = typer.Option("", "--description", "-d", help="Context description"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Add or update a context."""
+    try:
+        config_manager = get_config_manager(profile)
+
+        # Initialize contexts if they don't exist
+        if not config_manager.config.contexts:
+            config_manager.init_default_contexts()
+
+        config_manager.add_context(name, endpoint, description)
+        format_success(f"Context '{name}' created/updated successfully")
+
+    except Exception as e:
+        format_error(f"Failed to set context: {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command("delete-context")
+def delete_context(
+    name: str = typer.Argument(..., help="Context name to delete"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+) -> None:
+    """Delete a context."""
+    try:
+        if not yes:
+            confirm = typer.confirm(f"Are you sure you want to delete context '{name}'?")
+            if not confirm:
+                format_error("Cancelled")
+                raise typer.Exit(0)
+
+        config_manager = get_config_manager(profile)
+        config_manager.remove_context(name)
+        config_manager.clear_context_credentials(name)
+
+        format_success(f"Context '{name}' deleted successfully")
+
+    except ValueError as e:
+        format_error(str(e))
+        raise typer.Exit(1)
+    except Exception as e:
+        format_error(f"Failed to delete context: {str(e)}")
+        raise typer.Exit(1)

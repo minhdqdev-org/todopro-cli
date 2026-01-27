@@ -29,7 +29,17 @@ class APIClient:
 
         # Add authentication token if available and not skipped
         if not skip_auth:
-            credentials = self.config_manager.load_credentials()
+            # Try to load context-specific credentials first
+            current_context = self.config_manager.get_current_context()
+            if current_context:
+                credentials = self.config_manager.load_context_credentials(current_context.name)
+            else:
+                credentials = None
+
+            # Fall back to default credentials if context credentials not found
+            if not credentials:
+                credentials = self.config_manager.load_credentials()
+
             if credentials and "token" in credentials:
                 headers["Authorization"] = f"Bearer {credentials['token']}"
 

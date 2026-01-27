@@ -55,6 +55,14 @@ class SyncConfig(BaseModel):
     interval: int = Field(default=300)
 
 
+class Context(BaseModel):
+    """Context (environment) configuration."""
+
+    name: str
+    endpoint: str
+    description: str = Field(default="")
+
+
 class Config(BaseModel):
     """Main configuration."""
 
@@ -64,6 +72,8 @@ class Config(BaseModel):
     ui: UIConfig = Field(default_factory=UIConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
     sync: SyncConfig = Field(default_factory=SyncConfig)
+    current_context: str = Field(default="prod")
+    contexts: dict[str, Context] = Field(default_factory=dict)
 
 
 class ConfigManager:
@@ -196,6 +206,109 @@ class ConfigManager:
             if not config_file.name.startswith("."):
                 profiles.append(config_file.stem)
         return profiles
+
+    def init_default_contexts(self) -> None:
+        """Initialize default contexts if they don't exist."""
+        default_contexts = {
+            "dev": Context(
+                name="dev",
+                endpoint="http://localhost:8000/api",
+                description="Local development environment",
+            ),
+            "staging": Context(
+                name="staging",
+                endpoint="https://staging.todopro.minhdq.dev/api",
+                description="Staging environment",
+            ),
+            "prod": Context(
+                name="prod",
+                endpoint="https://todopro.minhdq.dev/api",
+                description="Production environment",
+            ),
+        }
+
+        if not self.config.contexts:
+            config_dict = self.config.model_dump()
+            config_dict["contexts"] = {k: v.model_dump() for k, v in default_contexts.items()}
+            self._config = Config(**config_dict)
+            self.save_config()
+
+    def add_context(self, name: str, endpoint: str, description: str = "") -> None:
+        """Add a new context."""
+        context = Context(name=name, endpoint=endpoint, description=description)
+        config_dict = self.config.model_dump()
+        config_dict["contexts"][name] = context.model_dump()
+        self._config = Config(**config_dict)
+        self.save_config()
+
+    def remove_context(self, name: str) -> None:
+        """Remove a context."""
+        if name not in self.config.contexts:
+            raise ValueError(f"Context '{name}' not found")
+
+        if self.config.current_context == name:
+            raise ValueError(f"Cannot remove current context '{name}'. Switch to another context first.")
+
+        config_dict = self.config.model_dump()
+        del config_dict["contexts"][name]
+        self._config = Config(**config_dict)
+        self.save_config()
+
+    def use_context(self, name: str) -> None:
+        """Switch to a different context."""
+        if name not in self.config.contexts:
+            raise ValueError(f"Context '{name}' not found")
+
+        # Update current context
+        config_dict = self.config.model_dump()
+        config_dict["current_context"] = name
+
+        # Update API endpoint to match the context
+        context = self.config.contexts[name]
+        config_dict["api"]["endpoint"] = context.endpoint
+
+        self._config = Config(**config_dict)
+        self.save_config()
+
+    def get_current_context(self) -> Optional[Context]:
+        """Get the current context."""
+        if self.config.current_context in self.config.contexts:
+            return self.config.contexts[self.config.current_context]
+        return None
+
+    def list_contexts(self) -> dict[str, Context]:
+        """List all contexts."""
+        return self.config.contexts
+
+    def save_context_credentials(self, context_name: str, token: str, refresh_token: Optional[str] = None) -> None:
+        """Save authentication credentials for a specific context."""
+        credentials_file = self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        credentials = {"token": token}
+        if refresh_token:
+            credentials["refresh_token"] = refresh_token
+
+        with open(credentials_file, "w") as f:
+            json.dump(credentials, f, indent=2)
+
+        # Set file permissions to be readable only by owner
+        credentials_file.chmod(0o600)
+
+    def load_context_credentials(self, context_name: str) -> Optional[dict[str, str]]:
+        """Load authentication credentials for a specific context."""
+        credentials_file = self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        if credentials_file.exists():
+            try:
+                with open(credentials_file, "r") as f:
+                    return json.load(f)
+            except Exception:
+                return None
+        return None
+
+    def clear_context_credentials(self, context_name: str) -> None:
+        """Clear authentication credentials for a specific context."""
+        credentials_file = self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        if credentials_file.exists():
+            credentials_file.unlink()
 
 
 # Global config manager instance

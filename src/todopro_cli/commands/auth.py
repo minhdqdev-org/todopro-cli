@@ -31,9 +31,17 @@ def login(
         # Get config manager
         config_manager = get_config_manager(profile)
 
+        # Initialize contexts if they don't exist
+        if not config_manager.config.contexts:
+            config_manager.init_default_contexts()
+
         # Update endpoint if provided
         if endpoint:
             config_manager.set("api.endpoint", endpoint)
+
+        # Get current context
+        current_context = config_manager.get_current_context()
+        context_name = current_context.name if current_context else "unknown"
 
         # Prompt for credentials if not provided
         if not email:
@@ -61,12 +69,18 @@ def login(
                     format_error("Invalid response from server: no token received")
                     raise typer.Exit(1)
 
+                # Save credentials for current context
+                config_manager.save_context_credentials(context_name, token, refresh_token)
+                # Also save to default location for backward compatibility
                 config_manager.save_credentials(token, refresh_token)
 
                 # Get user profile
                 user = await auth_api.get_profile()
 
-                format_success(f"Logged in as {user.get('email', 'unknown')}")
+                format_success(
+                    f"Logged in as {user.get('email', 'unknown')} "
+                    f"(context: {context_name})"
+                )
 
                 if save_profile:
                     format_success(f"Profile '{profile}' saved as default")

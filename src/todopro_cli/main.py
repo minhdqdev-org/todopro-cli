@@ -1,10 +1,12 @@
 """Main entry point for TodoPro CLI."""
 
+from typing import Optional
+
 import typer
 from rich.console import Console
 
 from todopro_cli import __version__
-from todopro_cli.commands import analytics, auth, config, labels, projects, tasks, utils
+from todopro_cli.commands import analytics, auth, config, contexts, labels, projects, tasks, timer, utils
 
 # Create main app
 app = typer.Typer(
@@ -23,6 +25,8 @@ app.add_typer(projects.app, name="projects", help="Project management commands")
 app.add_typer(labels.app, name="labels", help="Label management commands")
 app.add_typer(config.app, name="config", help="Configuration management")
 app.add_typer(analytics.app, name="analytics", help="Analytics and productivity insights")
+app.add_typer(contexts.contexts, name="contexts", help="Context management (@home, @office)")
+app.add_typer(timer.timer, name="timer", help="Pomodoro timer for focus sessions")
 app.add_typer(utils.app, name="utils", help="Utility commands")
 
 
@@ -35,10 +39,10 @@ def version() -> None:
 
 @app.command()
 def login(
-    email: str | None = typer.Option(None, "--email", "-e", help="Email address"),
-    password: str | None = typer.Option(None, "--password", "-p", help="Password"),
+    email: Optional[str] = typer.Option(None, "--email", "-e", help="Email address"),
+    password: Optional[str] = typer.Option(None, "--password", "-p", help="Password"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    endpoint: Optional[str] = typer.Option(None, "--endpoint", help="API endpoint URL"),
     save_profile: bool = typer.Option(
         False, "--save-profile", help="Save as default profile"
     ),
@@ -111,6 +115,24 @@ def complete(
 ) -> None:
     """Mark a task as completed."""
     tasks.complete_task(task_id=task_id, output=output, profile=profile)
+
+
+@app.command("add")
+def quick_add(
+    input_text: str = typer.Argument(..., help="Natural language task description"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    show_parsed: bool = typer.Option(False, "--show-parsed", help="Show parsed details"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """
+    Quick add a task using natural language.
+    
+    Examples:
+      todopro add "Buy milk tomorrow at 2pm #groceries p1 @shopping"
+      todopro add "Review PR #work p2 @code-review"
+      todopro add "Team meeting every Monday at 10am #meetings"
+    """
+    tasks.quick_add(input_text=input_text, output=output, show_parsed=show_parsed, profile=profile)
 
 
 @app.command()

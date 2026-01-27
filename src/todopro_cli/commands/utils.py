@@ -64,3 +64,9 @@ def health(
     except Exception as e:
         format_error(f"Health check failed: {str(e)}")
         raise typer.Exit(1)
+
+
+def handle_api_error(exception: Exception, action: str) -> None:
+    """Handle API errors uniformly."""
+    format_error(f"Error {action}: {str(exception)}")
+    raise typer.Exit(1)

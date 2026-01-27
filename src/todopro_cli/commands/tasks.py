@@ -145,6 +145,82 @@ def create_task(
         raise typer.Exit(1)
 
 
+@app.command("quick-add")
+def quick_add(
+    input_text: str = typer.Argument(..., help="Natural language task description"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    show_parsed: bool = typer.Option(False, "--show-parsed", help="Show parsed details"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """
+    Quick add a task using natural language.
+    
+    Examples:
+      todopro quick-add "Buy milk tomorrow at 2pm #groceries p1 @shopping"
+      todopro quick-add "Review PR #work p2 @code-review"
+      todopro quick-add "Team meeting every Monday at 10am #meetings"
+      todopro quick-add "Call dentist tomorrow p3"
+    
+    Syntax:
+      - #project - Assign to project (e.g., #work, #personal)
+      - @label - Add label (e.g., @urgent, @review)
+      - p1-p4 - Priority (p1=urgent, p2=high, p3=medium, p4=normal)
+      - Natural dates: tomorrow, next week, Monday, Jan 15, etc.
+      - Times: at 2pm, at 14:00
+      - Recurrence: every day, every Monday, every 2 weeks
+    """
+    check_auth(profile)
+
+    try:
+        async def do_quick_add() -> None:
+            client = get_client(profile)
+            tasks_api = TasksAPI(client)
+
+            try:
+                result = await tasks_api.quick_add(input_text)
+                
+                task = result.get("task", {})
+                parsed = result.get("parsed", {})
+                
+                format_success(f"Task created: {task.get('id', 'unknown')}")
+                
+                if show_parsed:
+                    format_info("\n📝 Parsed Details:")
+                    from rich.table import Table
+                    table = Table(show_header=True)
+                    table.add_column("Field", style="cyan")
+                    table.add_column("Value", style="green")
+                    
+                    table.add_row("Content", parsed.get('content', ''))
+                    if parsed.get('project_name'):
+                        table.add_row("Project", parsed.get('project_name'))
+                    if parsed.get('due_date'):
+                        table.add_row("Due Date", str(parsed.get('due_date')))
+                    if parsed.get('priority') and parsed.get('priority') != 1:
+                        priority_names = {1: 'Normal', 2: 'Medium', 3: 'High', 4: 'Urgent'}
+                        table.add_row("Priority", priority_names.get(parsed.get('priority'), str(parsed.get('priority'))))
+                    if parsed.get('labels'):
+                        table.add_row("Labels", ', '.join(parsed.get('labels', [])))
+                    if parsed.get('is_recurring'):
+                        table.add_row("Recurring", "Yes")
+                        if parsed.get('recurrence_rule'):
+                            table.add_row("Recurrence", str(parsed.get('recurrence_rule')))
+                    
+                    console.print(table)
+                    console.print()
+                
+                format_output(task, output)
+                
+            finally:
+                await client.close()
+
+        asyncio.run(do_quick_add())
+
+    except Exception as e:
+        format_error(f"Failed to quick add task: {str(e)}")
+        raise typer.Exit(1)
+
+
 @app.command("update")
 def update_task(
     task_id: str = typer.Argument(..., help="Task ID"),
