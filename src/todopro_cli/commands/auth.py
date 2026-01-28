@@ -1,7 +1,6 @@
 """Authentication commands."""
 
 import asyncio
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -18,10 +17,10 @@ console = Console()
 
 @app.command()
 def login(
-    email: Optional[str] = typer.Option(None, "--email", "-e", help="Email address"),
-    password: Optional[str] = typer.Option(None, "--password", "-p", help="Password"),
+    email: str | None = typer.Option(None, "--email", help="Email address"),
+    password: str | None = typer.Option(None, "--password", help="Password"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    endpoint: Optional[str] = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
     save_profile: bool = typer.Option(
         False, "--save-profile", help="Save as default profile"
     ),
@@ -70,7 +69,9 @@ def login(
                     raise typer.Exit(1)
 
                 # Save credentials for current context
-                config_manager.save_context_credentials(context_name, token, refresh_token)
+                config_manager.save_context_credentials(
+                    context_name, token, refresh_token
+                )
                 # Also save to default location for backward compatibility
                 config_manager.save_credentials(token, refresh_token)
 
@@ -92,7 +93,7 @@ def login(
 
     except Exception as e:
         format_error(f"Login failed: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command()
@@ -138,7 +139,7 @@ def logout(
 @app.command()
 def whoami(
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
 ) -> None:
     """Show current user information."""
     try:
@@ -164,12 +165,14 @@ def whoami(
 
     except Exception as e:
         format_error(f"Failed to get user information: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command()
 def timezone(
-    new_timezone: Optional[str] = typer.Argument(None, help="New timezone (IANA format, e.g., 'Asia/Ho_Chi_Minh')"),
+    new_timezone: str | None = typer.Argument(
+        None, help="New timezone (IANA format, e.g., 'Asia/Ho_Chi_Minh')"
+    ),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Get or set user timezone."""
@@ -195,11 +198,15 @@ def timezone(
                     # Get current timezone
                     user = await auth_api.get_profile()
                     current_tz = user.get("timezone", "UTC")
-                    console.print(f"[bold]Current timezone:[/bold] [cyan]{current_tz}[/cyan]")
+                    console.print(
+                        f"[bold]Current timezone:[/bold] [cyan]{current_tz}[/cyan]"
+                    )
                     console.print()
                     console.print("[dim]To set a new timezone, use:[/dim]")
                     console.print("[dim]  todopro auth timezone <IANA_TIMEZONE>[/dim]")
-                    console.print("[dim]  Example: todopro auth timezone Asia/Ho_Chi_Minh[/dim]")
+                    console.print(
+                        "[dim]  Example: todopro auth timezone Asia/Ho_Chi_Minh[/dim]"
+                    )
             finally:
                 await client.close()
 
@@ -207,4 +214,4 @@ def timezone(
 
     except Exception as e:
         format_error(f"Failed to handle timezone: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

@@ -26,7 +26,7 @@ def check_auth(profile: str = "default") -> None:
 
 @app.command("list")
 def list_labels(
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """List all labels."""
@@ -54,7 +54,7 @@ def list_labels(
 @app.command("get")
 def get_label(
     label_id: str = typer.Argument(..., help="Label ID"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Get label details."""
@@ -83,7 +83,7 @@ def get_label(
 def create_label(
     name: str = typer.Argument(..., help="Label name"),
     color: Optional[str] = typer.Option(None, "--color", help="Label color"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Create a new label."""
@@ -114,7 +114,7 @@ def update_label(
     label_id: str = typer.Argument(..., help="Label ID"),
     name: Optional[str] = typer.Option(None, "--name", help="Label name"),
     color: Optional[str] = typer.Option(None, "--color", help="Label color"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Update a label."""

@@ -29,10 +29,10 @@ def list_tasks(
     status: Optional[str] = typer.Option(None, "--status", help="Filter by status"),
     project: Optional[str] = typer.Option(None, "--project", help="Filter by project ID"),
     priority: Optional[int] = typer.Option(None, "--priority", help="Filter by priority"),
-    search: Optional[str] = typer.Option(None, "--search", "-s", help="Search tasks"),
-    limit: int = typer.Option(30, "--limit", "-n", help="Limit results"),
+    search: Optional[str] = typer.Option(None, "--search", help="Search tasks"),
+    limit: int = typer.Option(30, "--limit", help="Limit results"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
-    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output format"),
+    output: Optional[str] = typer.Option(None, "--output", help="Output format"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -75,7 +75,7 @@ def list_tasks(
 @app.command("get")
 def get_task(
     task_id: str = typer.Argument(..., help="Task ID"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Get task details."""
@@ -103,12 +103,12 @@ def get_task(
 @app.command("create")
 def create_task(
     content: str = typer.Argument(..., help="Task content"),
-    description: Optional[str] = typer.Option(None, "--description", "-d", help="Description"),
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID"),
+    description: Optional[str] = typer.Option(None, "--description", help="Description"),
+    project: Optional[str] = typer.Option(None, "--project", help="Project ID"),
     due: Optional[str] = typer.Option(None, "--due", help="Due date"),
     priority: Optional[int] = typer.Option(None, "--priority", help="Priority (1-4)"),
-    labels: Optional[str] = typer.Option(None, "--labels", "-l", help="Comma-separated labels"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    labels: Optional[str] = typer.Option(None, "--labels", help="Comma-separated labels"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Create a new task."""
@@ -148,7 +148,7 @@ def create_task(
 @app.command("quick-add")
 def quick_add(
     input_text: str = typer.Argument(..., help="Natural language task description"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     show_parsed: bool = typer.Option(False, "--show-parsed", help="Show parsed details"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -224,12 +224,12 @@ def quick_add(
 @app.command("update")
 def update_task(
     task_id: str = typer.Argument(..., help="Task ID"),
-    content: Optional[str] = typer.Option(None, "--content", "-c", help="Task content"),
-    description: Optional[str] = typer.Option(None, "--description", "-d", help="Description"),
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID"),
+    content: Optional[str] = typer.Option(None, "--content", help="Task content"),
+    description: Optional[str] = typer.Option(None, "--description", help="Description"),
+    project: Optional[str] = typer.Option(None, "--project", help="Project ID"),
     due: Optional[str] = typer.Option(None, "--due", help="Due date"),
     priority: Optional[int] = typer.Option(None, "--priority", help="Priority (1-4)"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Update a task."""
@@ -307,7 +307,7 @@ def delete_task(
 @app.command("complete")
 def complete_task(
     task_id: str = typer.Argument(..., help="Task ID"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Mark a task as completed."""
@@ -336,7 +336,7 @@ def complete_task(
 @app.command("reopen")
 def reopen_task(
     task_id: str = typer.Argument(..., help="Task ID"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Reopen a completed task."""
@@ -364,7 +364,7 @@ def reopen_task(
 
 @app.command("today")
 def today(
-    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
+    output: str = typer.Option("pretty", "--output", help="Output format"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -408,7 +408,7 @@ def today(
 
 @app.command("next")
 def next_task(
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show the next task to do right now."""

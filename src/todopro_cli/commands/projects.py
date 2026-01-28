@@ -28,7 +28,7 @@ def check_auth(profile: str = "default") -> None:
 def list_projects(
     archived: bool = typer.Option(False, "--archived", help="Show archived projects"),
     favorites: bool = typer.Option(False, "--favorites", help="Show only favorites"),
-    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output format"),
+    output: Optional[str] = typer.Option(None, "--output", help="Output format"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -67,7 +67,7 @@ def list_projects(
 @app.command("get")
 def get_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Get project details."""
@@ -97,7 +97,7 @@ def create_project(
     name: str = typer.Argument(..., help="Project name"),
     color: Optional[str] = typer.Option(None, "--color", help="Project color"),
     favorite: bool = typer.Option(False, "--favorite", help="Mark as favorite"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Create a new project."""
@@ -132,7 +132,7 @@ def update_project(
     project_id: str = typer.Argument(..., help="Project ID"),
     name: Optional[str] = typer.Option(None, "--name", help="Project name"),
     color: Optional[str] = typer.Option(None, "--color", help="Project color"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Update a project."""
@@ -204,7 +204,7 @@ def delete_project(
 @app.command("archive")
 def archive_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Archive a project."""
@@ -233,7 +233,7 @@ def archive_project(
 @app.command("unarchive")
 def unarchive_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Unarchive a project."""
@@ -262,7 +262,7 @@ def unarchive_project(
 @app.command("describe")
 def describe_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Get detailed information about a project."""

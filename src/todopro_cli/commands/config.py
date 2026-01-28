@@ -1,9 +1,8 @@
 """Configuration management commands."""
 
-from typing import Optional
-
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_output, format_success
@@ -15,7 +14,7 @@ console = Console()
 @app.command("view")
 def view_config(
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
 ) -> None:
     """View current configuration."""
     try:
@@ -24,7 +23,7 @@ def view_config(
         format_output(config_dict, output)
     except Exception as e:
         format_error(f"Failed to view config: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("get")
@@ -42,7 +41,7 @@ def get_config(
         console.print(value)
     except Exception as e:
         format_error(f"Failed to get config: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("set")
@@ -66,12 +65,12 @@ def set_config(
         format_success(f"Configuration '{key}' set to '{parsed_value}'")
     except Exception as e:
         format_error(f"Failed to set config: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("reset")
 def reset_config(
-    key: Optional[str] = typer.Argument(None, help="Configuration key to reset"),
+    key: str | None = typer.Argument(None, help="Configuration key to reset"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:
@@ -93,7 +92,7 @@ def reset_config(
             format_success("Configuration reset to defaults")
     except Exception as e:
         format_error(f"Failed to reset config: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("list")
@@ -114,7 +113,7 @@ def list_profiles(
             console.print(f"{prof}{marker}")
     except Exception as e:
         format_error(f"Failed to list profiles: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("use-context")
@@ -141,16 +140,16 @@ def use_context(
             )
     except ValueError as e:
         format_error(str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         format_error(f"Failed to switch context: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("current-context")
 def current_context(
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
 ) -> None:
     """Show the current context."""
     try:
@@ -167,8 +166,6 @@ def current_context(
             raise typer.Exit(1)
 
         if output == "table":
-            from rich.table import Table
-
             table = Table(title="Current Context")
             table.add_column("Property", style="cyan")
             table.add_column("Value", style="green")
@@ -183,13 +180,13 @@ def current_context(
 
     except Exception as e:
         format_error(f"Failed to get current context: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("get-contexts")
 def get_contexts(
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("table", "--output", help="Output format"),
 ) -> None:
     """List all available contexts."""
     try:
@@ -203,8 +200,6 @@ def get_contexts(
         current = config_manager.config.current_context
 
         if output == "table":
-            from rich.table import Table
-
             table = Table(title="Available Contexts")
             table.add_column("Current", style="yellow")
             table.add_column("Name", style="cyan")
@@ -221,14 +216,14 @@ def get_contexts(
 
     except Exception as e:
         format_error(f"Failed to list contexts: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("set-context")
 def set_context(
     name: str = typer.Argument(..., help="Context name"),
-    endpoint: str = typer.Option(..., "--endpoint", "-e", help="API endpoint URL"),
-    description: str = typer.Option("", "--description", "-d", help="Context description"),
+    endpoint: str = typer.Option(..., "--endpoint", help="API endpoint URL"),
+    description: str = typer.Option("", "--description", help="Context description"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Add or update a context."""
@@ -244,7 +239,7 @@ def set_context(
 
     except Exception as e:
         format_error(f"Failed to set context: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("delete-context")
@@ -256,7 +251,9 @@ def delete_context(
     """Delete a context."""
     try:
         if not yes:
-            confirm = typer.confirm(f"Are you sure you want to delete context '{name}'?")
+            confirm = typer.confirm(
+                f"Are you sure you want to delete context '{name}'?"
+            )
             if not confirm:
                 format_error("Cancelled")
                 raise typer.Exit(0)
@@ -269,7 +266,7 @@ def delete_context(
 
     except ValueError as e:
         format_error(str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except Exception as e:
         format_error(f"Failed to delete context: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

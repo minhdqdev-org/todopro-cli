@@ -19,9 +19,9 @@ def timer():
 
 
 @timer.command("start")
-@click.option("--task-id", "-t", help="Task ID to track time for")
-@click.option("--duration", "-d", default=25, type=int, help="Session duration in minutes")
-@click.option("--type", "-T", type=click.Choice(['work', 'short_break', 'long_break']), default='work')
+@click.option("--task-id", help="Task ID to track time for")
+@click.option("--duration", default=25, type=int, help="Session duration in minutes")
+@click.option("--type", type=click.Choice(['work', 'short_break', 'long_break']), default='work')
 def start_timer(task_id, duration, type):
     """Start a Pomodoro timer session."""
     client = APIClient()
@@ -87,8 +87,8 @@ def start_timer(task_id, duration, type):
 
 
 @timer.command("history")
-@click.option("--task-id", "-t", help="Filter by task ID")
-@click.option("--limit", "-l", default=20, type=int, help="Number of sessions to show")
+@click.option("--task-id", help="Filter by task ID")
+@click.option("--limit", default=20, type=int, help="Number of sessions to show")
 def timer_history(task_id, limit):
     """Show Pomodoro session history."""
     client = APIClient()
@@ -146,8 +146,8 @@ def timer_history(task_id, limit):
 
 
 @timer.command("stats")
-@click.option("--task-id", "-t", help="Filter by task ID")
-@click.option("--days", "-d", default=7, type=int, help="Number of days to analyze")
+@click.option("--task-id", help="Filter by task ID")
+@click.option("--days", default=7, type=int, help="Number of days to analyze")
 def timer_stats(task_id, days):
     """Show Pomodoro statistics."""
     client = APIClient()

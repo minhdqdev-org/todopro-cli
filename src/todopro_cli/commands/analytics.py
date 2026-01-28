@@ -1,11 +1,10 @@
 """Analytics commands for TodoPro CLI.
 
-US-010: Analytics commands to view productivity stats from terminal.
+Analytics commands to view productivity stats from terminal.
 """
 
 import asyncio
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -31,7 +30,7 @@ def check_auth(profile: str = "default") -> None:
 
 @app.command("stats")
 def analytics_stats(
-    output: str = typer.Option("table", "--output", "-o", help="Output format (table/json)"),
+    output: str = typer.Option("table", "--output", help="Output format (table/json)"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show productivity score and basic statistics."""
@@ -51,7 +50,10 @@ def analytics_stats(
                 if output == "json":
                     import json
 
-                    combined = {"productivity_score": score_data, "completion_stats": stats_data}
+                    combined = {
+                        "productivity_score": score_data,
+                        "completion_stats": stats_data,
+                    }
                     print(json.dumps(combined, indent=2, default=str))
                 else:
                     # Display productivity score
@@ -73,12 +75,18 @@ def analytics_stats(
                     elif score >= 40:
                         score_color = "yellow"
 
-                    score_table.add_row("Score", f"[{score_color}]{score:.1f}/100[/{score_color}]")
+                    score_table.add_row(
+                        "Score", f"[{score_color}]{score:.1f}/100[/{score_color}]"
+                    )
 
                     # Format trend
                     trend_str = f"+{trend:.1f}%" if trend > 0 else f"{trend:.1f}%"
-                    trend_color = "green" if trend > 0 else "red" if trend < 0 else "white"
-                    score_table.add_row("Trend", f"[{trend_color}]{trend_str}[/{trend_color}]")
+                    trend_color = (
+                        "green" if trend > 0 else "red" if trend < 0 else "white"
+                    )
+                    score_table.add_row(
+                        "Trend", f"[{trend_color}]{trend_str}[/{trend_color}]"
+                    )
 
                     console.print(score_table)
 
@@ -95,7 +103,9 @@ def analytics_stats(
                         f"{breakdown.get('completion_count', 0):.1f}",
                     )
                     breakdown_table.add_row(
-                        "Completion Rate", "30%", f"{breakdown.get('completion_rate', 0):.1f}"
+                        "Completion Rate",
+                        "30%",
+                        f"{breakdown.get('completion_rate', 0):.1f}",
                     )
                     breakdown_table.add_row(
                         "On-Time Rate", "30%", f"{breakdown.get('on_time_rate', 0):.1f}"
@@ -113,7 +123,8 @@ def analytics_stats(
                         "Total Completed", str(stats_data.get("total_completed", 0))
                     )
                     stats_table.add_row(
-                        "Completion Rate", f"{stats_data.get('completion_rate', 0):.1f}%"
+                        "Completion Rate",
+                        f"{stats_data.get('completion_rate', 0):.1f}%",
                     )
                     stats_table.add_row(
                         "On-Time Rate", f"{stats_data.get('on_time_rate', 0):.1f}%"
@@ -133,12 +144,12 @@ def analytics_stats(
 
     except Exception as e:
         format_error(f"Failed to fetch analytics: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("streaks")
 def analytics_streaks(
-    output: str = typer.Option("table", "--output", "-o", help="Output format (table/json)"),
+    output: str = typer.Option("table", "--output", help="Output format (table/json)"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show current and longest task completion streak."""
@@ -167,8 +178,20 @@ def analytics_streaks(
                     streak_table.add_column("Days", style="bold white")
 
                     # Color code based on streak length
-                    current_color = "green" if current_streak >= 7 else "yellow" if current_streak >= 3 else "white"
-                    longest_color = "green" if longest_streak >= 30 else "blue" if longest_streak >= 7 else "white"
+                    current_color = (
+                        "green"
+                        if current_streak >= 7
+                        else "yellow"
+                        if current_streak >= 3
+                        else "white"
+                    )
+                    longest_color = (
+                        "green"
+                        if longest_streak >= 30
+                        else "blue"
+                        if longest_streak >= 7
+                        else "white"
+                    )
 
                     streak_table.add_row(
                         "Current Streak",
@@ -184,9 +207,13 @@ def analytics_streaks(
 
                     # Show motivation message
                     if current_streak >= longest_streak and current_streak > 0:
-                        console.print("[bold green]🔥 You're on your best streak ever![/bold green]")
+                        console.print(
+                            "[bold green]🔥 You're on your best streak ever![/bold green]"
+                        )
                     elif current_streak >= 7:
-                        console.print("[green]✨ Great consistency! Keep it up![/green]")
+                        console.print(
+                            "[green]✨ Great consistency! Keep it up![/green]"
+                        )
                     elif current_streak >= 3:
                         console.print("[yellow]💪 Building momentum![/yellow]")
 
@@ -197,13 +224,13 @@ def analytics_streaks(
 
     except Exception as e:
         format_error(f"Failed to fetch streaks: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("export")
 def analytics_export(
-    format: str = typer.Option("csv", "--format", "-f", help="Export format (csv/json)"),
-    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path"),
+    format: str = typer.Option("csv", "--format", help="Export format (csv/json)"),
+    output: str | None = typer.Option(None, "--output", help="Output file path"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Export analytics data to file."""
@@ -228,7 +255,9 @@ def analytics_export(
             analytics_api = AnalyticsAPI(client)
 
             try:
-                console.print(f"[cyan]Exporting analytics data as {format.upper()}...[/cyan]")
+                console.print(
+                    f"[cyan]Exporting analytics data as {format.upper()}...[/cyan]"
+                )
 
                 # Fetch export data
                 data = await analytics_api.export_data(format=format)
@@ -246,4 +275,4 @@ def analytics_export(
 
     except Exception as e:
         format_error(f"Failed to export analytics: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

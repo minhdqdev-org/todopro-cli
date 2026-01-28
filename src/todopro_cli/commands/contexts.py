@@ -81,10 +81,10 @@ def list_contexts(location):
 
 @contexts.command("create")
 @click.argument("name")
-@click.option("--icon", "-i", default="📍", help="Context icon (emoji)")
-@click.option("--color", "-c", default="#3498DB", help="Context color (hex)")
+@click.option("--icon", default="📍", help="Context icon (emoji)")
+@click.option("--color", default="#3498DB", help="Context color (hex)")
 @click.option("--geo", is_flag=True, help="Enable geo-fencing at current location")
-@click.option("--radius", "-r", default=200, type=int, help="Geo-fence radius in meters")
+@click.option("--radius", default=200, type=int, help="Geo-fence radius in meters")
 def create_context(name, icon, color, geo, radius):
     """Create a new context."""
     client = APIClient()

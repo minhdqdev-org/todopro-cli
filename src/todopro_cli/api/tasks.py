@@ -1,6 +1,6 @@
 """Tasks API endpoints."""
 
-from typing import Any, Optional
+from typing import Any
 
 from todopro_cli.api.client import APIClient
 
@@ -14,13 +14,13 @@ class TasksAPI:
     async def list_tasks(
         self,
         *,
-        status: Optional[str] = None,
-        project_id: Optional[str] = None,
-        priority: Optional[int] = None,
-        search: Optional[str] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        sort: Optional[str] = None,
+        status: str | None = None,
+        project_id: str | None = None,
+        priority: int | None = None,
+        search: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        sort: str | None = None,
         **filters: Any,
     ) -> dict:
         """List tasks with optional filters."""
@@ -56,11 +56,11 @@ class TasksAPI:
         self,
         content: str,
         *,
-        description: Optional[str] = None,
-        project_id: Optional[str] = None,
-        due_date: Optional[str] = None,
-        priority: Optional[int] = None,
-        labels: Optional[list[str]] = None,
+        description: str | None = None,
+        project_id: str | None = None,
+        due_date: str | None = None,
+        priority: int | None = None,
+        labels: list[str] | None = None,
         **kwargs: Any,
     ) -> dict:
         """Create a new task."""
@@ -129,36 +129,39 @@ class TasksAPI:
         """Reschedule all overdue tasks to today."""
         response = await self.client.post("/v1/tasks/reschedule-overdue")
         return response.json()
-    
+
     async def quick_add(self, input_text: str) -> dict:
         """Quick add a task using natural language parsing."""
         response = await self.client.post(
-            "/v1/tasks/quick-add",
-            json={"input": input_text}
+            "/v1/tasks/quick-add", json={"input": input_text}
         )
         return response.json()
-    
+
     async def eisenhower_matrix(self) -> dict:
         """Get Eisenhower Matrix view with insights."""
         response = await self.client.get("/v1/tasks/eisenhower")
         return response.json()
-    
-    async def classify_task(self, task_id: str, is_urgent: bool = None, is_important: bool = None) -> dict:
+
+    async def classify_task(
+        self, task_id: str, is_urgent: bool = None, is_important: bool = None
+    ) -> dict:
         """Classify a task in the Eisenhower Matrix."""
         data = {}
         if is_urgent is not None:
             data["is_urgent"] = is_urgent
         if is_important is not None:
             data["is_important"] = is_important
-        
-        response = await self.client.patch(
-            f"/v1/tasks/{task_id}/eisenhower",
-            json=data
-        )
+
+        response = await self.client.patch(f"/v1/tasks/{task_id}/eisenhower", json=data)
         return response.json()
-    
-    async def bulk_classify(self, task_ids: list[str], quadrant: str = None, 
-                           is_urgent: bool = None, is_important: bool = None) -> dict:
+
+    async def bulk_classify(
+        self,
+        task_ids: list[str],
+        quadrant: str | None = None,
+        is_urgent: bool | None = None,
+        is_important: bool | None = None,
+    ) -> dict:
         """Bulk classify tasks."""
         data = {"task_ids": task_ids}
         if quadrant:
@@ -167,9 +170,6 @@ class TasksAPI:
             data["is_urgent"] = is_urgent
         if is_important is not None:
             data["is_important"] = is_important
-        
-        response = await self.client.post(
-            "/v1/tasks/eisenhower/classify",
-            json=data
-        )
+
+        response = await self.client.post("/v1/tasks/eisenhower/classify", json=data)
         return response.json()

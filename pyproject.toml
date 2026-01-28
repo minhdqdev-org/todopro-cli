@@ -19,7 +19,8 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "typer[all]>=0.9.0,<0.10.0",
+    "typer==0.9.0",
+    "click>=8.1,<8.2",
     "rich>=13.7.0",
     "httpx>=0.27.0",
     "platformdirs>=4.2.0",
@@ -45,20 +46,58 @@ tp = "todopro_cli.main:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.black]
-line-length = 88
-target-version = ["py312"]
-
 [tool.ruff]
 line-length = 88
 target-version = "py312"
-select = ["E", "F", "I", "N", "W", "UP"]
+src = ["src"]
 
-[tool.mypy]
-python_version = "3.12"
-strict = true
-warn_return_any = true
-warn_unused_configs = true
+[tool.ruff.lint]
+# Enable comprehensive rule sets
+select = [
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "W",    # pycodestyle warnings
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "PIE",  # flake8-pie
+    "RET",  # flake8-return
+]
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["todopro_cli"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# Pyright/Pylance configuration (replaces mypy)
+[tool.pyright]
+include = ["src", "tests"]
+exclude = [
+    "**/__pycache__",
+    "**/node_modules",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "**/.pytest_cache",
+    "**/.ruff_cache"
+]
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+extraPaths = ["src"]
+typeCheckingMode = "basic"
+reportMissingImports = "warning"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
