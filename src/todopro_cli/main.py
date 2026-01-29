@@ -120,12 +120,13 @@ def complete(
 
 @app.command()
 def reschedule(
-    task_id: str = typer.Argument(..., help="Task ID or suffix"),
-    date: str = typer.Option("today", "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"),
+    task_id: Optional[str] = typer.Argument(None, help="Task ID or suffix (omit to reschedule all overdue tasks)"),
+    date: Optional[str] = typer.Option(None, "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
-    """Reschedule a task to today (or specified date)."""
-    tasks.reschedule(target=task_id, date=date, yes=True, profile=profile)
+    """Reschedule a task or all overdue tasks to today."""
+    tasks.reschedule(target=task_id, date=date, yes=yes, profile=profile)
 
 
 @app.command("add")
