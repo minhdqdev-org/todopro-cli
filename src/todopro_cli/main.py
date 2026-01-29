@@ -11,7 +11,6 @@ from todopro_cli.commands import (  # contexts, timer
     labels,
     projects,
     tasks,
-    utils,
 )
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 
@@ -38,14 +37,47 @@ app.add_typer(
 # TODO: Convert Click groups to Typer apps - these are incompatible with Typer 0.9.0
 # app.add_typer(contexts.contexts, name="contexts", help="Context management (@home, @office)")
 # app.add_typer(timer.timer, name="timer", help="Pomodoro timer for focus sessions")
-app.add_typer(utils.app, name="utils", help="Utility commands")
 
 
 # Add top-level commands
 @app.command()
 def version() -> None:
-    """Show version information."""
+    """Show version information and API health."""
     console.print(f"[bold]TodoPro CLI[/bold] version [cyan]{__version__}[/cyan]")
+    console.print()
+    
+    # Check API health
+    import asyncio
+    from todopro_cli.api.client import get_client
+    from todopro_cli.config import get_config_manager
+    
+    try:
+        config_manager = get_config_manager("default")
+        credentials = config_manager.load_credentials()
+        
+        if not credentials:
+            console.print("[yellow]Not logged in - unable to check API health[/yellow]")
+            return
+        
+        async def check_health():
+            client = get_client("default")
+            try:
+                # Try a simple request to check connectivity
+                response = await client.get("/v1/tasks", params={"limit": 1})
+                if response.status_code == 200:
+                    console.print("[green]✓ API is healthy[/green]")
+                else:
+                    console.print(f"[yellow]⚠ API returned status {response.status_code}[/yellow]")
+            except Exception as e:
+                console.print(f"[red]✗ API health check failed: {str(e)}[/red]")
+            finally:
+                await client.close()
+        
+        asyncio.run(check_health())
+    except Exception:
+        # Silently skip health check if there's an error
+        pass
+
 
 
 @app.command()
@@ -87,16 +119,6 @@ def logout(
     """Logout from TodoPro."""
     # Delegate to auth command
     auth.logout(profile=profile, all_profiles=all_profiles)
-
-
-@app.command()
-def health(
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
-) -> None:
-    """Check API connectivity and health."""
-    # Delegate to utils command
-    utils.health(verbose=verbose, profile=profile)
 
 
 @app.command()
@@ -148,7 +170,7 @@ def reschedule(
 
 @app.command("add")
 def quick_add(
-    input_text: str = typer.Argument(..., help="Natural language task description"),
+    input_text: str | None = typer.Argument(None, help="Natural language task description"),
     output: str = typer.Option("table", "--output", help="Output format"),
     show_parsed: bool = typer.Option(
         False, "--show-parsed", help="Show parsed details"
@@ -163,6 +185,25 @@ def quick_add(
       todopro add "Review PR #work p2 @code-review"
       todopro add "Team meeting every Monday at 10am #meetings"
     """
+    # If no input text, enter interactive mode
+    if input_text is None:
+        from rich.console import Console
+        from rich.panel import Panel
+        
+        console = Console()
+        console.print(Panel(
+            "[dim]Type the task here (!!1, !!2 for priority, @label for label, #project for project,...)[/dim]",
+            border_style="blue",
+            padding=(0, 1)
+        ))
+        
+        input_text = typer.prompt("❯", prompt_suffix=" ")
+        
+        if not input_text or not input_text.strip():
+            console.print("[yellow]No task entered. Cancelled.[/yellow]")
+            raise typer.Exit(0)
+    
+    tasks.quick_add(text=input_text, output=output, show_parsed=show_parsed, profile=profile)
     tasks.quick_add(text=input_text, yes=False, profile=profile)
 
 

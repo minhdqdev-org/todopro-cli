@@ -590,8 +590,9 @@ def next_task(
                 if "message" in result:
                     console.print(f"[green]{result['message']}[/green]")
                 else:
-                    console.print("\n[bold cyan]Next Task:[/bold cyan]")
-                    format_output(result, output)
+                    # Custom simple format for next task
+                    from todopro_cli.ui.formatters import format_next_task
+                    format_next_task(result)
 
             finally:
                 await client.close()

@@ -272,6 +272,9 @@ def whoami(
 
             try:
                 user = await auth_api.get_profile()
+                # Remove avatar and created_at fields
+                user.pop("avatar", None)
+                user.pop("created_at", None)
                 format_output(user, output)
             finally:
                 await client.close()

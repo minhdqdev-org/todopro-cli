@@ -271,8 +271,8 @@ def format_tasks_pretty(tasks: list[dict], compact: bool = False) -> None:
             priority = task.get("priority", 1)
             tasks_by_priority[priority].append(task)
 
-    # Display by priority (highest first)
-    for priority in [4, 3, 2, 1]:
+    # Display by priority (lowest first - reversed order)
+    for priority in [1, 2, 3, 4]:
         priority_tasks = tasks_by_priority[priority]
         if not priority_tasks:
             continue
@@ -310,6 +310,9 @@ def format_task_item(task: dict, compact: bool = False, indent: str = "") -> Non
         status_icon = STATUS_ICONS["open"]
 
     content = task.get("content", "Untitled")
+    
+    # Render Markdown links
+    content = render_markdown_links(content)
 
     if compact:
         # Compact one-line format
@@ -670,3 +673,83 @@ def get_completion_color(percentage: float) -> str:
     if percentage >= 40:
         return "yellow"
     return "red"
+
+
+def render_markdown_links(text: str) -> str:
+    """Render Markdown links [text](url) as clickable links."""
+    import re
+    # Pattern: [text](url)
+    pattern = r'\[([^\]]+)\]\(([^\)]+)\)'
+    # Replace with Rich markup: [link=url]text[/link]
+    return re.sub(pattern, r'[link=\2]\1[/link]', text)
+
+
+# Eisenhower Quadrant Icons
+QUADRANT_ICONS = {
+    "Q1": "🔴",  # Urgent & Important
+    "Q2": "🟠",  # Not Urgent & Important  
+    "Q3": "🟡",  # Urgent & Not Important
+    "Q4": "🟢",  # Not Urgent & Not Important
+}
+
+
+def format_next_task(task: dict) -> None:
+    """Format next task in simple format similar to today view."""
+    console.print()
+    console.print("[bold cyan]Next Task:[/bold cyan]")
+    console.print()
+    
+    # Status icon
+    is_recurring = task.get("is_recurring", False)
+    status_icon = STATUS_ICONS["recurring"] if is_recurring else STATUS_ICONS["open"]
+    
+    # Content with Markdown rendering
+    content = task.get("content", "Untitled")
+    content = render_markdown_links(content)
+    
+    # Main line
+    line = Text()
+    line.append(f"  {status_icon} ", style="")
+    line.append(content, style="bold")
+    console.print(line)
+    
+    # Metadata line
+    meta = []
+    
+    # Eisenhower Quadrant
+    if task.get("eisenhower_quadrant"):
+        quadrant = task["eisenhower_quadrant"]
+        icon = QUADRANT_ICONS.get(quadrant, "")
+        meta.append((icon, ""))
+    
+    # Due date
+    if task.get("due_date"):
+        due_str = format_due_date(task["due_date"])
+        meta.append((due_str, "cyan"))
+    
+    # Project
+    if task.get("project"):
+        project_name = task["project"].get("name", "")
+        if project_name:
+            meta.append((project_name, "blue"))
+    
+    # Task ID suffix
+    if task.get("id"):
+        task_id_suffix = task["id"][-6:]
+        meta.append((f"#{task_id_suffix}", "dim"))
+    
+    if meta:
+        meta_line = Text()
+        meta_line.append("     └─ ", style="dim")
+        for i, (text, style) in enumerate(meta):
+            if i > 0:
+                meta_line.append(" • ", style="dim")
+            meta_line.append(text, style=style or "")
+        console.print(meta_line)
+    
+    # Description if exists
+    if task.get("description"):
+        console.print()
+        console.print(f"  [dim]{task['description']}[/dim]")
+    
+    console.print()
