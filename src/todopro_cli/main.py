@@ -165,6 +165,16 @@ def describe(
         raise typer.Exit(1)
 
 
+@app.command()
+def errors(
+    limit: int = typer.Option(20, "--limit", "-n", help="Number of errors to show"),
+    clear: bool = typer.Option(False, "--clear", help="Clear old errors (>30 days)"),
+    all_errors: bool = typer.Option(False, "--all", help="Show all errors including acknowledged"),
+) -> None:
+    """View error logs from background tasks."""
+    utils.errors(limit=limit, clear=clear, all_errors=all_errors)
+
+
 # Main entry point
 def main() -> None:
     """Main entry point."""

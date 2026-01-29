@@ -336,41 +336,86 @@ def complete_task(
     task_id: str = typer.Argument(..., help="Task ID or suffix"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
+    sync: bool = typer.Option(False, "--sync", help="Wait for completion (synchronous mode)"),
 ) -> None:
     """Mark a task as completed."""
     check_auth(profile)
 
     try:
-
-        async def do_complete() -> None:
+        # Resolve task ID first (this is quick and needed for feedback)
+        resolved_id = None
+        task_content = None
+        
+        async def resolve_id():
+            nonlocal resolved_id, task_content
             client = get_client(profile)
             tasks_api = TasksAPI(client)
-
             try:
                 resolved_id = await resolve_task_id(tasks_api, task_id)
-                response = await tasks_api.complete_task(resolved_id)
-                
-                # Extract task from response (API may wrap it)
-                task = response.get("completed_task", response.get("task", response))
-                
-                # Show concise success message
-                content = task.get("content", "")
-                if not content or not content.strip():
-                    content = "[No title]"
-                # Truncate long content
-                if len(content) > 60:
-                    content = content[:57] + "..."
-                    
-                format_success(f"✓ Completed: {content}")
-                console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
-                
-                # Only show full output if explicitly requested
-                if output not in ["table", "pretty"]:
-                    format_output(task, output)
+                # Get task content for display
+                task = await tasks_api.get_task(resolved_id)
+                task_content = task.get("content", "")
             finally:
                 await client.close()
+        
+        asyncio.run(resolve_id())
+        
+        if not task_content or not task_content.strip():
+            task_content = "[No title]"
+        # Truncate long content
+        if len(task_content) > 60:
+            task_content = task_content[:57] + "..."
+        
+        if sync:
+            # Synchronous mode - wait for completion
+            async def do_complete() -> None:
+                client = get_client(profile)
+                tasks_api = TasksAPI(client)
 
-        asyncio.run(do_complete())
+                try:
+                    response = await tasks_api.complete_task(resolved_id)
+                    
+                    # Extract task from response (API may wrap it)
+                    task = response.get("completed_task", response.get("task", response))
+                    
+                    format_success(f"✓ Completed: {task_content}")
+                    console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
+                    
+                    # Only show full output if explicitly requested
+                    if output not in ["table", "pretty"]:
+                        format_output(task, output)
+                finally:
+                    await client.close()
+
+            asyncio.run(do_complete())
+        else:
+            # Background mode - don't wait
+            from todopro_cli.utils.background import run_in_background
+            
+            async def complete_in_background():
+                client = get_client(profile)
+                tasks_api = TasksAPI(client)
+                try:
+                    await tasks_api.complete_task(resolved_id)
+                finally:
+                    await client.close()
+            
+            # Start background task
+            run_in_background(
+                func=complete_in_background,
+                command="complete",
+                context={
+                    "task_id": resolved_id,
+                    "task_content": task_content,
+                    "profile": profile,
+                },
+                max_retries=3,
+            )
+            
+            # Show immediate feedback
+            format_success(f"✓ Completing: {task_content}")
+            console.print("[dim]Running in background with auto-retry...[/dim]")
+            console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
 
     except Exception as e:
         format_error(f"Failed to complete task: {str(e)}")
@@ -415,6 +460,35 @@ def today(
 ) -> None:
     """Show tasks for today (overdue + today's tasks)."""
     check_auth(profile)
+    
+    # Show error banner if there are unread errors
+    from todopro_cli.utils.error_logger import get_unread_errors, mark_errors_as_read
+    from rich.panel import Panel
+    
+    unread_errors = get_unread_errors()
+    if unread_errors:
+        error_count = len(unread_errors)
+        latest_error = unread_errors[0]
+        
+        # Show banner
+        error_msg = latest_error.get("error", "Unknown error")
+        command = latest_error.get("command", "unknown")
+        
+        # Truncate long error messages
+        if len(error_msg) > 100:
+            error_msg = error_msg[:97] + "..."
+        
+        banner_text = (
+            f"[yellow]⚠️  {error_count} background task(s) failed[/yellow]\n"
+            f"[dim]Latest: '{command}' - {error_msg}[/dim]\n\n"
+            f"[dim]View details: [cyan]todopro errors[/cyan][/dim]"
+        )
+        
+        console.print(Panel(banner_text, border_style="yellow", padding=(0, 1)))
+        console.print()
+        
+        # Mark errors as read
+        mark_errors_as_read()
 
     try:
 
