@@ -140,10 +140,19 @@ class TasksAPI:
 
     async def quick_add(self, input_text: str) -> dict:
         """Quick add a task using natural language parsing."""
-        response = await self.client.post(
-            "/v1/tasks/quick-add", json={"input": input_text}
-        )
-        return response.json()
+        try:
+            response = await self.client.post(
+                "/v1/tasks/quick-add", json={"input": input_text}
+            )
+            return response.json()
+        except Exception as e:
+            # Try to parse error response
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    return e.response.json()
+                except Exception:
+                    pass
+            raise
 
     async def eisenhower_matrix(self) -> dict:
         """Get Eisenhower Matrix view with insights."""
