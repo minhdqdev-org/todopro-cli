@@ -203,7 +203,6 @@ def quick_add(
             console.print("[yellow]No task entered. Cancelled.[/yellow]")
             raise typer.Exit(0)
     
-    tasks.quick_add(text=input_text, output=output, show_parsed=show_parsed, profile=profile)
     tasks.quick_add(text=input_text, yes=False, profile=profile)
 
 
