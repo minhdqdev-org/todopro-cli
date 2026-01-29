@@ -519,20 +519,18 @@ def reschedule(
                         )
                         if not confirm:
                             format_info("Cancelled")
-                            raise typer.Exit(0)
+                            return
 
                     # Reschedule
                     response = await tasks_api.reschedule_overdue()
 
                     count = response.get("rescheduled_count", 0)
-                    format_success(f"Rescheduled {count} overdue task(s) to today")
+                    task_word = "task" if count == 1 else "tasks"
+                    format_success(f"Rescheduled {count} overdue {task_word} to today")
+                    
+                    # Suggest undo command instead of showing full list
+                    console.print(f"[dim]💡 Tip: You can undo this later if needed[/dim]")
 
-                    # Show rescheduled tasks
-                    tasks = response.get("tasks", [])
-                    if tasks:
-                        console.print()
-                        console.print("[bold cyan]Rescheduled Tasks:[/bold cyan]")
-                        format_output(tasks, "pretty", compact=True)
 
                 finally:
                     await client.close()
