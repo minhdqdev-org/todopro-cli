@@ -377,19 +377,9 @@ def complete_task(
             # Background mode - don't wait, start immediately
             from todopro_cli.utils.background import run_in_background
             
-            async def complete_in_background():
-                client = get_client(profile)
-                tasks_api = TasksAPI(client)
-                try:
-                    # Resolve ID and complete - all in background
-                    resolved_id = await resolve_task_id(tasks_api, task_id)
-                    await tasks_api.complete_task(resolved_id)
-                finally:
-                    await client.close()
-            
             # Start background task immediately
             run_in_background(
-                func=complete_in_background,
+                task_type="complete",
                 command="complete",
                 context={
                     "task_id": task_id,
