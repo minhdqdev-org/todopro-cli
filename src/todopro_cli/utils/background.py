@@ -36,6 +36,28 @@ async def complete_task(context: Dict[str, Any]):
     finally:
         await client.close()
 
+async def batch_complete_tasks(context: Dict[str, Any]):
+    from todopro_cli.api.client import get_client
+    from todopro_cli.api.tasks import TasksAPI
+    from todopro_cli.commands.tasks import resolve_task_id
+    
+    profile = context.get("profile", "default")
+    task_ids = context["task_ids"]
+    
+    client = get_client(profile)
+    tasks_api = TasksAPI(client)
+    try:
+        # Resolve all IDs
+        resolved_ids = []
+        for task_id in task_ids:
+            resolved_id = await resolve_task_id(tasks_api, task_id)
+            resolved_ids.append(resolved_id)
+        
+        # Batch complete
+        await tasks_api.batch_complete_tasks(resolved_ids)
+    finally:
+        await client.close()
+
 async def run_with_retry(task_type: str, command: str, context: Dict[str, Any], max_retries: int):
     from todopro_cli.utils.error_logger import log_error
     
@@ -45,6 +67,8 @@ async def run_with_retry(task_type: str, command: str, context: Dict[str, Any], 
         try:
             if task_type == "complete":
                 await complete_task(context)
+            elif task_type == "batch_complete":
+                await batch_complete_tasks(context)
             else:
                 raise ValueError(f"Unknown task type: {{task_type}}")
             return  # Success

@@ -97,6 +97,14 @@ class TasksAPI:
         response = await self.client.post(f"/v1/tasks/{task_id}/close")
         return response.json()
 
+    async def batch_complete_tasks(self, task_ids: list[str]) -> dict:
+        """Mark multiple tasks as completed."""
+        response = await self.client.post(
+            "/v1/tasks/batch/complete",
+            json={"task_ids": task_ids}
+        )
+        return response.json()
+
     async def reopen_task(self, task_id: str) -> dict:
         """Reopen a completed task."""
         response = await self.client.post(f"/v1/tasks/{task_id}/reopen")

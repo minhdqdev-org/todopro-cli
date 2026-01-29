@@ -120,15 +120,15 @@ def next(
 
 @app.command()
 def complete(
-    task_id: str = typer.Argument(..., help="Task ID"),
+    task_ids: list[str] = typer.Argument(..., help="Task ID(s) - can specify multiple"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
     sync: bool = typer.Option(
         False, "--sync", help="Wait for completion (synchronous mode)"
     ),
 ) -> None:
-    """Mark a task as completed."""
-    tasks.complete_task(task_id=task_id, output=output, profile=profile, sync=sync)
+    """Mark one or more tasks as completed."""
+    tasks.complete_task(task_ids=task_ids, output=output, profile=profile, sync=sync)
 
 
 @app.command()

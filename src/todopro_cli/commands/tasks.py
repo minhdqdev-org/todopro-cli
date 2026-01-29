@@ -331,73 +331,143 @@ def delete_task(
 
 @app.command("complete")
 def complete_task(
-    task_id: str = typer.Argument(..., help="Task ID or suffix"),
+    task_ids: list[str] | str = typer.Argument(..., help="Task ID(s) or suffix - can specify multiple"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
     sync: bool = typer.Option(
         False, "--sync", help="Wait for completion (synchronous mode)"
     ),
 ) -> None:
-    """Mark a task as completed."""
+    """Mark one or more tasks as completed."""
     check_auth(profile)
+    
+    # Normalize to list
+    if isinstance(task_ids, str):
+        task_ids = [task_ids]
+    
+    # Single task - use original logic
+    if len(task_ids) == 1:
+        task_id = task_ids[0]
+        try:
+            if sync:
+                # Synchronous mode - wait for completion
+                async def do_complete() -> None:
+                    client = get_client(profile)
+                    tasks_api = TasksAPI(client)
 
-    try:
-        if sync:
-            # Synchronous mode - wait for completion
-            async def do_complete() -> None:
-                client = get_client(profile)
-                tasks_api = TasksAPI(client)
+                    try:
+                        resolved_id = await resolve_task_id(tasks_api, task_id)
+                        response = await tasks_api.complete_task(resolved_id)
 
-                try:
-                    resolved_id = await resolve_task_id(tasks_api, task_id)
-                    response = await tasks_api.complete_task(resolved_id)
+                        # Extract task from response (API may wrap it)
+                        task = response.get(
+                            "completed_task", response.get("task", response)
+                        )
 
-                    # Extract task from response (API may wrap it)
-                    task = response.get(
-                        "completed_task", response.get("task", response)
-                    )
+                        # Show concise success message
+                        content = task.get("content", "")
+                        if not content or not content.strip():
+                            content = "[No title]"
+                        # Truncate long content
+                        if len(content) > 60:
+                            content = content[:57] + "..."
 
-                    # Show concise success message
-                    content = task.get("content", "")
-                    if not content or not content.strip():
-                        content = "[No title]"
-                    # Truncate long content
-                    if len(content) > 60:
-                        content = content[:57] + "..."
+                        format_success(f"✓ Completed: {content}")
+                        console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
 
-                    format_success(f"✓ Completed: {content}")
-                    console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
+                        # Only show full output if explicitly requested
+                        if output not in ["table", "pretty"]:
+                            format_output(task, output)
+                    finally:
+                        await client.close()
 
-                    # Only show full output if explicitly requested
-                    if output not in ["table", "pretty"]:
-                        format_output(task, output)
-                finally:
-                    await client.close()
+                asyncio.run(do_complete())
+            else:
+                # Background mode - don't wait, start immediately
+                from todopro_cli.utils.background import run_in_background
 
-            asyncio.run(do_complete())
-        else:
-            # Background mode - don't wait, start immediately
-            from todopro_cli.utils.background import run_in_background
+                # Start background task immediately
+                run_in_background(
+                    task_type="complete",
+                    command="complete",
+                    context={
+                        "task_id": task_id,
+                        "profile": profile,
+                    },
+                    max_retries=3,
+                )
 
-            # Start background task immediately
-            run_in_background(
-                task_type="complete",
-                command="complete",
-                context={
-                    "task_id": task_id,
-                    "profile": profile,
-                },
-                max_retries=3,
-            )
+                # Show immediate feedback without waiting
+                format_success(f"✓ Marking task as complete: {task_id}")
+                console.print(f"[dim]Check status: tp tasks get {task_id}[/dim]")
 
-            # Show immediate feedback without waiting
-            format_success(f"✓ Marking task as complete: {task_id}")
-            console.print("[dim]Running in background with auto-retry...[/dim]")
-            console.print(f"[dim]Check status: tp tasks get {task_id}[/dim]")
+        except Exception as e:
+            format_error(f"Failed to complete task: {str(e)}")
+            raise typer.Exit(1) from e
+    
+    # Multiple tasks - use batch API
+    else:
+        try:
+            if sync:
+                # Synchronous batch mode
+                async def do_batch_complete() -> None:
+                    client = get_client(profile)
+                    tasks_api = TasksAPI(client)
 
-    except Exception as e:
-        format_error(f"Failed to complete task: {str(e)}")
-        raise typer.Exit(1) from e
+                    try:
+                        # Resolve all IDs first
+                        resolved_ids = []
+                        for task_id in task_ids:
+                            resolved_id = await resolve_task_id(tasks_api, task_id)
+                            resolved_ids.append(resolved_id)
+                        
+                        # Batch complete
+                        response = await tasks_api.batch_complete_tasks(resolved_ids)
+                        
+                        # Show results
+                        completed = response.get("completed", [])
+                        failed = response.get("failed", [])
+                        summary = response.get("summary", {})
+                        
+                        if completed:
+                            format_success(f"✓ Completed {len(completed)} task(s)")
+                            for task in completed:
+                                content = task.get("content", "")[:50]
+                                console.print(f"  • {content}")
+                        
+                        if failed:
+                            format_error(f"Failed to complete {len(failed)} task(s)")
+                            for fail_info in failed:
+                                console.print(f"  • {fail_info.get('task_id')}: {fail_info.get('error')}")
+                        
+                        # Show summary
+                        console.print(f"\n[dim]Summary: {summary.get('completed', 0)}/{summary.get('total', 0)} completed[/dim]")
+                        
+                    finally:
+                        await client.close()
+
+                asyncio.run(do_batch_complete())
+            else:
+                # Background batch mode
+                from todopro_cli.utils.background import run_in_background
+
+                run_in_background(
+                    task_type="batch_complete",
+                    command="complete",
+                    context={
+                        "task_ids": task_ids,
+                        "profile": profile,
+                    },
+                    max_retries=3,
+                )
+
+                # Show immediate feedback
+                format_success(f"✓ Marking {len(task_ids)} task(s) as complete in background")
+                console.print(f"[dim]Tasks: {', '.join(task_ids)}[/dim]")
+
+        except Exception as e:
+            format_error(f"Failed to batch complete tasks: {str(e)}")
+            raise typer.Exit(1) from e
 
 
 @app.command("reopen")
