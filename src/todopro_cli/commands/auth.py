@@ -99,6 +99,113 @@ def login(
 
 
 @app.command()
+def signup(
+    email: Optional[str] = typer.Option(None, "--email", help="Email address"),
+    password: Optional[str] = typer.Option(None, "--password", help="Password"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+    endpoint: Optional[str] = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    auto_login: bool = typer.Option(
+        True, "--auto-login/--no-auto-login", help="Automatically login after signup"
+    ),
+) -> None:
+    """Create a new TodoPro account."""
+    try:
+        # Get config manager
+        config_manager = get_config_manager(profile)
+
+        # Initialize contexts if they don't exist
+        if not config_manager.config.contexts:
+            config_manager.init_default_contexts()
+
+        # Update endpoint if provided
+        if endpoint:
+            config_manager.set("api.endpoint", endpoint)
+
+        # Get current context
+        current_context = config_manager.get_current_context()
+        context_name = current_context.name if current_context else "unknown"
+
+        # Prompt for credentials if not provided
+        if not email:
+            email = Prompt.ask("Email")
+        if not password:
+            password = Prompt.ask("Password", password=True)
+            confirm_password = Prompt.ask("Confirm password", password=True)
+            
+            if password != confirm_password:
+                format_error("Passwords do not match")
+                raise typer.Exit(1)
+
+        if not email or not password:
+            format_error("Email and password are required")
+            raise typer.Exit(1)
+
+        # Perform signup
+        async def do_signup() -> None:
+            client = get_client(profile)
+            auth_api = AuthAPI(client)
+
+            try:
+                # Create account
+                try:
+                    result = await auth_api.signup(email, password)  # type: ignore
+                except Exception as e:
+                    # Try to extract error message from response
+                    error_msg = str(e)
+                    if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                        try:
+                            import json
+                            error_data = json.loads(e.response.text)
+                            if isinstance(error_data, dict):
+                                if 'email' in error_data:
+                                    error_msg = f"Email: {error_data['email'][0] if isinstance(error_data['email'], list) else error_data['email']}"
+                                elif 'password' in error_data:
+                                    error_msg = f"Password: {error_data['password'][0] if isinstance(error_data['password'], list) else error_data['password']}"
+                                elif 'error' in error_data:
+                                    error_msg = error_data['error']
+                        except:
+                            pass
+                    raise Exception(error_msg)
+                
+                user_id = result.get("user_id")
+                user_email = result.get("email")
+                
+                format_success(f"Account created successfully for {user_email}")
+                console.print(f"[dim]User ID: {user_id}[/dim]")
+                
+                # Auto-login if enabled
+                if auto_login:
+                    console.print("\n[dim]Logging in...[/dim]")
+                    login_result = await auth_api.login(email, password)  # type: ignore
+                    
+                    # Save credentials
+                    token = login_result.get("access_token") or login_result.get("token")
+                    refresh_token = login_result.get("refresh_token")
+                    
+                    if token:
+                        config_manager.save_context_credentials(
+                            context_name, token, refresh_token
+                        )
+                        config_manager.save_credentials(token, refresh_token)
+                        format_success(f"Logged in as {user_email}")
+                    else:
+                        console.print("[yellow]Auto-login failed. Please login manually with:[/yellow]")
+                        console.print(f"[yellow]  todopro login --email {user_email}[/yellow]")
+                else:
+                    console.print("\n[dim]You can now login with:[/dim]")
+                    console.print(f"[dim]  todopro login --email {user_email}[/dim]")
+
+            finally:
+                await client.close()
+
+        asyncio.run(do_signup())
+
+    except Exception as e:
+        format_error(f"Signup failed: {str(e)}")
+        raise typer.Exit(1) from e
+
+
+@app.command()
 def logout(
     profile: str = typer.Option("default", "--profile", help="Profile name"),
     all_profiles: bool = typer.Option(False, "--all", help="Logout from all profiles"),

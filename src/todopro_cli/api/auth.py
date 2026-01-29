@@ -43,3 +43,12 @@ class AuthAPI:
         """Update user profile."""
         response = await self.client.patch("/v1/auth/profile", json=kwargs)
         return response.json()
+
+    async def signup(self, email: str, password: str) -> dict:
+        """Create a new account."""
+        response = await self.client.post(
+            "/v1/auth/register",
+            json={"email": email, "password": password},
+            skip_auth=True,
+        )
+        return response.json()
