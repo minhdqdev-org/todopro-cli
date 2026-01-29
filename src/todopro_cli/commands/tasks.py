@@ -331,7 +331,9 @@ def delete_task(
 
 @app.command("complete")
 def complete_task(
-    task_ids: list[str] = typer.Argument(..., help="Task ID(s) or suffix - can specify multiple"),
+    task_ids: list[str] = typer.Argument(
+        ..., help="Task ID(s) or suffix - can specify multiple"
+    ),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
     sync: bool = typer.Option(
@@ -340,7 +342,7 @@ def complete_task(
 ) -> None:
     """Mark one or more tasks as completed."""
     check_auth(profile)
-    
+
     # Single task - use original logic
     if len(task_ids) == 1:
         task_id = task_ids[0]
@@ -400,7 +402,7 @@ def complete_task(
         except Exception as e:
             format_error(f"Failed to complete task: {str(e)}")
             raise typer.Exit(1) from e
-    
+
     # Multiple tasks - use batch API
     else:
         try:
@@ -416,29 +418,33 @@ def complete_task(
                         for task_id in task_ids:
                             resolved_id = await resolve_task_id(tasks_api, task_id)
                             resolved_ids.append(resolved_id)
-                        
+
                         # Batch complete
                         response = await tasks_api.batch_complete_tasks(resolved_ids)
-                        
+
                         # Show results
                         completed = response.get("completed", [])
                         failed = response.get("failed", [])
                         summary = response.get("summary", {})
-                        
+
                         if completed:
                             format_success(f"✓ Completed {len(completed)} task(s)")
                             for task in completed:
                                 content = task.get("content", "")[:50]
                                 console.print(f"  • {content}")
-                        
+
                         if failed:
                             format_error(f"Failed to complete {len(failed)} task(s)")
                             for fail_info in failed:
-                                console.print(f"  • {fail_info.get('task_id')}: {fail_info.get('error')}")
-                        
+                                console.print(
+                                    f"  • {fail_info.get('task_id')}: {fail_info.get('error')}"
+                                )
+
                         # Show summary
-                        console.print(f"\n[dim]Summary: {summary.get('completed', 0)}/{summary.get('total', 0)} completed[/dim]")
-                        
+                        console.print(
+                            f"\n[dim]Summary: {summary.get('completed', 0)}/{summary.get('total', 0)} completed[/dim]"
+                        )
+
                     finally:
                         await client.close()
 
@@ -458,7 +464,9 @@ def complete_task(
                 )
 
                 # Show immediate feedback
-                format_success(f"✓ Marking {len(task_ids)} task(s) as complete in background")
+                format_success(
+                    f"✓ Marking {len(task_ids)} task(s) as complete in background"
+                )
                 console.print(f"[dim]Tasks: {', '.join(task_ids)}[/dim]")
 
         except Exception as e:
@@ -592,6 +600,7 @@ def next_task(
                 else:
                     # Custom simple format for next task
                     from todopro_cli.ui.formatters import format_next_task
+
                     format_next_task(result)
 
             finally:
@@ -755,7 +764,7 @@ def quick_add(
                 tasks_api = TasksAPI(client)
 
                 # Show parsing preview
-                console.print(f"\n[cyan]Parsing:[/cyan] {text}")
+                # console.print(f"\n[cyan]Parsing:[/cyan] {text}")
 
                 response = await tasks_api.quick_add(text)
 

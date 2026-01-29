@@ -311,54 +311,55 @@ def format_task_item(task: dict, compact: bool = False, indent: str = "") -> Non
 
     content = task.get("content", "Untitled")
     
-    # Render Markdown links
+    # Render Markdown links - convert to Rich markup
     content = render_markdown_links(content)
 
     if compact:
         # Compact one-line format
-        line = Text()
-        line.append(f"{indent}{status_icon} ", style="")
-
+        # Build as markup string then convert to Text
+        line_str = f"{indent}{status_icon} "
+        
         # Content (dimmed if completed)
         if is_completed:
-            line.append(content, style="dim")
+            line_str += f"[dim]{content}[/dim]"
         else:
-            line.append(content, style="")
+            line_str += content
 
         # Due date
         if task.get("due_date"):
             due_str = format_due_date(task["due_date"])
             if is_overdue(task.get("due_date")) and not is_completed:
-                line.append(f" • {due_str}", style="bold red")
+                line_str += f" [bold red]• {due_str}[/bold red]"
             else:
-                line.append(f" • {due_str}", style="cyan")
+                line_str += f" [cyan]• {due_str}[/cyan]"
 
         # Labels
         labels = task.get("labels", [])
         if labels:
             for label in labels[:3]:  # Show max 3 labels in compact
-                line.append(f" #{label}", style="blue")
+                line_str += f" [blue]#{label}[/blue]"
 
-        console.print(line)
+        console.print(Text.from_markup(line_str))
     else:
         # Full format with metadata
-        line = Text()
-        line.append(f"{indent}{status_icon} ", style="")
+        # Build as markup string then convert to Text
+        line_str = f"{indent}{status_icon} "
 
         # Content
-        if is_completed:
-            line.append(content, style="dim")
+        style = "dim" if is_completed else ("bold" if task.get("priority", 1) >= 3 else "")
+        if style:
+            line_str += f"[{style}]{content}[/{style}]"
         else:
-            line.append(content, style="bold" if task.get("priority", 1) >= 3 else "")
+            line_str += content
 
         # Labels on same line
         labels = task.get("labels", [])
         if labels:
-            line.append("  ", style="")
+            line_str += "  "
             for label in labels:
-                line.append(f"#{label} ", style="blue")
+                line_str += f"[blue]#{label}[/blue] "
 
-        console.print(line)
+        console.print(Text.from_markup(line_str))
 
         # Metadata line
         meta = []
@@ -707,11 +708,9 @@ def format_next_task(task: dict) -> None:
     content = task.get("content", "Untitled")
     content = render_markdown_links(content)
     
-    # Main line
-    line = Text()
-    line.append(f"  {status_icon} ", style="")
-    line.append(content, style="bold")
-    console.print(line)
+    # Main line - build as markup string
+    line_str = f"  {status_icon} [bold]{content}[/bold]"
+    console.print(Text.from_markup(line_str))
     
     # Metadata line
     meta = []
