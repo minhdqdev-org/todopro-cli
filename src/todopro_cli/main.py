@@ -118,6 +118,16 @@ def complete(
     tasks.complete_task(task_id=task_id, output=output, profile=profile)
 
 
+@app.command()
+def reschedule(
+    task_id: str = typer.Argument(..., help="Task ID or suffix"),
+    date: str = typer.Option("today", "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"),
+    profile: str = typer.Option("default", "--profile", help="Profile name"),
+) -> None:
+    """Reschedule a task to today (or specified date)."""
+    tasks.reschedule(target=task_id, date=date, yes=True, profile=profile)
+
+
 @app.command("add")
 def quick_add(
     input_text: str = typer.Argument(..., help="Natural language task description"),

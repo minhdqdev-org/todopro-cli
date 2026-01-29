@@ -65,6 +65,23 @@ todopro next
 # Complete a task
 todopro complete <task_id>
 
+# Reschedule a task to today (quick rescheduling)
+todopro reschedule <task_id>
+
+# Reschedule to a specific date
+todopro reschedule <task_id> --date tomorrow
+todopro reschedule <task_id> --date 2026-02-15
+
+# Task ID Shortcuts
+# You can use task ID suffixes instead of full IDs for convenience
+# If the full ID is "task-abc123def", you can use:
+todopro complete abc123def    # Uses suffix
+todopro complete 123def       # Even shorter suffix
+todopro reschedule e562bb     # Reschedule to today by suffix
+todopro get e562bb            # Get task details by suffix
+todopro update 123def --content "Updated task"
+todopro delete abc123         # Delete by suffix
+
 # View project details
 todopro describe project <project_id>
 

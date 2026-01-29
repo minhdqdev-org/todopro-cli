@@ -102,6 +102,14 @@ class TasksAPI:
         response = await self.client.post(f"/v1/tasks/{task_id}/reopen")
         return response.json()
 
+    async def reschedule_task(self, task_id: str, due_date: str) -> dict:
+        """Reschedule a task to a new date."""
+        response = await self.client.post(
+            f"/v1/tasks/{task_id}/reschedule",
+            json={"due_date": due_date}
+        )
+        return response.json()
+
     async def get_task_comments(self, task_id: str) -> dict:
         """Get comments for a task."""
         response = await self.client.get(f"/v1/tasks/{task_id}/comments")

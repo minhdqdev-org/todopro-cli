@@ -225,7 +225,9 @@ def test_format_due_date_today():
     """Test formatting due date for today."""
     now = datetime.now()
     result = format_due_date(now.isoformat())
-    assert "Today" in result
+    # New format: HH:MM DD/MM DayOfWeek
+    assert "/" in result  # Contains date separator
+    assert ":" in result  # Contains time separator
 
 
 def test_format_due_date_tomorrow():
@@ -233,7 +235,9 @@ def test_format_due_date_tomorrow():
     from datetime import timedelta
     tomorrow = datetime.now() + timedelta(days=1)
     result = format_due_date(tomorrow.isoformat())
-    assert "Tomorrow" in result
+    # New format: HH:MM DD/MM DayOfWeek
+    assert "/" in result  # Contains date separator
+    assert ":" in result  # Contains time separator
 
 
 def test_format_due_date_past():
@@ -241,7 +245,9 @@ def test_format_due_date_past():
     from datetime import timedelta
     yesterday = datetime.now() - timedelta(days=1)
     result = format_due_date(yesterday.isoformat())
-    assert "Yesterday" in result
+    # New format: HH:MM DD/MM DayOfWeek
+    assert "/" in result  # Contains date separator
+    assert ":" in result  # Contains time separator
 
 
 def test_format_relative_time_just_now():

@@ -1,5 +1,7 @@
 """Configuration management commands."""
 
+from typing import Optional
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -70,7 +72,7 @@ def set_config(
 
 @app.command("reset")
 def reset_config(
-    key: str | None = typer.Argument(None, help="Configuration key to reset"),
+    key: Optional[str] = typer.Argument(None, help="Configuration key to reset"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:

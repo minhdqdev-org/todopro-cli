@@ -1,6 +1,7 @@
 """Authentication commands."""
 
 import asyncio
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -17,10 +18,10 @@ console = Console()
 
 @app.command()
 def login(
-    email: str | None = typer.Option(None, "--email", help="Email address"),
-    password: str | None = typer.Option(None, "--password", help="Password"),
+    email: Optional[str] = typer.Option(None, "--email", help="Email address"),
+    password: Optional[str] = typer.Option(None, "--password", help="Password"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    endpoint: Optional[str] = typer.Option(None, "--endpoint", help="API endpoint URL"),
     save_profile: bool = typer.Option(
         False, "--save-profile", help="Save as default profile"
     ),
@@ -170,7 +171,7 @@ def whoami(
 
 @app.command()
 def timezone(
-    new_timezone: str | None = typer.Argument(
+    new_timezone: Optional[str] = typer.Argument(
         None, help="New timezone (IANA format, e.g., 'Asia/Ho_Chi_Minh')"
     ),
     profile: str = typer.Option("default", "--profile", help="Profile name"),

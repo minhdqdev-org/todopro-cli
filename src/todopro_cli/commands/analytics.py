@@ -5,6 +5,7 @@ Analytics commands to view productivity stats from terminal.
 
 import asyncio
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -230,7 +231,7 @@ def analytics_streaks(
 @app.command("export")
 def analytics_export(
     format: str = typer.Option("csv", "--format", help="Export format (csv/json)"),
-    output: str | None = typer.Option(None, "--output", help="Output file path"),
+    output: Optional[str] = typer.Option(None, "--output", help="Output file path"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Export analytics data to file."""
