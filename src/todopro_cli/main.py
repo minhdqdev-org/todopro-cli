@@ -147,7 +147,7 @@ def quick_add(
       todopro add "Review PR #work p2 @code-review"
       todopro add "Team meeting every Monday at 10am #meetings"
     """
-    tasks.quick_add(input_text=input_text, output=output, show_parsed=show_parsed, profile=profile)
+    tasks.quick_add(text=input_text, yes=False, profile=profile)
 
 
 @app.command()
