@@ -1,7 +1,6 @@
 """Task data models."""
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,12 +14,12 @@ class Task(BaseModel):
 
     id: str
     content: str
-    description: Optional[str] = None
-    project_id: Optional[str] = None
-    due_date: Optional[datetime] = None
+    description: str | None = None
+    project_id: str | None = None
+    due_date: datetime | None = None
     priority: int = Field(default=1, ge=1, le=4)
     is_completed: bool = False
     labels: list[str] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None

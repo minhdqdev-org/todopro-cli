@@ -1,16 +1,15 @@
 """Project management commands."""
 
 import asyncio
-from typing import Optional
 
 import typer
-from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 
 from todopro_cli.api.client import get_client
 from todopro_cli.api.projects import ProjectsAPI
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_output, format_success
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 app = typer.Typer(cls=SuggestingGroup, help="Project management commands")
 console = Console()
@@ -29,7 +28,7 @@ def check_auth(profile: str = "default") -> None:
 def list_projects(
     archived: bool = typer.Option(False, "--archived", help="Show archived projects"),
     favorites: bool = typer.Option(False, "--favorites", help="Show only favorites"),
-    output: Optional[str] = typer.Option(None, "--output", help="Output format"),
+    output: str | None = typer.Option(None, "--output", help="Output format"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -96,7 +95,7 @@ def get_project(
 @app.command("create")
 def create_project(
     name: str = typer.Argument(..., help="Project name"),
-    color: Optional[str] = typer.Option(None, "--color", help="Project color"),
+    color: str | None = typer.Option(None, "--color", help="Project color"),
     favorite: bool = typer.Option(False, "--favorite", help="Mark as favorite"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
@@ -131,8 +130,8 @@ def create_project(
 @app.command("update")
 def update_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    name: Optional[str] = typer.Option(None, "--name", help="Project name"),
-    color: Optional[str] = typer.Option(None, "--color", help="Project color"),
+    name: str | None = typer.Option(None, "--name", help="Project name"),
+    color: str | None = typer.Option(None, "--color", help="Project color"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -180,7 +179,9 @@ def delete_project(
 
     try:
         if not yes:
-            confirm = typer.confirm(f"Are you sure you want to delete project {project_id}?")
+            confirm = typer.confirm(
+                f"Are you sure you want to delete project {project_id}?"
+            )
             if not confirm:
                 format_error("Cancelled")
                 raise typer.Exit(0)
@@ -277,29 +278,33 @@ def describe_project(
 
             try:
                 project = await projects_api.get_project(project_id)
-                
+
                 # Display project details
-                console.print(f"\n[bold cyan]Project Details:[/bold cyan]")
+                console.print("\n[bold cyan]Project Details:[/bold cyan]")
                 format_output(project, output)
-                
+
                 # Get project stats if available
                 try:
-                    stats_response = await client.get(f"/v1/projects/{project_id}/stats")
+                    stats_response = await client.get(
+                        f"/v1/projects/{project_id}/stats"
+                    )
                     stats = stats_response.json()
-                    
+
                     console.print("\n[bold]Statistics:[/bold]")
                     console.print(f"  Total tasks: {stats.get('total_tasks', 0)}")
                     console.print(f"  Completed: {stats.get('completed_tasks', 0)}")
                     console.print(f"  Pending: {stats.get('pending_tasks', 0)}")
                     console.print(f"  Overdue: {stats.get('overdue_tasks', 0)}")
-                    
-                    if stats.get('completion_rate') is not None:
-                        console.print(f"  Completion rate: {stats.get('completion_rate')}%")
-                        
+
+                    if stats.get("completion_rate") is not None:
+                        console.print(
+                            f"  Completion rate: {stats.get('completion_rate')}%"
+                        )
+
                 except Exception:
                     # Stats endpoint might not exist, ignore
                     pass
-                    
+
             finally:
                 await client.close()
 

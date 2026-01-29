@@ -1,10 +1,8 @@
 """Authentication commands."""
 
 import asyncio
-from typing import Optional
 
 import typer
-from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 from rich.prompt import Prompt
 
@@ -12,6 +10,7 @@ from todopro_cli.api.auth import AuthAPI
 from todopro_cli.api.client import get_client
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_output, format_success
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 app = typer.Typer(cls=SuggestingGroup, help="Authentication commands")
 console = Console()
@@ -19,10 +18,10 @@ console = Console()
 
 @app.command()
 def login(
-    email: Optional[str] = typer.Option(None, "--email", help="Email address"),
-    password: Optional[str] = typer.Option(None, "--password", help="Password"),
+    email: str | None = typer.Option(None, "--email", help="Email address"),
+    password: str | None = typer.Option(None, "--password", help="Password"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    endpoint: Optional[str] = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
     save_profile: bool = typer.Option(
         False, "--save-profile", help="Save as default profile"
     ),
@@ -100,10 +99,10 @@ def login(
 
 @app.command()
 def signup(
-    email: Optional[str] = typer.Option(None, "--email", help="Email address"),
-    password: Optional[str] = typer.Option(None, "--password", help="Password"),
+    email: str | None = typer.Option(None, "--email", help="Email address"),
+    password: str | None = typer.Option(None, "--password", help="Password"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    endpoint: Optional[str] = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
     auto_login: bool = typer.Option(
         True, "--auto-login/--no-auto-login", help="Automatically login after signup"
     ),
@@ -131,7 +130,7 @@ def signup(
         if not password:
             password = Prompt.ask("Password", password=True)
             confirm_password = Prompt.ask("Confirm password", password=True)
-            
+
             if password != confirm_password:
                 format_error("Passwords do not match")
                 raise typer.Exit(1)
@@ -152,36 +151,39 @@ def signup(
                 except Exception as e:
                     # Try to extract error message from response
                     error_msg = str(e)
-                    if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                    if hasattr(e, "response") and hasattr(e.response, "text"):
                         try:
                             import json
+
                             error_data = json.loads(e.response.text)
                             if isinstance(error_data, dict):
-                                if 'email' in error_data:
+                                if "email" in error_data:
                                     error_msg = f"Email: {error_data['email'][0] if isinstance(error_data['email'], list) else error_data['email']}"
-                                elif 'password' in error_data:
+                                elif "password" in error_data:
                                     error_msg = f"Password: {error_data['password'][0] if isinstance(error_data['password'], list) else error_data['password']}"
-                                elif 'error' in error_data:
-                                    error_msg = error_data['error']
+                                elif "error" in error_data:
+                                    error_msg = error_data["error"]
                         except:
                             pass
                     raise Exception(error_msg)
-                
+
                 user_id = result.get("user_id")
                 user_email = result.get("email")
-                
+
                 format_success(f"Account created successfully for {user_email}")
                 console.print(f"[dim]User ID: {user_id}[/dim]")
-                
+
                 # Auto-login if enabled
                 if auto_login:
                     console.print("\n[dim]Logging in...[/dim]")
                     login_result = await auth_api.login(email, password)  # type: ignore
-                    
+
                     # Save credentials
-                    token = login_result.get("access_token") or login_result.get("token")
+                    token = login_result.get("access_token") or login_result.get(
+                        "token"
+                    )
                     refresh_token = login_result.get("refresh_token")
-                    
+
                     if token:
                         config_manager.save_context_credentials(
                             context_name, token, refresh_token
@@ -189,8 +191,12 @@ def signup(
                         config_manager.save_credentials(token, refresh_token)
                         format_success(f"Logged in as {user_email}")
                     else:
-                        console.print("[yellow]Auto-login failed. Please login manually with:[/yellow]")
-                        console.print(f"[yellow]  todopro login --email {user_email}[/yellow]")
+                        console.print(
+                            "[yellow]Auto-login failed. Please login manually with:[/yellow]"
+                        )
+                        console.print(
+                            f"[yellow]  todopro login --email {user_email}[/yellow]"
+                        )
                 else:
                     console.print("\n[dim]You can now login with:[/dim]")
                     console.print(f"[dim]  todopro login --email {user_email}[/dim]")
@@ -279,7 +285,7 @@ def whoami(
 
 @app.command()
 def timezone(
-    new_timezone: Optional[str] = typer.Argument(
+    new_timezone: str | None = typer.Argument(
         None, help="New timezone (IANA format, e.g., 'Asia/Ho_Chi_Minh')"
     ),
     profile: str = typer.Option("default", "--profile", help="Profile name"),

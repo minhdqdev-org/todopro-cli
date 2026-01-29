@@ -1,14 +1,9 @@
 """Background task runner with retry logic."""
 
-import asyncio
-import os
 import subprocess
 import sys
 import tempfile
-from typing import Any, Dict, Optional
-
-from todopro_cli.utils.error_logger import log_error
-
+from typing import Any
 
 # Worker script template that will run in background
 WORKER_SCRIPT_TEMPLATE = """
@@ -88,13 +83,13 @@ if __name__ == "__main__":
 def run_in_background(
     func=None,  # Deprecated, kept for compatibility
     command: str = "",
-    context: Optional[Dict[str, Any]] = None,
+    context: dict[str, Any] | None = None,
     max_retries: int = 3,
-    task_type: Optional[str] = None,
+    task_type: str | None = None,
 ) -> None:
     """
     Run a task in a background process with retry logic.
-    
+
     Args:
         func: DEPRECATED - use task_type instead
         command: Command name for logging
@@ -104,18 +99,19 @@ def run_in_background(
     """
     if context is None:
         context = {}
-    
+
     # Determine task type from context if not provided
     if task_type is None:
         task_type = command  # Use command as task type
-    
+
     # Write worker script to temporary file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
         f.write(WORKER_SCRIPT_TEMPLATE)
         script_path = f.name
-    
+
     # Prepare arguments
     import json
+
     args = [
         sys.executable,
         script_path,
@@ -124,7 +120,7 @@ def run_in_background(
         json.dumps(context),
         str(max_retries),
     ]
-    
+
     # Start detached background process
     subprocess.Popen(
         args,

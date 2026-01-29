@@ -1,6 +1,6 @@
 """Labels API endpoints."""
 
-from typing import Any, Optional
+from typing import Any
 
 from todopro_cli.api.client import APIClient
 
@@ -25,7 +25,7 @@ class LabelsAPI:
         self,
         name: str,
         *,
-        color: Optional[str] = None,
+        color: str | None = None,
         **kwargs: Any,
     ) -> dict:
         """Create a new label."""

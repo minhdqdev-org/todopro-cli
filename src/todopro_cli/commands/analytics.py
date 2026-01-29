@@ -5,10 +5,8 @@ Analytics commands to view productivity stats from terminal.
 
 import asyncio
 from pathlib import Path
-from typing import Optional
 
 import typer
-from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 from rich.table import Table
 
@@ -16,6 +14,7 @@ from todopro_cli.api.analytics import AnalyticsAPI
 from todopro_cli.api.client import get_client
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_success
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 app = typer.Typer(cls=SuggestingGroup, help="Analytics commands")
 console = Console()
@@ -232,7 +231,7 @@ def analytics_streaks(
 @app.command("export")
 def analytics_export(
     format: str = typer.Option("csv", "--format", help="Export format (csv/json)"),
-    output: Optional[str] = typer.Option(None, "--output", help="Output file path"),
+    output: str | None = typer.Option(None, "--output", help="Output file path"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Export analytics data to file."""

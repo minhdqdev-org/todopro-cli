@@ -1,14 +1,12 @@
 """Configuration management commands."""
 
-from typing import Optional
-
 import typer
-from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 from rich.table import Table
 
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_output, format_success
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 app = typer.Typer(cls=SuggestingGroup, help="Configuration management commands")
 console = Console()
@@ -73,7 +71,7 @@ def set_config(
 
 @app.command("reset")
 def reset_config(
-    key: Optional[str] = typer.Argument(None, help="Configuration key to reset"),
+    key: str | None = typer.Argument(None, help="Configuration key to reset"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:

@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from platformdirs import user_config_dir, user_data_dir
 from pydantic import BaseModel, Field
@@ -90,7 +90,7 @@ class ConfigManager:
         self.config_dir.mkdir(parents=True, exist_ok=True)
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-        self._config: Optional[Config] = None
+        self._config: Config | None = None
 
     @property
     def config(self) -> Config:
@@ -103,7 +103,7 @@ class ConfigManager:
         """Load configuration from file."""
         if self.config_file.exists():
             try:
-                with open(self.config_file, "r") as f:
+                with open(self.config_file) as f:
                     data = json.load(f)
                 return Config(**data)
             except Exception:
@@ -111,7 +111,7 @@ class ConfigManager:
                 return Config()
         return Config()
 
-    def save_config(self, config: Optional[Config] = None) -> None:
+    def save_config(self, config: Config | None = None) -> None:
         """Save configuration to file."""
         if config is None:
             config = self.config
@@ -149,7 +149,7 @@ class ConfigManager:
         self._config = Config(**config_dict)
         self.save_config()
 
-    def reset(self, key: Optional[str] = None) -> None:
+    def reset(self, key: str | None = None) -> None:
         """Reset configuration to defaults."""
         if key is None:
             self._config = Config()
@@ -172,7 +172,7 @@ class ConfigManager:
                 return None
         return value
 
-    def save_credentials(self, token: str, refresh_token: Optional[str] = None) -> None:
+    def save_credentials(self, token: str, refresh_token: str | None = None) -> None:
         """Save authentication credentials."""
         credentials = {"token": token}
         if refresh_token:
@@ -184,11 +184,11 @@ class ConfigManager:
         # Set file permissions to be readable only by owner
         self.credentials_file.chmod(0o600)
 
-    def load_credentials(self) -> Optional[dict[str, str]]:
+    def load_credentials(self) -> dict[str, str] | None:
         """Load authentication credentials."""
         if self.credentials_file.exists():
             try:
-                with open(self.credentials_file, "r") as f:
+                with open(self.credentials_file) as f:
                     return json.load(f)
             except Exception:
                 return None
@@ -229,7 +229,9 @@ class ConfigManager:
 
         if not self.config.contexts:
             config_dict = self.config.model_dump()
-            config_dict["contexts"] = {k: v.model_dump() for k, v in default_contexts.items()}
+            config_dict["contexts"] = {
+                k: v.model_dump() for k, v in default_contexts.items()
+            }
             self._config = Config(**config_dict)
             self.save_config()
 
@@ -247,7 +249,9 @@ class ConfigManager:
             raise ValueError(f"Context '{name}' not found")
 
         if self.config.current_context == name:
-            raise ValueError(f"Cannot remove current context '{name}'. Switch to another context first.")
+            raise ValueError(
+                f"Cannot remove current context '{name}'. Switch to another context first."
+            )
 
         config_dict = self.config.model_dump()
         del config_dict["contexts"][name]
@@ -270,7 +274,7 @@ class ConfigManager:
         self._config = Config(**config_dict)
         self.save_config()
 
-    def get_current_context(self) -> Optional[Context]:
+    def get_current_context(self) -> Context | None:
         """Get the current context."""
         if self.config.current_context in self.config.contexts:
             return self.config.contexts[self.config.current_context]
@@ -280,9 +284,13 @@ class ConfigManager:
         """List all contexts."""
         return self.config.contexts
 
-    def save_context_credentials(self, context_name: str, token: str, refresh_token: Optional[str] = None) -> None:
+    def save_context_credentials(
+        self, context_name: str, token: str, refresh_token: str | None = None
+    ) -> None:
         """Save authentication credentials for a specific context."""
-        credentials_file = self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        credentials_file = (
+            self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        )
         credentials = {"token": token}
         if refresh_token:
             credentials["refresh_token"] = refresh_token
@@ -293,12 +301,14 @@ class ConfigManager:
         # Set file permissions to be readable only by owner
         credentials_file.chmod(0o600)
 
-    def load_context_credentials(self, context_name: str) -> Optional[dict[str, str]]:
+    def load_context_credentials(self, context_name: str) -> dict[str, str] | None:
         """Load authentication credentials for a specific context."""
-        credentials_file = self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        credentials_file = (
+            self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        )
         if credentials_file.exists():
             try:
-                with open(credentials_file, "r") as f:
+                with open(credentials_file) as f:
                     return json.load(f)
             except Exception:
                 return None
@@ -306,13 +316,15 @@ class ConfigManager:
 
     def clear_context_credentials(self, context_name: str) -> None:
         """Clear authentication credentials for a specific context."""
-        credentials_file = self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        credentials_file = (
+            self.data_dir / f"{self.profile}.{context_name}.credentials.json"
+        )
         if credentials_file.exists():
             credentials_file.unlink()
 
 
 # Global config manager instance
-_config_manager: Optional[ConfigManager] = None
+_config_manager: ConfigManager | None = None
 
 
 def get_config_manager(profile: str = "default") -> ConfigManager:

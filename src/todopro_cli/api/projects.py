@@ -1,6 +1,6 @@
 """Projects API endpoints."""
 
-from typing import Any, Optional
+from typing import Any
 
 from todopro_cli.api.client import APIClient
 
@@ -14,8 +14,8 @@ class ProjectsAPI:
     async def list_projects(
         self,
         *,
-        archived: Optional[bool] = None,
-        favorites: Optional[bool] = None,
+        archived: bool | None = None,
+        favorites: bool | None = None,
     ) -> dict:
         """List projects."""
         params: dict[str, Any] = {}
@@ -37,7 +37,7 @@ class ProjectsAPI:
         self,
         name: str,
         *,
-        color: Optional[str] = None,
+        color: str | None = None,
         favorite: bool = False,
         **kwargs: Any,
     ) -> dict:

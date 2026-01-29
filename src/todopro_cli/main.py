@@ -1,14 +1,19 @@
 """Main entry point for TodoPro CLI."""
 
-from typing import Optional
-
 import typer
 from rich.console import Console
 
 from todopro_cli import __version__
-from todopro_cli.commands import analytics, auth, config, labels, projects, tasks, utils  # contexts, timer
+from todopro_cli.commands import (  # contexts, timer
+    analytics,
+    auth,
+    config,
+    labels,
+    projects,
+    tasks,
+    utils,
+)
 from todopro_cli.utils.typer_helpers import SuggestingGroup
-
 
 # Create main app with custom group class
 app = typer.Typer(
@@ -27,7 +32,9 @@ app.add_typer(tasks.app, name="tasks", help="Task management commands")
 app.add_typer(projects.app, name="projects", help="Project management commands")
 app.add_typer(labels.app, name="labels", help="Label management commands")
 app.add_typer(config.app, name="config", help="Configuration management")
-app.add_typer(analytics.app, name="analytics", help="Analytics and productivity insights")
+app.add_typer(
+    analytics.app, name="analytics", help="Analytics and productivity insights"
+)
 # TODO: Convert Click groups to Typer apps - these are incompatible with Typer 0.9.0
 # app.add_typer(contexts.contexts, name="contexts", help="Context management (@home, @office)")
 # app.add_typer(timer.timer, name="timer", help="Pomodoro timer for focus sessions")
@@ -43,10 +50,10 @@ def version() -> None:
 
 @app.command()
 def login(
-    email: Optional[str] = typer.Option(None, "--email", help="Email address"),
-    password: Optional[str] = typer.Option(None, "--password", help="Password"),
+    email: str | None = typer.Option(None, "--email", help="Email address"),
+    password: str | None = typer.Option(None, "--password", help="Password"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    endpoint: Optional[str] = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
     save_profile: bool = typer.Option(
         False, "--save-profile", help="Save as default profile"
     ),
@@ -116,7 +123,9 @@ def complete(
     task_id: str = typer.Argument(..., help="Task ID"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    sync: bool = typer.Option(False, "--sync", help="Wait for completion (synchronous mode)"),
+    sync: bool = typer.Option(
+        False, "--sync", help="Wait for completion (synchronous mode)"
+    ),
 ) -> None:
     """Mark a task as completed."""
     tasks.complete_task(task_id=task_id, output=output, profile=profile, sync=sync)
@@ -124,8 +133,12 @@ def complete(
 
 @app.command()
 def reschedule(
-    task_id: Optional[str] = typer.Argument(None, help="Task ID or suffix (omit to reschedule all overdue tasks)"),
-    date: Optional[str] = typer.Option(None, "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"),
+    task_id: str | None = typer.Argument(
+        None, help="Task ID or suffix (omit to reschedule all overdue tasks)"
+    ),
+    date: str | None = typer.Option(
+        None, "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"
+    ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -137,12 +150,14 @@ def reschedule(
 def quick_add(
     input_text: str = typer.Argument(..., help="Natural language task description"),
     output: str = typer.Option("table", "--output", help="Output format"),
-    show_parsed: bool = typer.Option(False, "--show-parsed", help="Show parsed details"),
+    show_parsed: bool = typer.Option(
+        False, "--show-parsed", help="Show parsed details"
+    ),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """
     Quick add a task using natural language.
-    
+
     Examples:
       todopro add "Buy milk tomorrow at 2pm #groceries p1 @shopping"
       todopro add "Review PR #work p2 @code-review"
@@ -160,7 +175,9 @@ def describe(
 ) -> None:
     """Describe a resource in detail."""
     if resource_type.lower() == "project":
-        projects.describe_project(project_id=resource_id, output=output, profile=profile)
+        projects.describe_project(
+            project_id=resource_id, output=output, profile=profile
+        )
     else:
         console.print(f"[red]Unknown resource type: {resource_type}[/red]")
         raise typer.Exit(1)
@@ -170,7 +187,9 @@ def describe(
 def errors(
     limit: int = typer.Option(20, "--limit", "-n", help="Number of errors to show"),
     clear: bool = typer.Option(False, "--clear", help="Clear old errors (>30 days)"),
-    all_errors: bool = typer.Option(False, "--all", help="Show all errors including acknowledged"),
+    all_errors: bool = typer.Option(
+        False, "--all", help="Show all errors including acknowledged"
+    ),
 ) -> None:
     """View error logs from background tasks."""
     utils.errors(limit=limit, clear=clear, all_errors=all_errors)

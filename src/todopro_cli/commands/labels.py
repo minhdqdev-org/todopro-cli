@@ -1,16 +1,15 @@
 """Label management commands."""
 
 import asyncio
-from typing import Optional
 
 import typer
-from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 
 from todopro_cli.api.client import get_client
 from todopro_cli.api.labels import LabelsAPI
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_output, format_success
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 app = typer.Typer(cls=SuggestingGroup, help="Label management commands")
 console = Console()
@@ -83,7 +82,7 @@ def get_label(
 @app.command("create")
 def create_label(
     name: str = typer.Argument(..., help="Label name"),
-    color: Optional[str] = typer.Option(None, "--color", help="Label color"),
+    color: str | None = typer.Option(None, "--color", help="Label color"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -113,8 +112,8 @@ def create_label(
 @app.command("update")
 def update_label(
     label_id: str = typer.Argument(..., help="Label ID"),
-    name: Optional[str] = typer.Option(None, "--name", help="Label name"),
-    color: Optional[str] = typer.Option(None, "--color", help="Label color"),
+    name: str | None = typer.Option(None, "--name", help="Label name"),
+    color: str | None = typer.Option(None, "--color", help="Label color"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -162,7 +161,9 @@ def delete_label(
 
     try:
         if not yes:
-            confirm = typer.confirm(f"Are you sure you want to delete label {label_id}?")
+            confirm = typer.confirm(
+                f"Are you sure you want to delete label {label_id}?"
+            )
             if not confirm:
                 format_error("Cancelled")
                 raise typer.Exit(0)

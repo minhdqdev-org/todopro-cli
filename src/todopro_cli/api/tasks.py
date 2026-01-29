@@ -105,8 +105,7 @@ class TasksAPI:
     async def reschedule_task(self, task_id: str, due_date: str) -> dict:
         """Reschedule a task to a new date."""
         response = await self.client.post(
-            f"/v1/tasks/{task_id}/reschedule",
-            json={"due_date": due_date}
+            f"/v1/tasks/{task_id}/reschedule", json={"due_date": due_date}
         )
         return response.json()
 
@@ -147,7 +146,7 @@ class TasksAPI:
             return response.json()
         except Exception as e:
             # Try to parse error response
-            if hasattr(e, 'response') and e.response is not None:
+            if hasattr(e, "response") and e.response is not None:
                 try:
                     return e.response.json()
                 except Exception:

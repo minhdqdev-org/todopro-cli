@@ -1,7 +1,6 @@
 """Task management commands."""
 
 import asyncio
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -18,7 +17,6 @@ from todopro_cli.ui.formatters import (
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 
-
 app = typer.Typer(cls=SuggestingGroup, help="Task management commands")
 console = Console()
 
@@ -34,13 +32,13 @@ def check_auth(profile: str = "default") -> None:
 
 @app.command("list")
 def list_tasks(
-    status: Optional[str] = typer.Option(None, "--status", help="Filter by status"),
-    project: Optional[str] = typer.Option(None, "--project", help="Filter by project ID"),
-    priority: Optional[int] = typer.Option(None, "--priority", help="Filter by priority"),
-    search: Optional[str] = typer.Option(None, "--search", help="Search tasks"),
+    status: str | None = typer.Option(None, "--status", help="Filter by status"),
+    project: str | None = typer.Option(None, "--project", help="Filter by project ID"),
+    priority: int | None = typer.Option(None, "--priority", help="Filter by priority"),
+    search: str | None = typer.Option(None, "--search", help="Search tasks"),
     limit: int = typer.Option(30, "--limit", help="Limit results"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
-    output: Optional[str] = typer.Option(None, "--output", help="Output format"),
+    output: str | None = typer.Option(None, "--output", help="Output format"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -112,11 +110,11 @@ def get_task(
 @app.command("create")
 def create_task(
     content: str = typer.Argument(..., help="Task content"),
-    description: Optional[str] = typer.Option(None, "--description", help="Description"),
-    project: Optional[str] = typer.Option(None, "--project", help="Project ID"),
-    due: Optional[str] = typer.Option(None, "--due", help="Due date"),
-    priority: Optional[int] = typer.Option(None, "--priority", help="Priority (1-4)"),
-    labels: Optional[str] = typer.Option(None, "--labels", help="Comma-separated labels"),
+    description: str | None = typer.Option(None, "--description", help="Description"),
+    project: str | None = typer.Option(None, "--project", help="Project ID"),
+    due: str | None = typer.Option(None, "--due", help="Due date"),
+    priority: int | None = typer.Option(None, "--priority", help="Priority (1-4)"),
+    labels: str | None = typer.Option(None, "--labels", help="Comma-separated labels"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -249,11 +247,11 @@ def quick_add(
 @app.command("update")
 def update_task(
     task_id: str = typer.Argument(..., help="Task ID or suffix"),
-    content: Optional[str] = typer.Option(None, "--content", help="Task content"),
-    description: Optional[str] = typer.Option(None, "--description", help="Description"),
-    project: Optional[str] = typer.Option(None, "--project", help="Project ID"),
-    due: Optional[str] = typer.Option(None, "--due", help="Due date"),
-    priority: Optional[int] = typer.Option(None, "--priority", help="Priority (1-4)"),
+    content: str | None = typer.Option(None, "--content", help="Task content"),
+    description: str | None = typer.Option(None, "--description", help="Description"),
+    project: str | None = typer.Option(None, "--project", help="Project ID"),
+    due: str | None = typer.Option(None, "--due", help="Due date"),
+    priority: int | None = typer.Option(None, "--priority", help="Priority (1-4)"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -336,7 +334,9 @@ def complete_task(
     task_id: str = typer.Argument(..., help="Task ID or suffix"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    sync: bool = typer.Option(False, "--sync", help="Wait for completion (synchronous mode)"),
+    sync: bool = typer.Option(
+        False, "--sync", help="Wait for completion (synchronous mode)"
+    ),
 ) -> None:
     """Mark a task as completed."""
     check_auth(profile)
@@ -351,10 +351,12 @@ def complete_task(
                 try:
                     resolved_id = await resolve_task_id(tasks_api, task_id)
                     response = await tasks_api.complete_task(resolved_id)
-                    
+
                     # Extract task from response (API may wrap it)
-                    task = response.get("completed_task", response.get("task", response))
-                    
+                    task = response.get(
+                        "completed_task", response.get("task", response)
+                    )
+
                     # Show concise success message
                     content = task.get("content", "")
                     if not content or not content.strip():
@@ -362,10 +364,10 @@ def complete_task(
                     # Truncate long content
                     if len(content) > 60:
                         content = content[:57] + "..."
-                    
+
                     format_success(f"✓ Completed: {content}")
                     console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
-                    
+
                     # Only show full output if explicitly requested
                     if output not in ["table", "pretty"]:
                         format_output(task, output)
@@ -376,7 +378,7 @@ def complete_task(
         else:
             # Background mode - don't wait, start immediately
             from todopro_cli.utils.background import run_in_background
-            
+
             # Start background task immediately
             run_in_background(
                 task_type="complete",
@@ -387,7 +389,7 @@ def complete_task(
                 },
                 max_retries=3,
             )
-            
+
             # Show immediate feedback without waiting
             format_success(f"✓ Marking task as complete: {task_id}")
             console.print("[dim]Running in background with auto-retry...[/dim]")
@@ -436,33 +438,34 @@ def today(
 ) -> None:
     """Show tasks for today (overdue + today's tasks)."""
     check_auth(profile)
-    
+
     # Show error banner if there are unread errors
-    from todopro_cli.utils.error_logger import get_unread_errors, mark_errors_as_read
     from rich.panel import Panel
-    
+
+    from todopro_cli.utils.error_logger import get_unread_errors, mark_errors_as_read
+
     unread_errors = get_unread_errors()
     if unread_errors:
         error_count = len(unread_errors)
         latest_error = unread_errors[0]
-        
+
         # Show banner
         error_msg = latest_error.get("error", "Unknown error")
         command = latest_error.get("command", "unknown")
-        
+
         # Truncate long error messages
         if len(error_msg) > 100:
             error_msg = error_msg[:97] + "..."
-        
+
         banner_text = (
             f"[yellow]⚠️  {error_count} background task(s) failed[/yellow]\n"
             f"[dim]Latest: '{command}' - {error_msg}[/dim]\n\n"
             f"[dim]View details: [cyan]todopro errors[/cyan][/dim]"
         )
-        
+
         console.print(Panel(banner_text, border_style="yellow", padding=(0, 1)))
         console.print()
-        
+
         # Mark errors as read
         mark_errors_as_read()
 
@@ -536,8 +539,12 @@ def next_task(
 
 @app.command("reschedule")
 def reschedule(
-    target: Optional[str] = typer.Argument(None, help="Task ID/suffix (omit to reschedule all overdue tasks)"),
-    date: Optional[str] = typer.Option(None, "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"),
+    target: str | None = typer.Argument(
+        None, help="Task ID/suffix (omit to reschedule all overdue tasks)"
+    ),
+    date: str | None = typer.Option(
+        None, "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"
+    ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -558,7 +565,9 @@ def reschedule(
                     overdue_count = result.get("overdue_count", 0)
 
                     if overdue_count == 0:
-                        console.print("[green]No overdue tasks to reschedule! 🎉[/green]")
+                        console.print(
+                            "[green]No overdue tasks to reschedule! 🎉[/green]"
+                        )
                         return
 
                     # Confirm
@@ -567,7 +576,7 @@ def reschedule(
                         task_word = "task" if overdue_count == 1 else "tasks"
                         confirm = typer.confirm(
                             f"Do you want to reschedule {overdue_count} overdue {task_word} to today?",
-                            default=True
+                            default=True,
                         )
                         if not confirm:
                             format_info("Cancelled")
@@ -579,10 +588,11 @@ def reschedule(
                     count = response.get("rescheduled_count", 0)
                     task_word = "task" if count == 1 else "tasks"
                     format_success(f"Rescheduled {count} overdue {task_word} to today")
-                    
-                    # Suggest undo command instead of showing full list
-                    console.print(f"[dim]💡 Tip: You can undo this later if needed[/dim]")
 
+                    # Suggest undo command instead of showing full list
+                    console.print(
+                        "[dim]💡 Tip: You can undo this later if needed[/dim]"
+                    )
 
                 finally:
                     await client.close()
@@ -595,11 +605,11 @@ def reschedule(
     else:
         # Reschedule a specific task
         task_id = target
-        
+
         # Default to today if no date specified
         if not date:
             date = "today"
-        
+
         try:
 
             async def do_reschedule_task() -> None:
@@ -609,17 +619,17 @@ def reschedule(
                 try:
                     # Resolve task ID
                     resolved_id = await resolve_task_id(tasks_api, task_id)
-                    
+
                     # Reschedule the task
                     response = await tasks_api.reschedule_task(resolved_id, date)
-                    
+
                     task = response.get("task", {})
                     content = task.get("content", "")
                     if not content or not content.strip():
                         content = "[No title]"
                     if len(content) > 60:
                         content = content[:57] + "..."
-                    
+
                     message = response.get("message", "Task rescheduled")
                     format_success(f"✓ {content}")
                     console.print(f"[dim]{message}[/dim]")
@@ -636,7 +646,7 @@ def reschedule(
 
 @app.command("add")
 def quick_add(
-    text: Optional[str] = typer.Argument(None, help="Task text in natural language"),
+    text: str | None = typer.Argument(None, help="Task text in natural language"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -691,13 +701,13 @@ def quick_add(
                     if "suggestions" in response:
                         suggestions = response["suggestions"]
                         if suggestions.get("create_project"):
-                            project_name = response.get("parsed", {}).get("project_name", "")
-                            console.print(
-                                f"\n[yellow]Tip:[/yellow] Create the project first:"
+                            project_name = response.get("parsed", {}).get(
+                                "project_name", ""
                             )
                             console.print(
-                                f'  todopro projects add "{project_name}"'
+                                "\n[yellow]Tip:[/yellow] Create the project first:"
                             )
+                            console.print(f'  todopro projects add "{project_name}"')
 
                         if suggestions.get("available_projects"):
                             console.print("\n[cyan]Available projects:[/cyan]")
