@@ -63,6 +63,41 @@ class APIClient:
             await self._client.aclose()
             self._client = None
 
+    async def _try_refresh_token(self) -> bool:
+        """
+        Try to refresh the access token using the refresh token.
+        Returns True if successful, False otherwise.
+        """
+        try:
+            credentials = self.config_manager.load_credentials()
+            if not credentials or "refresh_token" not in credentials:
+                return False
+
+            refresh_token = credentials["refresh_token"]
+            
+            # Make refresh request without auth
+            response = await self.post(
+                "/v1/auth/refresh",
+                json={"refresh_token": refresh_token},
+                skip_auth=True,
+            )
+            
+            data = response.json()
+            if "access_token" in data:
+                # Update stored credentials with new access token
+                credentials["token"] = data["access_token"]
+                if "refresh_token" in data:
+                    credentials["refresh_token"] = data["refresh_token"]
+                
+                self.config_manager.save_credentials(credentials)
+                console.print("[dim]Token refreshed automatically[/dim]")
+                return True
+            
+            return False
+        except Exception:
+            # Refresh failed
+            return False
+
     async def request(
         self,
         method: str,
@@ -92,7 +127,29 @@ class APIClient:
                 response.raise_for_status()
                 return response
             except httpx.HTTPStatusError as e:
-                # Don't retry client errors (4xx)
+                # Handle 401 Unauthorized - try to refresh token
+                if e.response.status_code == 401 and not skip_auth:
+                    # Try to refresh the token
+                    if await self._try_refresh_token():
+                        # Retry the request with new token
+                        client = await self._get_client(skip_auth=skip_auth)
+                        try:
+                            response = await client.request(
+                                method=method,
+                                url=url,
+                                json=json,
+                                params=params,
+                            )
+                            response.raise_for_status()
+                            return response
+                        except httpx.HTTPStatusError:
+                            # If still fails after refresh, raise original error
+                            raise e
+                    else:
+                        # Refresh failed, raise original error
+                        raise e
+                
+                # Don't retry other client errors (4xx)
                 if 400 <= e.response.status_code < 500:
                     raise
                 last_exception = e

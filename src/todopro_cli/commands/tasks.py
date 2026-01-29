@@ -641,11 +641,12 @@ def quick_add(
                     if "suggestions" in response:
                         suggestions = response["suggestions"]
                         if suggestions.get("create_project"):
+                            project_name = response.get("parsed", {}).get("project_name", "")
                             console.print(
-                                "\n[yellow]Tip:[/yellow] Create the project first:"
+                                f"\n[yellow]Tip:[/yellow] Create the project first:"
                             )
                             console.print(
-                                f'  todopro projects create "{response["parsed"]["project_name"]}"'
+                                f'  todopro projects add "{project_name}"'
                             )
 
                         if suggestions.get("available_projects"):
@@ -653,7 +654,7 @@ def quick_add(
                             for proj in suggestions["available_projects"]:
                                 console.print(f"  • {proj}")
 
-                    raise typer.Exit(1) from e
+                    raise typer.Exit(1)
 
                 task = response.get("task", {})
                 parsed = response.get("parsed", {})
