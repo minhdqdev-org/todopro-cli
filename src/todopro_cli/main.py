@@ -45,20 +45,21 @@ def version() -> None:
     """Show version information and API health."""
     console.print(f"[bold]TodoPro CLI[/bold] version [cyan]{__version__}[/cyan]")
     console.print()
-    
+
     # Check API health
     import asyncio
+
     from todopro_cli.api.client import get_client
     from todopro_cli.config import get_config_manager
-    
+
     try:
         config_manager = get_config_manager("default")
         credentials = config_manager.load_credentials()
-        
+
         if not credentials:
             console.print("[yellow]Not logged in - unable to check API health[/yellow]")
             return
-        
+
         async def check_health():
             client = get_client("default")
             try:
@@ -72,7 +73,7 @@ def version() -> None:
                 console.print(f"[red]✗ API health check failed: {str(e)}[/red]")
             finally:
                 await client.close()
-        
+
         asyncio.run(check_health())
     except Exception:
         # Silently skip health check if there's an error
@@ -189,20 +190,20 @@ def quick_add(
     if input_text is None:
         from rich.console import Console
         from rich.panel import Panel
-        
+
         console = Console()
         console.print(Panel(
             "[dim]Type the task here (!!1, !!2 for priority, @label for label, #project for project,...)[/dim]",
             border_style="blue",
             padding=(0, 1)
         ))
-        
+
         input_text = typer.prompt("❯", prompt_suffix=" ")
-        
+
         if not input_text or not input_text.strip():
             console.print("[yellow]No task entered. Cancelled.[/yellow]")
             raise typer.Exit(0)
-    
+
     tasks.quick_add(text=input_text, yes=False, profile=profile)
 
 
@@ -238,7 +239,13 @@ def errors(
 # Main entry point
 def main() -> None:
     """Main entry point."""
-    app()
+    from todopro_cli.utils.update_checker import check_for_updates
+
+    try:
+        app()
+    finally:
+        # Check for updates after command execution (non-blocking)
+        check_for_updates()
 
 
 if __name__ == "__main__":
