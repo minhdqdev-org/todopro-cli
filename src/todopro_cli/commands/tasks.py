@@ -331,7 +331,7 @@ def delete_task(
 
 @app.command("complete")
 def complete_task(
-    task_ids: list[str] | str = typer.Argument(..., help="Task ID(s) or suffix - can specify multiple"),
+    task_ids: list[str] = typer.Argument(..., help="Task ID(s) or suffix - can specify multiple"),
     output: str = typer.Option("table", "--output", help="Output format"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
     sync: bool = typer.Option(
@@ -340,10 +340,6 @@ def complete_task(
 ) -> None:
     """Mark one or more tasks as completed."""
     check_auth(profile)
-    
-    # Normalize to list
-    if isinstance(task_ids, str):
-        task_ids = [task_ids]
     
     # Single task - use original logic
     if len(task_ids) == 1:
