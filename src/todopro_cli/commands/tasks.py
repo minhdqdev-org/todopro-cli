@@ -342,30 +342,6 @@ def complete_task(
     check_auth(profile)
 
     try:
-        # Resolve task ID first (this is quick and needed for feedback)
-        resolved_id = None
-        task_content = None
-        
-        async def resolve_id():
-            nonlocal resolved_id, task_content
-            client = get_client(profile)
-            tasks_api = TasksAPI(client)
-            try:
-                resolved_id = await resolve_task_id(tasks_api, task_id)
-                # Get task content for display
-                task = await tasks_api.get_task(resolved_id)
-                task_content = task.get("content", "")
-            finally:
-                await client.close()
-        
-        asyncio.run(resolve_id())
-        
-        if not task_content or not task_content.strip():
-            task_content = "[No title]"
-        # Truncate long content
-        if len(task_content) > 60:
-            task_content = task_content[:57] + "..."
-        
         if sync:
             # Synchronous mode - wait for completion
             async def do_complete() -> None:
@@ -373,12 +349,21 @@ def complete_task(
                 tasks_api = TasksAPI(client)
 
                 try:
+                    resolved_id = await resolve_task_id(tasks_api, task_id)
                     response = await tasks_api.complete_task(resolved_id)
                     
                     # Extract task from response (API may wrap it)
                     task = response.get("completed_task", response.get("task", response))
                     
-                    format_success(f"✓ Completed: {task_content}")
+                    # Show concise success message
+                    content = task.get("content", "")
+                    if not content or not content.strip():
+                        content = "[No title]"
+                    # Truncate long content
+                    if len(content) > 60:
+                        content = content[:57] + "..."
+                    
+                    format_success(f"✓ Completed: {content}")
                     console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
                     
                     # Only show full output if explicitly requested
@@ -389,33 +374,34 @@ def complete_task(
 
             asyncio.run(do_complete())
         else:
-            # Background mode - don't wait
+            # Background mode - don't wait, start immediately
             from todopro_cli.utils.background import run_in_background
             
             async def complete_in_background():
                 client = get_client(profile)
                 tasks_api = TasksAPI(client)
                 try:
+                    # Resolve ID and complete - all in background
+                    resolved_id = await resolve_task_id(tasks_api, task_id)
                     await tasks_api.complete_task(resolved_id)
                 finally:
                     await client.close()
             
-            # Start background task
+            # Start background task immediately
             run_in_background(
                 func=complete_in_background,
                 command="complete",
                 context={
-                    "task_id": resolved_id,
-                    "task_content": task_content,
+                    "task_id": task_id,
                     "profile": profile,
                 },
                 max_retries=3,
             )
             
-            # Show immediate feedback
-            format_success(f"✓ Completing: {task_content}")
+            # Show immediate feedback without waiting
+            format_success(f"✓ Marking task as complete: {task_id}")
             console.print("[dim]Running in background with auto-retry...[/dim]")
-            console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
+            console.print(f"[dim]Check status: tp tasks get {task_id}[/dim]")
 
     except Exception as e:
         format_error(f"Failed to complete task: {str(e)}")
