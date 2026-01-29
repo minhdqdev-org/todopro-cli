@@ -16,8 +16,10 @@ from todopro_cli.ui.formatters import (
     format_success,
 )
 from todopro_cli.utils.task_helpers import resolve_task_id
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 
-app = typer.Typer(help="Task management commands")
+
+app = typer.Typer(cls=SuggestingGroup, help="Task management commands")
 console = Console()
 
 

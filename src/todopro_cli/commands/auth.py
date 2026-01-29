@@ -4,6 +4,7 @@ import asyncio
 from typing import Optional
 
 import typer
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 from rich.prompt import Prompt
 
@@ -12,7 +13,7 @@ from todopro_cli.api.client import get_client
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_output, format_success
 
-app = typer.Typer(help="Authentication commands")
+app = typer.Typer(cls=SuggestingGroup, help="Authentication commands")
 console = Console()
 
 

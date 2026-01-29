@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 from rich.table import Table
 
@@ -16,7 +17,7 @@ from todopro_cli.api.client import get_client
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_success
 
-app = typer.Typer(help="Analytics commands")
+app = typer.Typer(cls=SuggestingGroup, help="Analytics commands")
 console = Console()
 
 

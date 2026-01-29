@@ -4,6 +4,7 @@ import asyncio
 from typing import Optional
 
 import typer
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 
 from todopro_cli.api.client import get_client
@@ -11,7 +12,7 @@ from todopro_cli.api.labels import LabelsAPI
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_output, format_success
 
-app = typer.Typer(help="Label management commands")
+app = typer.Typer(cls=SuggestingGroup, help="Label management commands")
 console = Console()
 
 

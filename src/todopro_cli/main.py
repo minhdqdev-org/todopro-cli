@@ -7,10 +7,13 @@ from rich.console import Console
 
 from todopro_cli import __version__
 from todopro_cli.commands import analytics, auth, config, labels, projects, tasks, utils  # contexts, timer
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 
-# Create main app
+
+# Create main app with custom group class
 app = typer.Typer(
     name="todopro",
+    cls=SuggestingGroup,
     help="A professional command-line interface for TodoPro task management",
     no_args_is_help=True,
 )
