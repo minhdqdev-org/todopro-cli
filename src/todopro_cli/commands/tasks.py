@@ -736,20 +736,21 @@ def quick_add(
     Syntax:
       #ProjectName - Assign to project
       @label - Add label
-      p1-p4 - Set priority (p1=urgent, p4=low)
+      p1-p4 or !!1-!!4 - Set priority (p1/!!1=urgent, p4/!!4=low)
       Natural dates - tomorrow, next monday, at 3pm
       Recurrence - every day/week/monday, etc.
     """
     check_auth(profile)
 
-    # If no text provided, prompt for input
+    # If no text provided, use interactive prompt
     if not text:
-        console.print("[cyan]Enter task (use Ctrl+C to cancel):[/cyan]")
         try:
-            text = console.input("[yellow]> [/yellow]").strip()
+            from todopro_cli.ui.interactive_prompt import get_interactive_input
+
+            text = asyncio.run(get_interactive_input(profile=profile))
         except KeyboardInterrupt:
             console.print("\n[yellow]Cancelled.[/yellow]")
-            raise typer.Exit(0)
+            raise typer.Exit(0) from None
 
         if not text:
             format_error("Task text is required")
