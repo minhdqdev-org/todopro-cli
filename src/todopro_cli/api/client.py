@@ -1,6 +1,6 @@
 """API client for TodoPro."""
 
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from rich.console import Console
@@ -16,9 +16,25 @@ class APIClient:
     def __init__(self, profile: str = "default"):
         self.config_manager = get_config_manager(profile)
         self.config = self.config_manager.config
-        self.base_url = self.config.api.endpoint.rstrip("/")
+        # Use dynamic backend URL with fallback to config
+        self.base_url = self._get_backend_url()
         self.timeout = self.config.api.timeout
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
+
+    def _get_backend_url(self) -> str:
+        """Get backend URL with priority: env > dynamic discovery > config."""
+        from todopro_cli.utils.update_checker import get_backend_url
+
+        # Try dynamic backend discovery first
+        try:
+            dynamic_url = get_backend_url()
+            if dynamic_url:
+                return dynamic_url
+        except Exception:
+            pass
+
+        # Fallback to config
+        return self.config.api.endpoint.rstrip("/")
 
     def _get_headers(self, skip_auth: bool = False) -> dict[str, str]:
         """Get HTTP headers with authentication."""
@@ -74,25 +90,25 @@ class APIClient:
                 return False
 
             refresh_token = credentials["refresh_token"]
-            
+
             # Make refresh request without auth
             response = await self.post(
                 "/v1/auth/refresh",
                 json={"refresh_token": refresh_token},
                 skip_auth=True,
             )
-            
+
             data = response.json()
             if "access_token" in data:
                 # Update stored credentials with new access token
                 credentials["token"] = data["access_token"]
                 if "refresh_token" in data:
                     credentials["refresh_token"] = data["refresh_token"]
-                
+
                 self.config_manager.save_credentials(credentials)
                 console.print("[dim]Token refreshed automatically[/dim]")
                 return True
-            
+
             return False
         except Exception:
             # Refresh failed
@@ -103,9 +119,9 @@ class APIClient:
         method: str,
         path: str,
         *,
-        json: Optional[dict[str, Any]] = None,
-        params: Optional[dict[str, Any]] = None,
-        retry: Optional[int] = None,
+        json: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+        retry: int | None = None,
         skip_auth: bool = False,
     ) -> httpx.Response:
         """Make an HTTP request to the API."""
@@ -115,7 +131,7 @@ class APIClient:
         client = await self._get_client(skip_auth=skip_auth)
         url = f"{path}" if path.startswith("/") else f"/{path}"
 
-        last_exception: Optional[Exception] = None
+        last_exception: Exception | None = None
         for attempt in range(retry + 1):
             try:
                 response = await client.request(
@@ -130,7 +146,8 @@ class APIClient:
                 # Handle 401 Unauthorized - try to refresh token
                 if e.response.status_code == 401 and not skip_auth:
                     # Try to refresh the token
-                    if await self._try_refresh_token():
+                    refreshed = await self._try_refresh_token()
+                    if refreshed:
                         # Retry the request with new token
                         client = await self._get_client(skip_auth=skip_auth)
                         try:
@@ -146,9 +163,21 @@ class APIClient:
                             # If still fails after refresh, raise original error
                             raise e
                     else:
-                        # Refresh failed, raise original error
+                        # Refresh failed - provide helpful error message
+                        credentials = self.config_manager.load_credentials()
+                        if not credentials or "refresh_token" not in credentials:
+                            # No refresh token available
+                            from rich.console import Console as RichConsole
+
+                            rich_console = RichConsole()
+                            rich_console.print(
+                                "\n[yellow]⚠ Your session has expired and no refresh token is available.[/yellow]"
+                            )
+                            rich_console.print(
+                                "[dim]Please login again:[/dim] [cyan]todopro login[/cyan]\n"
+                            )
                         raise e
-                
+
                 # Don't retry other client errors (4xx)
                 if 400 <= e.response.status_code < 500:
                     raise
@@ -168,25 +197,25 @@ class APIClient:
         raise RuntimeError("Request failed after all retries")
 
     async def get(
-        self, path: str, *, params: Optional[dict[str, Any]] = None
+        self, path: str, *, params: dict[str, Any] | None = None
     ) -> httpx.Response:
         """Make a GET request."""
         return await self.request("GET", path, params=params)
 
     async def post(
-        self, path: str, *, json: Optional[dict[str, Any]] = None, skip_auth: bool = False
+        self, path: str, *, json: dict[str, Any] | None = None, skip_auth: bool = False
     ) -> httpx.Response:
         """Make a POST request."""
         return await self.request("POST", path, json=json, skip_auth=skip_auth)
 
     async def put(
-        self, path: str, *, json: Optional[dict[str, Any]] = None
+        self, path: str, *, json: dict[str, Any] | None = None
     ) -> httpx.Response:
         """Make a PUT request."""
         return await self.request("PUT", path, json=json)
 
     async def patch(
-        self, path: str, *, json: Optional[dict[str, Any]] = None
+        self, path: str, *, json: dict[str, Any] | None = None
     ) -> httpx.Response:
         """Make a PATCH request."""
         return await self.request("PATCH", path, json=json)

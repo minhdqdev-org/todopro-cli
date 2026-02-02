@@ -2,6 +2,19 @@
 
 > A professional command-line interface for TodoPro task management system, inspired by kubectl.
 
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Development](#development)
+- [Releasing](#releasing)
+- [Documentation](#documentation)
+
 ## Features
 
 - **Kubectl-inspired**: Resource-oriented commands with consistent patterns
@@ -13,9 +26,44 @@
 
 ## Installation
 
+> 📖 **For detailed installation instructions and troubleshooting, see [docs/INSTALLATION.md](docs/INSTALLATION.md)**
+
+### One-Liner (Recommended)
+
+Install `uv` and `todopro-cli` in one command:
+
 ```bash
-# Install from source
+curl -LsSf https://astral.sh/uv/install.sh | sh && uv tool install git+https://github.com/minhdqdev-org/todopro-cli.git
+```
+
+This will:
+- Install `uv` (if not already installed)
+- Pull the CLI tool directly from GitHub
+- Build an isolated environment with all dependencies
+- Place the `todopro` and `tp` commands in your PATH
+
+### Update
+
+```bash
+uv tool upgrade todopro-cli
+```
+
+### Install from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/minhdqdev-org/todopro-cli.git
+cd todopro-cli
+
+# Install locally
 uv tool install --from . todopro-cli
+```
+
+### Install from Release
+
+```bash
+# Install a specific version from GitHub releases
+uv tool install https://github.com/minhdqdev-org/todopro-cli/releases/download/v0.1.0/todopro_cli-0.1.0-py3-none-any.whl
 ```
 
 ## Quick Start
@@ -111,3 +159,43 @@ black src/ tests/
 # Lint code
 ruff check src/ tests/
 ```
+
+## Releasing
+
+> 📖 **For detailed release instructions, see [docs/RELEASE.md](docs/RELEASE.md)**
+
+This project uses automated GitHub Actions workflows for testing and releasing.
+
+### Create a Release
+
+1. **Tag your code:**
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+2. **Automatic Release:** GitHub Actions will:
+   - Run all tests
+   - Build the package (`.whl` and `.tar.gz`)
+   - Create a GitHub Release with the artifacts
+
+3. **Users can install:** Once released, users can install directly from the release URL or via the one-liner command.
+
+### Workflow Details
+
+- **On Push to `main`:** Runs tests to ensure code quality
+- **On Tag Push (`v*`):** Runs tests + builds and publishes release artifacts
+
+## Documentation
+
+- 📦 [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions and troubleshooting
+- 🚀 [Release Process](docs/RELEASE.md) - How to create and publish releases
+- 💡 [Package Ideas](docs/PACKAGE_IDEA.md) - Original implementation ideas and rationale
+
+## License
+
+MIT License - See LICENSE file for details
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

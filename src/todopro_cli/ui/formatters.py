@@ -12,6 +12,44 @@ from rich.text import Text
 console = Console()
 
 
+def calculate_unique_suffixes(task_ids: list[str]) -> dict[str, int]:
+    """
+    Calculate minimum unique suffix length for each task ID.
+
+    Starts from length 1 and grows until unique among all IDs.
+
+    Args:
+        task_ids: List of full task IDs
+
+    Returns:
+        Dict mapping task_id -> required suffix length
+    """
+    if not task_ids:
+        return {}
+
+    result = {}
+
+    for task_id in task_ids:
+        # Start with length 1, grow until unique
+        for length in range(1, len(task_id) + 1):
+            suffix = task_id[-length:]
+
+            # Check if this suffix is unique
+            conflicts = [
+                tid for tid in task_ids
+                if tid != task_id and tid.endswith(suffix)
+            ]
+
+            if not conflicts:
+                result[task_id] = length
+                break
+        else:
+            # Use full ID if no unique suffix found (shouldn't happen with UUIDs)
+            result[task_id] = len(task_id)
+
+    return result
+
+
 def format_output(
     data: Any, output_format: str = "pretty", compact: bool = False
 ) -> None:
@@ -259,6 +297,18 @@ def format_tasks_pretty(tasks: list[dict], compact: bool = False) -> None:
     console.print(header)
     console.print()
 
+    # Calculate unique suffix lengths for all task IDs
+    task_ids = [task["id"] for task in tasks if task.get("id")]
+    suffix_map = calculate_unique_suffixes(task_ids)
+
+    # Save suffix mapping to cache for later resolution
+    from todopro_cli.utils.task_cache import save_suffix_mapping
+    suffix_to_id = {}
+    for task_id, length in suffix_map.items():
+        suffix = task_id[-length:] if length > 0 else task_id
+        suffix_to_id[suffix] = task_id
+    save_suffix_mapping(suffix_to_id)
+
     # Group tasks by priority and status
     overdue_tasks = []
     tasks_by_priority = {4: [], 3: [], 2: [], 1: []}
@@ -285,18 +335,18 @@ def format_tasks_pretty(tasks: list[dict], compact: bool = False) -> None:
 
         # Display tasks
         for task in priority_tasks:
-            format_task_item(task, compact, indent="  ")
+            format_task_item(task, compact, indent="  ", suffix_map=suffix_map)
         console.print()
 
     # Display overdue tasks separately
     if overdue_tasks:
         console.print(f"⏱️  OVERDUE ({len(overdue_tasks)})", style="bold red")
         for task in overdue_tasks:
-            format_task_item(task, compact, indent="  ")
+            format_task_item(task, compact, indent="  ", suffix_map=suffix_map)
         console.print()
 
 
-def format_task_item(task: dict, compact: bool = False, indent: str = "") -> None:
+def format_task_item(task: dict, compact: bool = False, indent: str = "", suffix_map: dict[str, int] | None = None) -> None:
     """Format a single task item."""
     # Status icon
     is_completed = task.get("is_completed", False)
@@ -310,7 +360,7 @@ def format_task_item(task: dict, compact: bool = False, indent: str = "") -> Non
         status_icon = STATUS_ICONS["open"]
 
     content = task.get("content", "Untitled")
-    
+
     # Render Markdown links - convert to Rich markup
     content = render_markdown_links(content)
 
@@ -318,7 +368,7 @@ def format_task_item(task: dict, compact: bool = False, indent: str = "") -> Non
         # Compact one-line format
         # Build as markup string then convert to Text
         line_str = f"{indent}{status_icon} "
-        
+
         # Content (dimmed if completed)
         if is_completed:
             line_str += f"[dim]{content}[/dim]"
@@ -337,7 +387,9 @@ def format_task_item(task: dict, compact: bool = False, indent: str = "") -> Non
         labels = task.get("labels", [])
         if labels:
             for label in labels[:3]:  # Show max 3 labels in compact
-                line_str += f" [blue]#{label}[/blue]"
+                # Handle both string labels and dict labels
+                label_name = label.get("name", "") if isinstance(label, dict) else label
+                line_str += f" [blue]#{label_name}[/blue]"
 
         console.print(Text.from_markup(line_str))
     else:
@@ -357,7 +409,9 @@ def format_task_item(task: dict, compact: bool = False, indent: str = "") -> Non
         if labels:
             line_str += "  "
             for label in labels:
-                line_str += f"[blue]#{label}[/blue] "
+                # Handle both string labels and dict labels
+                label_name = label.get("name", "") if isinstance(label, dict) else label
+                line_str += f"[blue]#{label_name}[/blue] "
 
         console.print(Text.from_markup(line_str))
 
@@ -383,10 +437,16 @@ def format_task_item(task: dict, compact: bool = False, indent: str = "") -> Non
         if task.get("project_name"):
             meta.append((f"Project: {task['project_name']}", "blue"))
 
-        # Add task ID suffix
+        # Add task ID suffix with dynamic length
         if task.get("id"):
-            # Get last 6 characters of the ID as suffix
-            task_id_suffix = task.get("id", "")[-6:]
+            task_id = task["id"]
+            if suffix_map and task_id in suffix_map:
+                # Use calculated unique suffix length
+                suffix_length = suffix_map[task_id]
+                task_id_suffix = task_id[-suffix_length:]
+            else:
+                # Fallback to last 6 characters if suffix_map not provided
+                task_id_suffix = task_id[-6:]
             meta.append((f"#{task_id_suffix}", "dim"))
 
         if is_recurring and task.get("next_occurrence"):
@@ -688,7 +748,7 @@ def render_markdown_links(text: str) -> str:
 # Eisenhower Quadrant Icons
 QUADRANT_ICONS = {
     "Q1": "🔴",  # Urgent & Important
-    "Q2": "🟠",  # Not Urgent & Important  
+    "Q2": "🟠",  # Not Urgent & Important
     "Q3": "🟡",  # Urgent & Not Important
     "Q4": "🟢",  # Not Urgent & Not Important
 }
@@ -699,44 +759,48 @@ def format_next_task(task: dict) -> None:
     console.print()
     console.print("[bold cyan]Next Task:[/bold cyan]")
     console.print()
-    
+
     # Status icon
     is_recurring = task.get("is_recurring", False)
     status_icon = STATUS_ICONS["recurring"] if is_recurring else STATUS_ICONS["open"]
-    
+
     # Content with Markdown rendering
     content = task.get("content", "Untitled")
     content = render_markdown_links(content)
-    
+
     # Main line - build as markup string
     line_str = f"  {status_icon} [bold]{content}[/bold]"
     console.print(Text.from_markup(line_str))
-    
+
     # Metadata line
     meta = []
-    
+
     # Eisenhower Quadrant
     if task.get("eisenhower_quadrant"):
         quadrant = task["eisenhower_quadrant"]
         icon = QUADRANT_ICONS.get(quadrant, "")
         meta.append((icon, ""))
-    
+
     # Due date
     if task.get("due_date"):
         due_str = format_due_date(task["due_date"])
         meta.append((due_str, "cyan"))
-    
+
     # Project
     if task.get("project"):
         project_name = task["project"].get("name", "")
         if project_name:
             meta.append((project_name, "blue"))
-    
+
     # Task ID suffix
     if task.get("id"):
-        task_id_suffix = task["id"][-6:]
+        # For single task, calculate suffix (will be minimal)
+        task_id = task["id"]
+        suffix_map = calculate_unique_suffixes([task_id])
+        suffix_length = suffix_map.get(task_id, 6)
+        task_id_suffix = task_id[-suffix_length:]
         meta.append((f"#{task_id_suffix}", "dim"))
-    
+
     if meta:
         meta_line = Text()
         meta_line.append("     └─ ", style="dim")
@@ -745,10 +809,10 @@ def format_next_task(task: dict) -> None:
                 meta_line.append(" • ", style="dim")
             meta_line.append(text, style=style or "")
         console.print(meta_line)
-    
+
     # Description if exists
     if task.get("description"):
         console.print()
         console.print(f"  [dim]{task['description']}[/dim]")
-    
+
     console.print()

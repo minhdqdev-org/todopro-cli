@@ -27,7 +27,7 @@ def check_auth(profile: str = "default") -> None:
     credentials = config_manager.load_credentials()
     if not credentials:
         format_error("Not logged in. Use 'todopro login' to authenticate.")
-        raise typer.Exit(1) from e
+        raise typer.Exit(1)
 
 
 @app.command("list")
@@ -53,6 +53,7 @@ def list_tasks(
             compact = config_manager.get("output.compact") or False
 
     try:
+        assert output is not None  # for mypy
 
         async def do_list() -> None:
             client = get_client(profile)
@@ -67,6 +68,28 @@ def list_tasks(
                     limit=limit,
                     offset=offset,
                 )
+
+                # Filter out tasks being completed in background
+                from todopro_cli.utils.task_cache import get_background_cache
+
+                cache = get_background_cache()
+                completing_tasks = set(cache.get_completing_tasks())
+
+                if completing_tasks and isinstance(result, dict):
+                    tasks_list = result.get("tasks", result.get("items", []))
+                    if tasks_list:
+                        original_count = len(tasks_list)
+                        filtered_tasks = [
+                            task
+                            for task in tasks_list
+                            if not any(task.get("id", "").endswith(short_id) for short_id in completing_tasks)
+                        ]
+                        if len(filtered_tasks) < original_count:
+                            if "tasks" in result:
+                                result["tasks"] = filtered_tasks
+                            elif "items" in result:
+                                result["items"] = filtered_tasks
+
                 format_output(result, output, compact=compact)
             finally:
                 await client.close()
@@ -152,98 +175,6 @@ def create_task(
         raise typer.Exit(1) from e
 
 
-@app.command("quick-add")
-def quick_add(
-    input_text: str = typer.Argument(..., help="Natural language task description"),
-    output: str = typer.Option("table", "--output", help="Output format"),
-    show_parsed: bool = typer.Option(
-        False, "--show-parsed", help="Show parsed details"
-    ),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
-) -> None:
-    """
-    Quick add a task using natural language.
-
-    Examples:
-      todopro quick-add "Buy milk tomorrow at 2pm #groceries p1 @shopping"
-      todopro quick-add "Review PR #work p2 @code-review"
-      todopro quick-add "Team meeting every Monday at 10am #meetings"
-      todopro quick-add "Call dentist tomorrow p3"
-
-    Syntax:
-      - #project - Assign to project (e.g., #work, #personal)
-      - @label - Add label (e.g., @urgent, @review)
-      - p1-p4 - Priority (p1=urgent, p2=high, p3=medium, p4=normal)
-      - Natural dates: tomorrow, next week, Monday, Jan 15, etc.
-      - Times: at 2pm, at 14:00
-      - Recurrence: every day, every Monday, every 2 weeks
-    """
-    check_auth(profile)
-
-    try:
-
-        async def do_quick_add() -> None:
-            client = get_client(profile)
-            tasks_api = TasksAPI(client)
-
-            try:
-                result = await tasks_api.quick_add(input_text)
-
-                task = result.get("task", {})
-                parsed = result.get("parsed", {})
-
-                format_success(f"Task created: {task.get('id', 'unknown')}")
-
-                if show_parsed:
-                    format_info("\n📝 Parsed Details:")
-                    from rich.table import Table
-
-                    table = Table(show_header=True)
-                    table.add_column("Field", style="cyan")
-                    table.add_column("Value", style="green")
-
-                    table.add_row("Content", parsed.get("content", ""))
-                    if parsed.get("project_name"):
-                        table.add_row("Project", parsed.get("project_name"))
-                    if parsed.get("due_date"):
-                        table.add_row("Due Date", str(parsed.get("due_date")))
-                    if parsed.get("priority") and parsed.get("priority") != 1:
-                        priority_names = {
-                            1: "Normal",
-                            2: "Medium",
-                            3: "High",
-                            4: "Urgent",
-                        }
-                        table.add_row(
-                            "Priority",
-                            priority_names.get(
-                                parsed.get("priority"), str(parsed.get("priority"))
-                            ),
-                        )
-                    if parsed.get("labels"):
-                        table.add_row("Labels", ", ".join(parsed.get("labels", [])))
-                    if parsed.get("is_recurring"):
-                        table.add_row("Recurring", "Yes")
-                        if parsed.get("recurrence_rule"):
-                            table.add_row(
-                                "Recurrence", str(parsed.get("recurrence_rule"))
-                            )
-
-                    console.print(table)
-                    console.print()
-
-                format_output(task, output)
-
-            finally:
-                await client.close()
-
-        asyncio.run(do_quick_add())
-
-    except Exception as e:
-        format_error(f"Failed to quick add task: {str(e)}")
-        raise typer.Exit(1) from e
-
-
 @app.command("update")
 def update_task(
     task_id: str = typer.Argument(..., help="Task ID or suffix"),
@@ -274,7 +205,7 @@ def update_task(
 
         if not updates:
             format_error("No updates specified")
-            raise typer.Exit(1) from e
+            raise typer.Exit(1)
 
         async def do_update() -> None:
             client = get_client(profile)
@@ -383,6 +314,11 @@ def complete_task(
             else:
                 # Background mode - don't wait, start immediately
                 from todopro_cli.utils.background import run_in_background
+                from todopro_cli.utils.task_cache import get_background_cache
+
+                # Add to cache for optimistic UI update
+                cache = get_background_cache()
+                cache.add_completing_task(task_id)
 
                 # Start background task immediately
                 run_in_background(
@@ -452,6 +388,11 @@ def complete_task(
             else:
                 # Background batch mode
                 from todopro_cli.utils.background import run_in_background
+                from todopro_cli.utils.task_cache import get_background_cache
+
+                # Add all tasks to cache for optimistic UI update
+                cache = get_background_cache()
+                cache.add_completing_tasks(task_ids)
 
                 run_in_background(
                     task_type="batch_complete",
@@ -554,6 +495,28 @@ def today(
 
                 # Combine overdue and today tasks for pretty output
                 all_tasks = result.get("overdue", []) + result.get("today", [])
+
+                # Filter out tasks being completed in background
+                from todopro_cli.utils.task_cache import get_background_cache
+
+                cache = get_background_cache()
+                completing_tasks = set(cache.get_completing_tasks())
+
+                if completing_tasks:
+                    # Filter tasks and adjust counts
+                    original_count = len(all_tasks)
+                    all_tasks = [
+                        task
+                        for task in all_tasks
+                        if not any(task.get("id", "").endswith(short_id) for short_id in completing_tasks)
+                    ]
+                    filtered_count = original_count - len(all_tasks)
+
+                    if filtered_count > 0:
+                        console.print(
+                            f"[dim]Hiding {filtered_count} task(s) being completed in background...[/dim]"
+                        )
+                        console.print()
 
                 if all_tasks:
                     # Display with pretty format by default
@@ -754,7 +717,7 @@ def quick_add(
 
         if not text:
             format_error("Task text is required")
-            raise typer.Exit(1) from e
+            raise typer.Exit(1)
 
     try:
 

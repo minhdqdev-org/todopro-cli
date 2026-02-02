@@ -3,12 +3,12 @@
 import asyncio
 
 import typer
-from todopro_cli.utils.typer_helpers import SuggestingGroup
 from rich.console import Console
 
 from todopro_cli.api.client import get_client
 from todopro_cli.config import get_config_manager
 from todopro_cli.ui.formatters import format_error, format_success
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 app = typer.Typer(cls=SuggestingGroup, help="Utility commands")
 console = Console()
@@ -74,20 +74,22 @@ def errors(
     all_errors: bool = typer.Option(False, "--all", help="Show all errors including acknowledged"),
 ) -> None:
     """View error logs from background tasks."""
+    from datetime import datetime
+
+    from rich.table import Table
+
     from todopro_cli.utils.error_logger import (
-        get_recent_errors,
-        get_unread_errors,
         clear_old_errors,
         get_log_directory,
+        get_recent_errors,
+        get_unread_errors,
     )
-    from rich.table import Table
-    from datetime import datetime
-    
+
     if clear:
         removed = clear_old_errors(days=30)
         format_success(f"Cleared {removed} old error(s)")
         return
-    
+
     # Get errors
     if all_errors:
         errors_list = get_recent_errors(limit=limit)
@@ -96,45 +98,47 @@ def errors(
         if not errors_list:
             # If no unread, show recent
             errors_list = get_recent_errors(limit=limit)
-    
+
     if not errors_list:
         console.print("[green]No errors found! ✓[/green]")
         return
-    
+
     # Display errors in a table
     table = Table(title=f"Error Logs ({len(errors_list)} shown)", show_header=True)
     table.add_column("Time", style="cyan", width=20)
     table.add_column("Command", style="yellow", width=15)
     table.add_column("Error", style="red")
     table.add_column("Retries", justify="right", width=8)
-    
+
     for error in errors_list[:limit]:
         timestamp = error.get("timestamp", "")
         try:
             dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-            time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
-        except:
+            # Convert to local timezone
+            local_dt = dt.astimezone()
+            time_str = local_dt.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
             time_str = timestamp
-        
+
         command = error.get("command", "unknown")
         error_msg = error.get("error", "")
         retries = error.get("retries", 0)
-        
+
         # Truncate long errors
         if len(error_msg) > 80:
             error_msg = error_msg[:77] + "..."
-        
+
         # Show context if available
         context = error.get("context", {})
         if context.get("task_content"):
             error_msg = f"{error_msg}\n[dim]Task: {context['task_content']}[/dim]"
-        
+
         table.add_row(time_str, command, error_msg, str(retries))
-    
+
     console.print(table)
     console.print()
     console.print(f"[dim]Log file: {get_log_directory() / 'errors.jsonl'}[/dim]")
-    console.print(f"[dim]Clear old errors: [cyan]todopro errors --clear[/cyan][/dim]")
+    console.print("[dim]Clear old errors: [cyan]todopro errors --clear[/cyan][/dim]")
 
 
 def handle_api_error(exception: Exception, action: str) -> None:

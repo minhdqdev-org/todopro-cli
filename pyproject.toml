@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "todopro-cli"
@@ -38,12 +38,18 @@ dev = [
     "mypy>=1.8.0",
 ]
 
+[project.urls]
+Backend = "https://todopro.minhdq.dev/api"
+Homepage = "https://github.com/minhdqdev-org/todopro-cli"
+Repository = "https://github.com/minhdqdev-org/todopro-cli"
+Issues = "https://github.com/minhdqdev-org/todopro-cli/issues"
+
 [project.scripts]
 todopro = "todopro_cli.main:main"
 tp = "todopro_cli.main:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/todopro_cli"]
 
 [tool.ruff]
 line-length = 88

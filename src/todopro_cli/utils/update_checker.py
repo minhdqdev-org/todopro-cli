@@ -1,6 +1,7 @@
 """Automatic update checker for TodoPro CLI."""
 
 import json
+import os
 import time
 from pathlib import Path
 
@@ -14,6 +15,7 @@ CACHE_DIR = Path(user_cache_dir("todopro"))
 CACHE_FILE = CACHE_DIR / "update_check.json"
 PYPI_URL = "https://pypi.org/pypi/todopro-cli/json"
 CHECK_INTERVAL = 3600  # 1 hour in seconds
+DEFAULT_BACKEND_URL = "https://todopro.minhdq.dev/api"
 
 
 def check_for_updates() -> None:
@@ -43,14 +45,20 @@ def check_for_updates() -> None:
             # Short timeout to avoid blocking the CLI
             res = requests.get(PYPI_URL, timeout=0.5)
             if res.status_code == 200:
-                latest_version = res.json()["info"]["version"]
+                data = res.json()
+                latest_version = data["info"]["version"]
+                # Also fetch backend URL from PyPI metadata
+                project_urls = data["info"].get("project_urls", {})
+                backend_url = project_urls.get("Backend", DEFAULT_BACKEND_URL)
+
                 # Update cache
                 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-                CACHE_FILE.write_text(
-                    json.dumps(
-                        {"last_check_timestamp": now, "latest_version": latest_version}
-                    )
-                )
+                cache_data = {
+                    "last_check_timestamp": now,
+                    "latest_version": latest_version,
+                    "backend_url": backend_url,
+                }
+                CACHE_FILE.write_text(json.dumps(cache_data))
         except Exception:
             return  # Fail silently on network errors
 
@@ -60,3 +68,123 @@ def check_for_updates() -> None:
             f"\n\033[93m✨ New version available: {latest_version} (Current: {__version__})"
         )
         print("👉 Run: 'uv tool upgrade todopro-cli' to update.\033[0m\n")
+
+
+def get_latest_version() -> str | None:
+    """Get the latest version from PyPI.
+
+    Returns:
+        Latest version string or None if unable to fetch
+    """
+    now = time.time()
+
+    # Check cache first
+    if CACHE_FILE.exists():
+        try:
+            data = json.loads(CACHE_FILE.read_text())
+            # Use cache if it's less than 5 minutes old for update command
+            if now - data.get("last_check_timestamp", 0) < 300:
+                return data.get("latest_version")
+        except Exception:
+            pass
+
+    # Fetch from PyPI
+    try:
+        res = requests.get(PYPI_URL, timeout=2.0)
+        if res.status_code == 200:
+            data = res.json()
+            latest_version = data["info"]["version"]
+            # Also fetch backend URL from PyPI metadata
+            project_urls = data["info"].get("project_urls", {})
+            backend_url = project_urls.get("Backend", DEFAULT_BACKEND_URL)
+
+            # Update cache
+            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            cache_data = {
+                "last_check_timestamp": now,
+                "latest_version": latest_version,
+                "backend_url": backend_url,
+            }
+            CACHE_FILE.write_text(json.dumps(cache_data))
+            return latest_version
+    except Exception:
+        pass
+    return None
+
+
+def is_update_available() -> tuple[bool, str | None]:
+    """Check if an update is available.
+
+    Returns:
+        Tuple of (is_available, latest_version)
+    """
+    latest_version = get_latest_version()
+    if latest_version and version.parse(latest_version) > version.parse(__version__):
+        return True, latest_version
+    return False, latest_version
+
+
+def get_backend_url() -> str:
+    """Get backend URL with priority: env var > cache > PyPI > default.
+
+    Priority hierarchy:
+    1. Environment variable (TODOPRO_BACKEND_URL) - highest priority for dev/testing
+    2. Local cache - if PyPI was fetched within last hour
+    3. PyPI metadata - fetch from project_urls.Backend
+    4. Hard-coded fallback - default URL
+
+    Returns:
+        Backend URL string
+    """
+    # Priority 1: Environment variable
+    env_url = os.getenv("TODOPRO_BACKEND_URL")
+    if env_url:
+        return env_url.rstrip("/")
+
+    # Priority 2: Check cache
+    if CACHE_FILE.exists():
+        try:
+            data = json.loads(CACHE_FILE.read_text())
+            # If cache is fresh (less than 1 hour old), use cached backend URL
+            if time.time() - data.get("last_check_timestamp", 0) < CHECK_INTERVAL:
+                backend_url = data.get("backend_url")
+                if backend_url:
+                    return backend_url.rstrip("/")
+        except Exception:
+            pass
+
+    # Priority 3: Fetch from PyPI metadata
+    try:
+        res = requests.get(PYPI_URL, timeout=0.5)
+        if res.status_code == 200:
+            data = res.json()
+            latest_version = data["info"]["version"]
+            # Get backend URL from project_urls.Backend field
+            project_urls = data["info"].get("project_urls", {})
+            backend_url = project_urls.get("Backend", DEFAULT_BACKEND_URL)
+
+            # Update cache with both version and backend URL
+            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            cache_data = {
+                "last_check_timestamp": time.time(),
+                "latest_version": latest_version,
+                "backend_url": backend_url,
+            }
+            CACHE_FILE.write_text(json.dumps(cache_data))
+
+            return backend_url.rstrip("/")
+    except Exception:
+        pass
+
+    # Priority 4: Try to use cached backend URL even if expired
+    if CACHE_FILE.exists():
+        try:
+            data = json.loads(CACHE_FILE.read_text())
+            backend_url = data.get("backend_url")
+            if backend_url:
+                return backend_url.rstrip("/")
+        except Exception:
+            pass
+
+    # Final fallback: Hard-coded default
+    return DEFAULT_BACKEND_URL

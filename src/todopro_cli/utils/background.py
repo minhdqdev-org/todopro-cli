@@ -24,10 +24,10 @@ async def complete_task(context: Dict[str, Any]):
     from todopro_cli.api.client import get_client
     from todopro_cli.api.tasks import TasksAPI
     from todopro_cli.commands.tasks import resolve_task_id
-    
+
     profile = context.get("profile", "default")
     task_id = context["task_id"]
-    
+
     client = get_client(profile)
     tasks_api = TasksAPI(client)
     try:
@@ -40,10 +40,10 @@ async def batch_complete_tasks(context: Dict[str, Any]):
     from todopro_cli.api.client import get_client
     from todopro_cli.api.tasks import TasksAPI
     from todopro_cli.commands.tasks import resolve_task_id
-    
+
     profile = context.get("profile", "default")
     task_ids = context["task_ids"]
-    
+
     client = get_client(profile)
     tasks_api = TasksAPI(client)
     try:
@@ -52,7 +52,7 @@ async def batch_complete_tasks(context: Dict[str, Any]):
         for task_id in task_ids:
             resolved_id = await resolve_task_id(tasks_api, task_id)
             resolved_ids.append(resolved_id)
-        
+
         # Batch complete
         await tasks_api.batch_complete_tasks(resolved_ids)
     finally:
@@ -60,43 +60,74 @@ async def batch_complete_tasks(context: Dict[str, Any]):
 
 async def run_with_retry(task_type: str, command: str, context: Dict[str, Any], max_retries: int):
     from todopro_cli.utils.error_logger import log_error
-    
+    from todopro_cli.utils.task_cache import get_background_cache
+
     last_error = None
-    
-    for attempt in range(max_retries):
+
+    # Get task IDs for cache removal
+    task_ids = []
+    if task_type == "complete":
+        task_ids = [context.get("task_id")]
+    elif task_type == "batch_complete":
+        task_ids = context.get("task_ids", [])
+
+    try:
+        for attempt in range(max_retries):
+            try:
+                if task_type == "complete":
+                    await complete_task(context)
+                elif task_type == "batch_complete":
+                    await batch_complete_tasks(context)
+                else:
+                    raise ValueError(f"Unknown task type: {{task_type}}")
+
+                # Success! Remove from cache
+                cache = get_background_cache()
+                for task_id in task_ids:
+                    if task_id:
+                        cache.remove_task(task_id)
+                return  # Success
+            except Exception as e:
+                last_error = str(e)
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+                continue
+
+        # All retries failed
+        # Remove from cache even on failure (don't keep showing as "completing")
+        cache = get_background_cache()
+        for task_id in task_ids:
+            if task_id:
+                cache.remove_task(task_id)
+
+        # Log error
+        if last_error:
+            log_error(
+                command=command,
+                error=last_error,
+                context=context,
+                retries=max_retries - 1,
+            )
+    except Exception:
+        # Final safety net - ensure cache is cleaned even if something goes wrong
         try:
-            if task_type == "complete":
-                await complete_task(context)
-            elif task_type == "batch_complete":
-                await batch_complete_tasks(context)
-            else:
-                raise ValueError(f"Unknown task type: {{task_type}}")
-            return  # Success
-        except Exception as e:
-            last_error = str(e)
-            if attempt < max_retries - 1:
-                await asyncio.sleep(2 ** attempt)
-            continue
-    
-    # All retries failed, log error
-    if last_error:
-        log_error(
-            command=command,
-            error=last_error,
-            context=context,
-            retries=max_retries - 1,
-        )
+            cache = get_background_cache()
+            for task_id in task_ids:
+                if task_id:
+                    cache.remove_task(task_id)
+        except Exception:
+            pass  # Best effort
 
 if __name__ == "__main__":
     import json
     import sys
-    
+
     # Read parameters from command line
     task_type = sys.argv[1]
     command = sys.argv[2]
     context = json.loads(sys.argv[3])
     max_retries = int(sys.argv[4])
-    
+
     try:
         asyncio.run(run_with_retry(task_type, command, context, max_retries))
     except Exception:
