@@ -17,11 +17,15 @@
 
 ## Features
 
-- **Kubectl-inspired**: Resource-oriented commands with consistent patterns
+- **CLI-first design**: Built for the terminal with developers in mind
+- **Natural language input**: `todopro add "Buy milk tomorrow at 2pm #groceries"`
 - **Context-aware**: Maintains authentication state and user preferences
 - **Multi-environment**: Switch between dev, staging, and prod contexts seamlessly
 - **Output flexibility**: JSON, YAML, table, and custom formats
 - **Interactive & scriptable**: Menu-driven UI for exploration, flags for automation
+- **AI-agent friendly**: JSON output, semantic exit codes, idempotent operations
+- **End-to-end encryption**: Client-side encryption with AES-256-GCM
+- **Import/Export**: Backup and restore all your data
 - **Professional UX**: Rich terminal UI with colors, progress indicators, and helpful messages
 
 ## Installation
@@ -135,6 +139,16 @@ todopro describe project <project_id>
 
 # Get help
 todopro --help
+
+# Data management
+todopro data export --output backup.json      # Export all data
+todopro data import backup.json               # Import data
+todopro data purge --dry-run                  # Preview data deletion
+
+# AI-agent friendly usage
+todopro tasks list --output json              # JSON output for parsing
+todopro complete task-abc --yes               # Skip confirmation prompts
+echo $?                                        # Check exit code (0=success)
 ```
 
 ## Development
@@ -191,6 +205,7 @@ This project uses automated GitHub Actions workflows for testing and releasing.
 - 📦 [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions and troubleshooting
 - 🚀 [Release Process](docs/RELEASE.md) - How to create and publish releases
 - 💡 [Package Ideas](docs/PACKAGE_IDEA.md) - Original implementation ideas and rationale
+- 🤖 [AI Agent Integration](docs/AI_AGENT_INTEGRATION.md) - Guide for automation and AI agents
 
 ## License
 

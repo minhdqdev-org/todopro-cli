@@ -8,6 +8,8 @@ from todopro_cli.commands import (  # contexts, timer
     analytics,
     auth,
     config,
+    data,
+    encryption,
     labels,
     projects,
     tasks,
@@ -34,6 +36,8 @@ app.add_typer(config.app, name="config", help="Configuration management")
 app.add_typer(
     analytics.app, name="analytics", help="Analytics and productivity insights"
 )
+app.add_typer(encryption.app, name="encryption", help="Manage end-to-end encryption")
+app.add_typer(data.app, name="data", help="Data management (import, export, purge)")
 # TODO: Convert Click groups to Typer apps - these are incompatible with Typer 0.9.0
 # app.add_typer(contexts.contexts, name="contexts", help="Context management (@home, @office)")
 # app.add_typer(timer.timer, name="timer", help="Pomodoro timer for focus sessions")
