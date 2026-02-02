@@ -201,21 +201,23 @@ def logout(
 
 @app.command()
 def today(
-    output: str = typer.Option("pretty", "--output", help="Output format"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
+    json: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show tasks for today (overdue + today's tasks)."""
-    tasks.today(output=output, compact=compact, profile=profile)
+    tasks.today(output=output, json=json, compact=compact, profile=profile)
 
 
 @app.command()
 def next(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    json: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show the next task to do right now."""
-    tasks.next_task(output=output, profile=profile)
+    tasks.next_task(output=output, json=json, profile=profile)
 
 
 @app.command()

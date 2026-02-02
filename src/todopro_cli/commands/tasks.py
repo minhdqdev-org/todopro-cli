@@ -447,12 +447,17 @@ def reopen_task(
 
 @app.command("today")
 def today(
-    output: str = typer.Option("pretty", "--output", help="Output format"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
+    json: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show tasks for today (overdue + today's tasks)."""
     check_auth(profile)
+    
+    # Handle --json flag as alias for --output json
+    if json:
+        output = "json"
 
     # Show error banner if there are unread errors
     from rich.panel import Panel
@@ -522,14 +527,27 @@ def today(
                     # Display with pretty format by default
                     format_output(all_tasks, output, compact=compact)
 
-                    # Summary
-                    console.print()
-                    console.print(
-                        f"[bold]Summary:[/bold] {result.get('overdue_count', 0)} overdue, "
-                        f"{result.get('today_count', 0)} due today"
-                    )
+                    # Summary (skip for JSON output)
+                    if output not in ["json", "yaml"]:
+                        console.print()
+                        console.print(
+                            f"[bold]Summary:[/bold] {result.get('overdue_count', 0)} overdue, "
+                            f"{result.get('today_count', 0)} due today"
+                        )
                 else:
-                    console.print("[green]No tasks due today! 🎉[/green]")
+                    # Handle empty result based on output format
+                    if output == "json":
+                        import json
+                        print(json.dumps({
+                            "tasks": [],
+                            "overdue_count": 0,
+                            "today_count": 0,
+                            "message": "No tasks due today"
+                        }))
+                    elif output == "yaml":
+                        print("tasks: []\noverdue_count: 0\ntoday_count: 0\nmessage: No tasks due today")
+                    else:
+                        console.print("[green]No tasks due today! 🎉[/green]")
 
             finally:
                 await client.close()
@@ -543,11 +561,16 @@ def today(
 
 @app.command("next")
 def next_task(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    json: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show the next task to do right now."""
     check_auth(profile)
+    
+    # Handle --json flag as alias for --output json
+    if json:
+        output = "json"
 
     try:
 
@@ -559,12 +582,25 @@ def next_task(
                 result = await tasks_api.next_task()
 
                 if "message" in result:
-                    console.print(f"[green]{result['message']}[/green]")
+                    # No tasks found
+                    if output == "json":
+                        import json
+                        print(json.dumps({
+                            "task": None,
+                            "message": result["message"]
+                        }))
+                    elif output == "yaml":
+                        print(f"task: null\nmessage: {result['message']}")
+                    else:
+                        console.print(f"[green]{result['message']}[/green]")
                 else:
-                    # Custom simple format for next task
-                    from todopro_cli.ui.formatters import format_next_task
-
-                    format_next_task(result)
+                    # Task found - format based on output type
+                    if output in ["json", "yaml"]:
+                        format_output(result, output)
+                    else:
+                        # Custom simple format for next task
+                        from todopro_cli.ui.formatters import format_next_task
+                        format_next_task(result)
 
             finally:
                 await client.close()
