@@ -15,17 +15,19 @@ The quick-add feature allows you to create tasks using natural language instead 
 
 ## Commands
 
-### Top-Level Shortcut
+### Quick Add Command
 
 The fastest way to add a task:
 
 ```bash
+# Interactive mode (shows autocomplete UI)
+todopro add
+
+# Direct input
 todopro add "Task description"
 ```
 
-### Full Command
-
-For more control and options:
+### Alternative Command
 
 ```bash
 todopro tasks quick-add "Task description"

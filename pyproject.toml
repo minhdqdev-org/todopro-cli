@@ -28,6 +28,7 @@ dependencies = [
     "packaging>=26.0",
     "cryptography>=42.0.0",
     "mnemonic>=0.20",
+    "prompt-toolkit>=3.0.0",
 ]
 
 [project.optional-dependencies]

@@ -454,7 +454,7 @@ def today(
 ) -> None:
     """Show tasks for today (overdue + today's tasks)."""
     check_auth(profile)
-    
+
     # Handle --json flag as alias for --output json
     if json:
         output = "json"
@@ -567,7 +567,7 @@ def next_task(
 ) -> None:
     """Show the next task to do right now."""
     check_auth(profile)
-    
+
     # Handle --json flag as alias for --output json
     if json:
         output = "json"
@@ -810,7 +810,7 @@ def quick_add(
                         parsed["due_date"].replace("Z", "+00:00")
                     )
                     details.append(
-                        f"[blue]📅 {due.strftime('%b %d, %Y at %I:%M %p')}[/blue]"
+                        f"📅 {due.strftime('%b %d, %Y at %I:%M %p')}"
                     )
 
                 if parsed.get("project_name"):

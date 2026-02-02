@@ -267,17 +267,18 @@ def quick_add(
     """
     # If no input text, enter interactive mode
     if input_text is None:
+        import asyncio
+
         from rich.console import Console
-        from rich.panel import Panel
+
+        from todopro_cli.ui.interactive_prompt import get_interactive_input
 
         console = Console()
-        console.print(Panel(
-            "[dim]Type the task here (!!1, !!2 for priority, @label for label, #project for project,...)[/dim]",
-            border_style="blue",
-            padding=(0, 1)
-        ))
-
-        input_text = typer.prompt("❯", prompt_suffix=" ")
+        try:
+            input_text = asyncio.run(get_interactive_input(profile=profile))
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Cancelled.[/yellow]")
+            raise typer.Exit(0) from None
 
         if not input_text or not input_text.strip():
             console.print("[yellow]No task entered. Cancelled.[/yellow]")
