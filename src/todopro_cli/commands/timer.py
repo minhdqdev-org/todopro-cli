@@ -1,29 +1,37 @@
 """Pomodoro timer commands for TodoPro CLI."""
 
-import click
 import time
 from datetime import datetime
+
+import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
+
 from todopro_cli.api.client import APIClient
 from todopro_cli.commands.utils import handle_api_error
 
 console = Console()
+app = typer.Typer(help="Pomodoro timer for focus sessions")
 
 
-@click.group()
-def timer():
-    """Pomodoro timer for focus sessions."""
-    pass
-
-
-@timer.command("start")
-@click.option("--task-id", help="Task ID to track time for")
-@click.option("--duration", default=25, type=int, help="Session duration in minutes")
-@click.option("--type", type=click.Choice(['work', 'short_break', 'long_break']), default='work')
-def start_timer(task_id, duration, type):
+@app.command("start")
+def start_timer(
+    task_id: str | None = typer.Option(None, "--task-id", help="Task ID to track time for"),
+    duration: int = typer.Option(25, help="Session duration in minutes"),
+    type: str = typer.Option(
+        "work",
+        help="Session type: work, short_break, or long_break",
+    ),
+):
     """Start a Pomodoro timer session."""
+    # Validate type
+    if type not in ["work", "short_break", "long_break"]:
+        console.print(
+            "[red]Invalid type. Must be: work, short_break, or long_break[/red]"
+        )
+        raise typer.Exit(1)
+    
     client = APIClient()
     
     try:
@@ -86,10 +94,11 @@ def start_timer(task_id, duration, type):
         handle_api_error(e, "starting timer")
 
 
-@timer.command("history")
-@click.option("--task-id", help="Filter by task ID")
-@click.option("--limit", default=20, type=int, help="Number of sessions to show")
-def timer_history(task_id, limit):
+@app.command("history")
+def timer_history(
+    task_id: str | None = typer.Option(None, "--task-id", help="Filter by task ID"),
+    limit: int = typer.Option(20, help="Number of sessions to show"),
+):
     """Show Pomodoro session history."""
     client = APIClient()
     
@@ -145,10 +154,11 @@ def timer_history(task_id, limit):
         handle_api_error(e, "fetching timer history")
 
 
-@timer.command("stats")
-@click.option("--task-id", help="Filter by task ID")
-@click.option("--days", default=7, type=int, help="Number of days to analyze")
-def timer_stats(task_id, days):
+@app.command("stats")
+def timer_stats(
+    task_id: str | None = typer.Option(None, "--task-id", help="Filter by task ID"),
+    days: int = typer.Option(7, help="Number of days to analyze"),
+):
     """Show Pomodoro statistics."""
     client = APIClient()
     
@@ -174,9 +184,10 @@ def timer_stats(task_id, days):
         handle_api_error(e, "fetching timer stats")
 
 
-@timer.command("quick")
-@click.argument("minutes", type=int, default=25)
-def quick_timer(minutes):
+@app.command("quick")
+def quick_timer(
+    minutes: int = typer.Argument(25, help="Timer duration in minutes"),
+):
     """Quick countdown timer (no server tracking)."""
     console.print(f"\n[bold]⏱️  {minutes}-minute timer started[/bold]\n")
     

@@ -1,7 +1,3 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "todopro-cli"
 version = "0.1.0"
@@ -16,7 +12,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "click>=8.1,<8.2",
     "rich>=13.7.0",
     "httpx>=0.27.0",
     "platformdirs>=4.2.0",
@@ -28,7 +23,7 @@ dependencies = [
     "packaging>=26.0",
     "cryptography>=42.0.0",
     "mnemonic>=0.20",
-    "prompt-toolkit>=3.0.0",
+    "textual[syntax]>=0.87.0",
 ]
 
 [project.optional-dependencies]
@@ -65,18 +60,18 @@ select = [
     "E",   # pycodestyle errors
     "F",   # Pyflakes
     "I",   # isort
-    "N",   # pep8-naming
-    "W",   # pycodestyle warnings
     "UP",  # pyupgrade
     "B",   # flake8-bugbear
     "SIM", # flake8-simplify
+    "DJ",  # flake8-django
     "C4",  # flake8-comprehensions
     "PIE", # flake8-pie
+    "T20", # flake8-print
     "RET", # flake8-return
+    "ARG", # flake8-unused-arguments
 ]
 ignore = [
-    "E501",  # Line too long (handled by formatter)
-    "UP007", # <--- Add this: Stop converting Optional[T] to T | None
+    "E501", # Line too long (handled by formatter)
 ]
 
 [tool.ruff.lint.isort]
@@ -123,4 +118,5 @@ dev = [
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
     "ruff>=0.14.14",
+    "textual-dev>=1.8.0",
 ]

@@ -72,7 +72,7 @@ class Config(BaseModel):
     ui: UIConfig = Field(default_factory=UIConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
     sync: SyncConfig = Field(default_factory=SyncConfig)
-    current_context: str = Field(default="prod")
+    current_context: str = Field(default="default")
     contexts: dict[str, Context] = Field(default_factory=dict)
 
 
@@ -178,7 +178,7 @@ class ConfigManager:
         if refresh_token:
             credentials["refresh_token"] = refresh_token
 
-        with open(self.credentials_file, "w") as f:
+        with open(self.credentials_file, "w", encoding="utf-8") as f:
             json.dump(credentials, f, indent=2)
 
         # Set file permissions to be readable only by owner
@@ -187,11 +187,8 @@ class ConfigManager:
     def load_credentials(self) -> dict[str, str] | None:
         """Load authentication credentials."""
         if self.credentials_file.exists():
-            try:
-                with open(self.credentials_file) as f:
-                    return json.load(f)
-            except Exception:
-                return None
+            with open(self.credentials_file, encoding="utf-8") as f:
+                return json.load(f)
         return None
 
     def clear_credentials(self) -> None:
@@ -220,10 +217,15 @@ class ConfigManager:
                 endpoint="https://staging.todopro.minhdq.dev/api",
                 description="Staging environment",
             ),
-            "prod": Context(
-                name="prod",
+            "default": Context(
+                name="default",
                 endpoint="https://todopro.minhdq.dev/api",
                 description="Production environment",
+            ),
+            "local": Context(
+                name="local",
+                endpoint="",
+                description="Local instance (set endpoint manually)",
             ),
         }
 

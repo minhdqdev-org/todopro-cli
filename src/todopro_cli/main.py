@@ -1,20 +1,30 @@
 """Main entry point for TodoPro CLI."""
 
+import asyncio
+import subprocess
+
 import typer
 from rich.console import Console
 
 from todopro_cli import __version__
-from todopro_cli.commands import (  # contexts, timer
+from todopro_cli.api.client import get_client
+from todopro_cli.commands import (
     analytics,
     auth,
     config,
+    contexts,
     data,
     encryption,
     labels,
     projects,
     tasks,
+    timer,
 )
+from todopro_cli.commands.utils import errors as show_errors
+from todopro_cli.config import get_config_manager
+from todopro_cli.ui.textual_prompt import get_interactive_input
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.update_checker import check_for_updates, is_update_available
 
 # Create main app with custom group class
 app = typer.Typer(
@@ -38,9 +48,8 @@ app.add_typer(
 )
 app.add_typer(encryption.app, name="encryption", help="Manage end-to-end encryption")
 app.add_typer(data.app, name="data", help="Data management (import, export, purge)")
-# TODO: Convert Click groups to Typer apps - these are incompatible with Typer 0.9.0
-# app.add_typer(contexts.contexts, name="contexts", help="Context management (@home, @office)")
-# app.add_typer(timer.timer, name="timer", help="Pomodoro timer for focus sessions")
+app.add_typer(contexts.app, name="contexts", help="Context management (@home, @office)")
+app.add_typer(timer.app, name="timer", help="Pomodoro timer for focus sessions")
 
 
 # Add top-level commands
@@ -51,10 +60,6 @@ def version() -> None:
     console.print()
 
     # Check API health
-    import asyncio
-
-    from todopro_cli.api.client import get_client
-    from todopro_cli.config import get_config_manager
 
     try:
         config_manager = get_config_manager("default")
@@ -72,7 +77,9 @@ def version() -> None:
                 if response.status_code == 200:
                     console.print("[green]✓ API is healthy[/green]")
                 else:
-                    console.print(f"[yellow]⚠ API returned status {response.status_code}[/yellow]")
+                    console.print(
+                        f"[yellow]⚠ API returned status {response.status_code}[/yellow]"
+                    )
             except Exception as e:
                 console.print(f"[red]✗ API health check failed: {str(e)}[/red]")
             finally:
@@ -89,9 +96,6 @@ def update(
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
 ) -> None:
     """Update TodoPro CLI to the latest version."""
-    import subprocess
-
-    from todopro_cli.utils.update_checker import is_update_available
 
     console.print("[bold]Checking for updates...[/bold]")
 
@@ -139,23 +143,17 @@ def update(
             console.print("\n[red]✗ Update failed.[/red]")
             if result.stderr:
                 console.print(f"[red]{result.stderr}[/red]")
-            console.print(
-                "\n[yellow]You can try updating manually with:[/yellow]"
-            )
+            console.print("\n[yellow]You can try updating manually with:[/yellow]")
             console.print("  [cyan]uv tool upgrade todopro-cli[/cyan]")
             raise typer.Exit(1)
 
     except FileNotFoundError:
-        console.print(
-            "[red]✗ 'uv' command not found. Please install uv first:[/red]"
-        )
+        console.print("[red]✗ 'uv' command not found. Please install uv first:[/red]")
         console.print("  [cyan]curl -LsSf https://astral.sh/uv/install.sh | sh[/cyan]")
         raise typer.Exit(1) from None
     except Exception as e:
         console.print(f"[red]✗ Unexpected error: {e}[/red]")
         raise typer.Exit(1) from e
-
-
 
 
 @app.command()
@@ -202,7 +200,9 @@ def logout(
 @app.command()
 def today(
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
-    json: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    json: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -213,7 +213,9 @@ def today(
 @app.command()
 def next(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
-    json: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    json: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show the next task to do right now."""
@@ -249,8 +251,10 @@ def reschedule(
 
 
 @app.command("add")
-def quick_add(
-    input_text: str | None = typer.Argument(None, help="Natural language task description"),
+def add(
+    input_text: str | None = typer.Argument(
+        None, help="Natural language task description"
+    ),
     output: str = typer.Option("table", "--output", help="Output format"),
     show_parsed: bool = typer.Option(
         False, "--show-parsed", help="Show parsed details"
@@ -267,13 +271,6 @@ def quick_add(
     """
     # If no input text, enter interactive mode
     if input_text is None:
-        import asyncio
-
-        from rich.console import Console
-
-        from todopro_cli.ui.interactive_prompt import get_interactive_input
-
-        console = Console()
         try:
             input_text = asyncio.run(get_interactive_input(profile=profile))
         except KeyboardInterrupt:
@@ -313,15 +310,12 @@ def errors(
     ),
 ) -> None:
     """View error logs from background tasks."""
-    from todopro_cli.commands.utils import errors as show_errors
-
     show_errors(limit=limit, clear=clear, all_errors=all_errors)
 
 
 # Main entry point
-def main() -> None:
+def main():
     """Main entry point."""
-    from todopro_cli.utils.update_checker import check_for_updates
 
     try:
         app()

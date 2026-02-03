@@ -14,6 +14,7 @@ from todopro_cli.ui.formatters import (
     format_output,
     format_success,
 )
+from todopro_cli.ui.textual_prompt import get_interactive_input
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 
@@ -82,7 +83,10 @@ def list_tasks(
                         filtered_tasks = [
                             task
                             for task in tasks_list
-                            if not any(task.get("id", "").endswith(short_id) for short_id in completing_tasks)
+                            if not any(
+                                task.get("id", "").endswith(short_id)
+                                for short_id in completing_tasks
+                            )
                         ]
                         if len(filtered_tasks) < original_count:
                             if "tasks" in result:
@@ -448,7 +452,9 @@ def reopen_task(
 @app.command("today")
 def today(
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
-    json: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    json: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
@@ -513,7 +519,10 @@ def today(
                     all_tasks = [
                         task
                         for task in all_tasks
-                        if not any(task.get("id", "").endswith(short_id) for short_id in completing_tasks)
+                        if not any(
+                            task.get("id", "").endswith(short_id)
+                            for short_id in completing_tasks
+                        )
                     ]
                     filtered_count = original_count - len(all_tasks)
 
@@ -538,14 +547,21 @@ def today(
                     # Handle empty result based on output format
                     if output == "json":
                         import json
-                        print(json.dumps({
-                            "tasks": [],
-                            "overdue_count": 0,
-                            "today_count": 0,
-                            "message": "No tasks due today"
-                        }))
+
+                        print(
+                            json.dumps(
+                                {
+                                    "tasks": [],
+                                    "overdue_count": 0,
+                                    "today_count": 0,
+                                    "message": "No tasks due today",
+                                }
+                            )
+                        )
                     elif output == "yaml":
-                        print("tasks: []\noverdue_count: 0\ntoday_count: 0\nmessage: No tasks due today")
+                        print(
+                            "tasks: []\noverdue_count: 0\ntoday_count: 0\nmessage: No tasks due today"
+                        )
                     else:
                         console.print("[green]No tasks due today! 🎉[/green]")
 
@@ -562,7 +578,9 @@ def today(
 @app.command("next")
 def next_task(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
-    json: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    json: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show the next task to do right now."""
@@ -585,10 +603,8 @@ def next_task(
                     # No tasks found
                     if output == "json":
                         import json
-                        print(json.dumps({
-                            "task": None,
-                            "message": result["message"]
-                        }))
+
+                        print(json.dumps({"task": None, "message": result["message"]}))
                     elif output == "yaml":
                         print(f"task: null\nmessage: {result['message']}")
                     else:
@@ -600,6 +616,7 @@ def next_task(
                     else:
                         # Custom simple format for next task
                         from todopro_cli.ui.formatters import format_next_task
+
                         format_next_task(result)
 
             finally:
@@ -745,8 +762,6 @@ def quick_add(
     # If no text provided, use interactive prompt
     if not text:
         try:
-            from todopro_cli.ui.interactive_prompt import get_interactive_input
-
             text = asyncio.run(get_interactive_input(profile=profile))
         except KeyboardInterrupt:
             console.print("\n[yellow]Cancelled.[/yellow]")
@@ -809,9 +824,7 @@ def quick_add(
                     due = datetime.fromisoformat(
                         parsed["due_date"].replace("Z", "+00:00")
                     )
-                    details.append(
-                        f"📅 {due.strftime('%b %d, %Y at %I:%M %p')}"
-                    )
+                    details.append(f"📅 {due.strftime('%b %d, %Y at %I:%M %p')}")
 
                 if parsed.get("project_name"):
                     details.append(f"[magenta]📁 #{parsed['project_name']}[/magenta]")

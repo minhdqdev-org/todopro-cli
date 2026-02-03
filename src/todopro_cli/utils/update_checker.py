@@ -13,6 +13,8 @@ from todopro_cli import __version__
 
 CACHE_DIR = Path(user_cache_dir("todopro"))
 CACHE_FILE = CACHE_DIR / "update_check.json"
+
+# TODO: Replace PyPI URL with Github Releases API instead for more reliable metadata
 PYPI_URL = "https://pypi.org/pypi/todopro-cli/json"
 CHECK_INTERVAL = 3600  # 1 hour in seconds
 DEFAULT_BACKEND_URL = "https://todopro.minhdq.dev/api"

@@ -1,23 +1,22 @@
 """Context management commands for TodoPro CLI."""
 
-import click
+import typer
 from rich.console import Console
 from rich.table import Table
+
 from todopro_cli.api.client import APIClient
 from todopro_cli.commands.utils import handle_api_error
 
 console = Console()
+app = typer.Typer(help="Manage task contexts (@home, @office, @errands)")
 
 
-@click.group()
-def contexts():
-    """Manage task contexts (@home, @office, @errands)."""
-    pass
-
-
-@contexts.command("list")
-@click.option("--location", "-l", is_flag=True, help="Request location for availability check")
-def list_contexts(location):
+@app.command("list")
+def list_contexts(
+    location: bool = typer.Option(
+        False, "--location", "-l", help="Request location for availability check"
+    ),
+):
     """List all contexts."""
     client = APIClient()
     
@@ -79,13 +78,14 @@ def list_contexts(location):
         handle_api_error(e, "listing contexts")
 
 
-@contexts.command("create")
-@click.argument("name")
-@click.option("--icon", default="📍", help="Context icon (emoji)")
-@click.option("--color", default="#3498DB", help="Context color (hex)")
-@click.option("--geo", is_flag=True, help="Enable geo-fencing at current location")
-@click.option("--radius", default=200, type=int, help="Geo-fence radius in meters")
-def create_context(name, icon, color, geo, radius):
+@app.command("create")
+def create_context(
+    name: str = typer.Argument(..., help="Context name"),
+    icon: str = typer.Option("📍", help="Context icon (emoji)"),
+    color: str = typer.Option("#3498DB", help="Context color (hex)"),
+    geo: bool = typer.Option(False, "--geo", help="Enable geo-fencing at current location"),
+    radius: int = typer.Option(200, help="Geo-fence radius in meters"),
+):
     """Create a new context."""
     client = APIClient()
     
@@ -119,11 +119,20 @@ def create_context(name, icon, color, geo, radius):
         handle_api_error(e, "creating context")
 
 
-@contexts.command("delete")
-@click.argument("name")
-@click.confirmation_option(prompt="Are you sure you want to delete this context?")
-def delete_context(name):
+@app.command("delete")
+def delete_context(
+    name: str = typer.Argument(..., help="Context name"),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip confirmation prompt"
+    ),
+):
     """Delete a context."""
+    if not yes:
+        confirmed = typer.confirm("Are you sure you want to delete this context?")
+        if not confirmed:
+            console.print("[yellow]Cancelled.[/yellow]")
+            raise typer.Exit(0)
+    
     client = APIClient()
     
     try:
@@ -142,9 +151,10 @@ def delete_context(name):
         handle_api_error(e, "deleting context")
 
 
-@contexts.command("tasks")
-@click.argument("name")
-def context_tasks(name):
+@app.command("tasks")
+def context_tasks(
+    name: str = typer.Argument(..., help="Context name"),
+):
     """List tasks for a specific context."""
     client = APIClient()
     
@@ -176,7 +186,7 @@ def context_tasks(name):
         handle_api_error(e, "listing context tasks")
 
 
-@contexts.command("check")
+@app.command("check")
 def check_available():
     """Check which contexts are available at current location."""
     client = APIClient()
