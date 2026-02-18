@@ -4,12 +4,12 @@ import typer
 from rich.console import Console
 
 from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.services.task_service import TaskService
-from todopro_cli.services.project_service import ProjectService
 from todopro_cli.services.label_service import LabelService
-from todopro_cli.utils.ui.formatters import format_output, format_success, format_error
+from todopro_cli.services.project_service import ProjectService
+from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
 
 from .decorators import command_wrapper
 
@@ -67,9 +67,7 @@ async def update_project(
     project_repo = strategy.project_repository
     project_service = ProjectService(project_repo)
 
-    project = await project_service.update_project(
-        project_id, name=name, color=color
-    )
+    project = await project_service.update_project(project_id, name=name, color=color)
     format_success(f"Project updated: {project.id}")
     format_output(project.model_dump(), output)
 

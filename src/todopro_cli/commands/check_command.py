@@ -4,8 +4,8 @@ import typer
 from rich.console import Console
 
 from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.utils.ui.formatters import format_output
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_output
 
 from .decorators import command_wrapper
 
@@ -43,4 +43,6 @@ async def check_location(
     service = LocationContextService(repo)
 
     location = await service.check_current_location()
-    format_output(location.model_dump() if location else {"location": "Unknown"}, output)
+    format_output(
+        location.model_dump() if location else {"location": "Unknown"}, output
+    )

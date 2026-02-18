@@ -1,7 +1,5 @@
 """Encryption management commands for TodoPro CLI."""
 
-from pathlib import Path
-
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -97,6 +95,7 @@ def setup():
 
     # Enable E2EE in config
     from todopro_cli.services.config_service import get_config_service
+
     config_service = get_config_service()
     config_service.config.e2ee.enabled = True
     config_service.save_config()
@@ -110,7 +109,9 @@ def setup():
 
     console.print()
     console.print("[bold green]✅ Encryption setup complete![/bold green]")
-    console.print(f"   Key stored at: [cyan]{status.key_file_path or service.storage.key_file}[/cyan]")
+    console.print(
+        f"   Key stored at: [cyan]{status.key_file_path or service.storage.key_file}[/cyan]"
+    )
     console.print("   E2EE enabled in config")
     console.print()
 
@@ -127,7 +128,9 @@ def status():
         console.print(f"   Key file: [cyan]{enc_status.key_file_path}[/cyan]")
         console.print("   Status: [green]Valid key loaded[/green]")
     elif enc_status.key_file_exists:
-        console.print("[bold yellow]⚠️  Encryption key exists but is invalid[/bold yellow]")
+        console.print(
+            "[bold yellow]⚠️  Encryption key exists but is invalid[/bold yellow]"
+        )
         console.print(f"   Key file: [cyan]{enc_status.key_file_path}[/cyan]")
         console.print(f"   Error: [red]{enc_status.error}[/red]")
     else:
@@ -220,7 +223,9 @@ def recover():
         console.print(
             "[bold green]✅ Encryption key recovered successfully![/bold green]"
         )
-        console.print(f"   Key stored at: [cyan]{service.storage.get_key_path()}[/cyan]")
+        console.print(
+            f"   Key stored at: [cyan]{service.storage.get_key_path()}[/cyan]"
+        )
         console.print()
 
     except TodoProCryptoError as e:

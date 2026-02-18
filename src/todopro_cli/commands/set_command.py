@@ -4,8 +4,8 @@ import typer
 from rich.console import Console
 
 from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.utils.ui.formatters import format_success, format_output
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_output, format_success
 
 from .decorators import command_wrapper
 
@@ -26,7 +26,7 @@ async def set_config(
     config_service = ConfigService()
     config_service.set(key, value)
     format_success(f"Configuration updated: {key}={value}")
-    
+
     result = {"key": key, "value": value}
     format_output(result, output)
 

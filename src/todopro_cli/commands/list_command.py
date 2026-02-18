@@ -3,13 +3,13 @@
 import typer
 from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.services.task_service import TaskService
-from todopro_cli.services.project_service import ProjectService
-from todopro_cli.services.label_service import LabelService
 from todopro_cli.services.cache_service import get_background_cache
-from todopro_cli.utils.ui.formatters import format_output
+from todopro_cli.services.context_manager import get_strategy_context
+from todopro_cli.services.label_service import LabelService
+from todopro_cli.services.project_service import ProjectService
+from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_output
 
 from .decorators import command_wrapper
 
@@ -27,11 +27,14 @@ async def list_tasks(
     limit: int = typer.Option(30, "--limit", help="Limit results (default 30)"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
-    json_opt: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
     """List tasks."""
     import sys
+
     if json_opt:
         output = "json"
 
@@ -44,13 +47,25 @@ async def list_tasks(
     if limit <= _BIG_TASK_THRESHOLD:
         # Quick count with a high limit to detect large sets
         count_check = await task_service.list_tasks(
-            status=status, project_id=project, priority=priority,
-            search=search, limit=_BIG_TASK_THRESHOLD + 1, offset=0,
+            status=status,
+            project_id=project,
+            priority=priority,
+            search=search,
+            limit=_BIG_TASK_THRESHOLD + 1,
+            offset=0,
         )
         total = len(count_check)
-        if total > _BIG_TASK_THRESHOLD and sys.stdin.isatty() and output not in ("json",):
-            console.print(f"[yellow]Found {total}+ tasks. Showing first {limit}.[/yellow]")
-            console.print(f"[dim]Use --limit {total} to show all, or --limit N for a different amount.[/dim]")
+        if (
+            total > _BIG_TASK_THRESHOLD
+            and sys.stdin.isatty()
+            and output not in ("json",)
+        ):
+            console.print(
+                f"[yellow]Found {total}+ tasks. Showing first {limit}.[/yellow]"
+            )
+            console.print(
+                f"[dim]Use --limit {total} to show all, or --limit N for a different amount.[/dim]"
+            )
 
     tasks = await task_service.list_tasks(
         status=status,
@@ -83,7 +98,9 @@ async def list_projects(
         False, "--archived", help="Include archived projects"
     ),
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
-    json_opt: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
 ) -> None:
     """List all projects."""
     if json_opt:
@@ -118,9 +135,13 @@ async def list_labels(
 @app.command("contexts")
 @command_wrapper
 async def list_contexts(
-    limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of contexts to show"),
+    limit: int = typer.Option(
+        10, "--limit", "-n", help="Maximum number of contexts to show"
+    ),
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
-    json_opt: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
 ) -> None:
     """List all storage contexts (local/remote)."""
     from todopro_cli.services.config_service import get_config_service
@@ -154,12 +175,16 @@ async def list_contexts(
     for ctx in contexts:
         current = "✓" if ctx.name == current_context.name else " "
         type_color = "cyan" if ctx.type == "local" else "magenta"
-        console.print(f"  [{current}] [bold]{ctx.name}[/bold] - [{type_color}]{ctx.type}[/{type_color}]")
+        console.print(
+            f"  [{current}] [bold]{ctx.name}[/bold] - [{type_color}]{ctx.type}[/{type_color}]"
+        )
         console.print(f"      Source: {ctx.source}")
         if ctx.description:
             console.print(f"      {ctx.description}")
     if len(all_contexts) > limit:
-        console.print(f"\n[dim]Showing {limit} of {len(all_contexts)} contexts. Use --limit N for more.[/dim]")
+        console.print(
+            f"\n[dim]Showing {limit} of {len(all_contexts)} contexts. Use --limit N for more.[/dim]"
+        )
     console.print()
 
 

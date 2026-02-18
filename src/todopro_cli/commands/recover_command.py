@@ -3,8 +3,8 @@
 import typer
 from rich.console import Console
 
-from todopro_cli.utils.ui.formatters import format_success
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
 

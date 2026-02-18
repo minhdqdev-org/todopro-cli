@@ -4,11 +4,11 @@ import typer
 from rich.console import Console
 
 from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.services.task_service import TaskService
-from todopro_cli.services.project_service import ProjectService
 from todopro_cli.services.label_service import LabelService
-from todopro_cli.utils.ui.formatters import format_output, format_success
+from todopro_cli.services.project_service import ProjectService
+from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_output, format_success
 
 from .decorators import command_wrapper
 
@@ -71,6 +71,7 @@ async def create_project(
 
     if output == "json":
         from todopro_cli.utils.ui.formatters import format_output
+
         format_output({"project": project.model_dump()}, "json")
         return
 
@@ -99,7 +100,9 @@ async def create_label(
 @command_wrapper
 async def create_context(
     name: str = typer.Argument(..., help="Context name"),
-    backend: str = typer.Option("sqlite", "--backend", help="Backend type (sqlite/rest)"),
+    backend: str = typer.Option(
+        "sqlite", "--backend", help="Backend type (sqlite/rest)"
+    ),
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Create a new storage context."""

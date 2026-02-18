@@ -4,16 +4,16 @@ from typing import Annotated
 
 import typer
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.cache_service import get_background_cache
+from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.task_service import TaskService
+from todopro_cli.utils.background import run_in_background
+from todopro_cli.utils.task_helpers import resolve_task_id
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import (
     format_output,
     format_success,
 )
-from todopro_cli.utils.background import run_in_background
-from todopro_cli.utils.task_helpers import resolve_task_id
-from todopro_cli.utils.ui.console import get_console
 
 from .decorators import command_wrapper
 
@@ -27,8 +27,12 @@ async def complete_command(
     task_ids: Annotated[
         list[str], typer.Argument(help="Task ID(s) - can specify multiple")
     ],
-    output: Annotated[str, typer.Option("--output", "-o", help="Output format")] = "table",
-    json_opt: Annotated[bool, typer.Option("--json", help="Output as JSON (alias for --output json)")] = False,
+    output: Annotated[
+        str, typer.Option("--output", "-o", help="Output format")
+    ] = "table",
+    json_opt: Annotated[
+        bool, typer.Option("--json", help="Output as JSON (alias for --output json)")
+    ] = False,
     sync_opt: Annotated[
         bool, typer.Option("--sync", help="Wait for completion")
     ] = False,
@@ -44,6 +48,7 @@ async def complete_command(
     # For local context, background mode uses the remote API which doesn't apply.
     # Always use sync mode so the local SQLite DB is updated directly.
     from todopro_cli.services.config_service import get_config_service
+
     _config_svc = get_config_service()
     if _config_svc.get_current_context().type == "local":
         sync_opt = True

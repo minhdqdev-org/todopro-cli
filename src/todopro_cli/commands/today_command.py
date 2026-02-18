@@ -6,14 +6,14 @@ from datetime import datetime
 import typer
 from rich.panel import Panel
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.cache_service import get_background_cache
+from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.log_service import LogService
 from todopro_cli.services.task_service import TaskService
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import (
     format_output,
 )
-from todopro_cli.utils.ui.console import get_console
 
 from .decorators import command_wrapper
 
@@ -115,7 +115,9 @@ async def today_command(
         result = {"tasks": [t.model_dump() for t in all_tasks_today]}
         # Pass all active task IDs so suffixes are globally unique
         all_task_ids = [t.id for t in all_tasks]
-        format_output(result["tasks"], output, compact=compact, all_task_ids=all_task_ids)
+        format_output(
+            result["tasks"], output, compact=compact, all_task_ids=all_task_ids
+        )
 
         # Summary (skip for JSON output)
         if output not in ["json"]:

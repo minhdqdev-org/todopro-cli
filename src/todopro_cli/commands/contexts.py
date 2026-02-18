@@ -5,6 +5,7 @@ from rich.console import Console
 from rich.table import Table
 
 from todopro_cli.services.api.client import APIClient
+
 from .utils import handle_api_error
 
 console = Console()

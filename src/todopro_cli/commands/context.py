@@ -18,9 +18,9 @@ from rich.table import Table
 
 from todopro_cli.adapters.sqlite.connection import get_connection
 from todopro_cli.adapters.sqlite.schema import initialize_schema
+from todopro_cli.models.config_models import Context
 from todopro_cli.services.api.auth import AuthAPI
 from todopro_cli.services.api.client import get_client
-from todopro_cli.models.config_models import Context
 from todopro_cli.services.context_manager import get_context_manager
 
 from .decorators import command_wrapper
@@ -231,14 +231,14 @@ def use_context(name: str = typer.Argument(..., help="Context name to switch to"
     try:
         # Check if already using this context
         current = manager.get_current_context()
-        
+
         if current and current.name == name:
             console.print(
                 f"[yellow]ℹ[/yellow] Already using context '{name}' ([cyan]{current.type}[/cyan])"
             )
             console.print(f"  Source: {current.source}")
             return
-        
+
         ctx = manager.use_context(name)
         console.print(
             f"[green]✓[/green] Switched to context '{ctx.name}' ([cyan]{ctx.type}[/cyan])"

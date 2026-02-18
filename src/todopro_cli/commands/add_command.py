@@ -5,13 +5,14 @@ from datetime import datetime
 
 import typer
 
-from todopro_cli.services.api.tasks import TasksAPI
+from todopro_cli.models.core import TaskCreate
 from todopro_cli.services.api.client import get_client
+from todopro_cli.services.api.tasks import TasksAPI
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.models.core import TaskCreate
-from todopro_cli.utils.ui.formatters import format_error, format_success
 from todopro_cli.utils.ui.console import get_console
+from todopro_cli.utils.ui.formatters import format_error, format_success
+
 # Lazy import QuickAddApp to avoid Textual initialization issues
 # from todopro_cli.utils.ui.textual_prompt import QuickAddApp
 from .decorators import command_wrapper
@@ -25,9 +26,15 @@ console = get_console()
 def add(
     text: str | None = typer.Argument(None, help="Natural language task description"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    project: str | None = typer.Option(None, "--project", "-p", help="Project name or ID (overrides #project in text)"),
-    output: str = typer.Option("pretty", "--output", "-o", help="Output format (pretty/json/table)"),
-    json_opt: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Project name or ID (overrides #project in text)"
+    ),
+    output: str = typer.Option(
+        "pretty", "--output", "-o", help="Output format (pretty/json/table)"
+    ),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
 ) -> None:
     """
     Quick add a task using natural language.
@@ -43,7 +50,7 @@ def add(
       p1-p4 or !!1-!!4 - Set priority (p1/!!1=urgent, p4/!!4=low)
       Natural dates - tomorrow, next monday, at 3pm
       Recurrence - every day/week/monday, etc.
-      
+
     Note: Natural language parsing requires cloud context.
     For local context, creates a simple task with the text as content.
     """
@@ -63,6 +70,7 @@ def add(
             # Interactive terminal, use Textual UI (lazy import)
             try:
                 from todopro_cli.utils.ui.textual_prompt import QuickAddApp
+
                 app_ui = QuickAddApp(default_project="Inbox")
                 app_ui.run()
                 text = app_ui.result
@@ -126,21 +134,20 @@ def add(
 
             if output == "json":
                 import json as _json
-                console.print(_json.dumps({"task": task, "parsed": parsed}, indent=2, default=str))
+
+                console.print(
+                    _json.dumps({"task": task, "parsed": parsed}, indent=2, default=str)
+                )
                 return
 
             # Show parsed elements
             console.print("\n[bold green]✓[/bold green] Task created successfully!")
-            console.print(
-                f"\n[bold cyan]Task:[/bold cyan] {task.get('content', '')}"
-            )
+            console.print(f"\n[bold cyan]Task:[/bold cyan] {task.get('content', '')}")
 
             # Show parsed details
             details = []
             if parsed.get("due_date"):
-                due = datetime.fromisoformat(
-                    parsed["due_date"].replace("Z", "+00:00")
-                )
+                due = datetime.fromisoformat(parsed["due_date"].replace("Z", "+00:00"))
                 details.append(f"📅 {due.strftime('%b %d, %Y at %I:%M %p')}")
 
             if parsed.get("project_name"):
@@ -179,9 +186,12 @@ def add(
         raise typer.Exit(1) from e
 
 
-def _create_local_task(text: str, project_override: str | None = None, output: str = "pretty") -> None:
+def _create_local_task(
+    text: str, project_override: str | None = None, output: str = "pretty"
+) -> None:
     """Create a task in local context with NLP parsing."""
     import asyncio
+
     from todopro_cli.utils.nlp_parser import parse_natural_language
 
     async def _do_create():
@@ -192,7 +202,7 @@ def _create_local_task(text: str, project_override: str | None = None, output: s
         parsed = parse_natural_language(text)
 
         # Ensure priority is an integer, default to 1 if None
-        priority = parsed.get('priority')
+        priority = parsed.get("priority")
         if priority is None or not isinstance(priority, int):
             priority = 1
 
@@ -202,8 +212,9 @@ def _create_local_task(text: str, project_override: str | None = None, output: s
 
         if project_override is not None:
             # Resolve project by name/ID (fuzzy)
-            from todopro_cli.services.project_service import ProjectService
             from todopro_cli.commands.edit_command import _resolve_project_name
+            from todopro_cli.services.project_service import ProjectService
+
             project_repo = strategy.project_repository
             try:
                 project_id = await _resolve_project_name(project_override, strategy)
@@ -211,30 +222,37 @@ def _create_local_task(text: str, project_override: str | None = None, output: s
                 effective_project_name = proj.name
             except ValueError as e:
                 from todopro_cli.utils.ui.formatters import format_error
+
                 format_error(str(e))
                 raise typer.Exit(1) from e
-        elif parsed.get('project_name'):
+        elif parsed.get("project_name"):
             # Resolve project name from NLP
-            from todopro_cli.services.project_service import ProjectService
             import difflib
+
+            from todopro_cli.services.project_service import ProjectService
+
             project_repo = strategy.project_repository
             project_service = ProjectService(project_repo)
             all_projects = await project_service.list_projects()
             names = [p.name for p in all_projects]
-            matches = difflib.get_close_matches(parsed['project_name'], names, n=1, cutoff=0.6)
+            matches = difflib.get_close_matches(
+                parsed["project_name"], names, n=1, cutoff=0.6
+            )
             if matches:
                 proj = next(p for p in all_projects if p.name == matches[0])
                 project_id = proj.id
                 effective_project_name = proj.name
             else:
-                effective_project_name = parsed['project_name']  # will note it wasn't found
+                effective_project_name = parsed[
+                    "project_name"
+                ]  # will note it wasn't found
 
         # Create task with parsed metadata
         task_create = TaskCreate(
-            content=parsed['content'] or text,
+            content=parsed["content"] or text,
             description="",
             priority=priority,
-            due_date=parsed.get('due_date'),
+            due_date=parsed.get("due_date"),
             project_id=project_id,
         )
 
@@ -242,6 +260,7 @@ def _create_local_task(text: str, project_override: str | None = None, output: s
 
         if output == "json":
             import json as _json
+
             console.print(_json.dumps(task.model_dump(), indent=2, default=str))
             return
 
@@ -250,19 +269,26 @@ def _create_local_task(text: str, project_override: str | None = None, output: s
         console.print(f"\n[bold cyan]Task:[/bold cyan] {task.content}")
 
         details = []
-        if parsed.get('due_date'):
-            due = parsed['due_date']
+        if parsed.get("due_date"):
+            due = parsed["due_date"]
             details.append(f"📅 Due: {due.strftime('%b %d, %Y at %H:%M')}")
 
         if priority > 1:
-            priority_map = {4: "P1 (Urgent)", 3: "P2 (High)", 2: "P3 (Medium)", 1: "P4 (Low)"}
-            details.append(f"[red]⚡ {priority_map.get(priority, f'P{priority}')}[/red]")
+            priority_map = {
+                4: "P1 (Urgent)",
+                3: "P2 (High)",
+                2: "P3 (Medium)",
+                1: "P4 (Low)",
+            }
+            details.append(
+                f"[red]⚡ {priority_map.get(priority, f'P{priority}')}[/red]"
+            )
 
         if effective_project_name:
             details.append(f"[magenta]📁 #{effective_project_name}[/magenta]")
 
-        if parsed.get('labels'):
-            labels_str = " ".join([f"@{l}" for l in parsed['labels']])
+        if parsed.get("labels"):
+            labels_str = " ".join([f"@{l}" for l in parsed["labels"]])
             details.append(f"[yellow]🏷️  {labels_str}[/yellow]")
 
         if details:
@@ -278,5 +304,6 @@ def _create_local_task(text: str, project_override: str | None = None, output: s
         raise
     except Exception as e:
         from todopro_cli.utils.ui.formatters import format_error as _fe
+
         _fe(f"Failed to create task: {str(e)}")
         raise typer.Exit(1) from e

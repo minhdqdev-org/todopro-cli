@@ -5,8 +5,8 @@ from rich.console import Console
 from rich.table import Table
 
 from todopro_cli.services.context_manager import get_context_manager
-from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
 
 from .decorators import command_wrapper
 

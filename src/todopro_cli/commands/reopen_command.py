@@ -5,9 +5,9 @@ from rich.console import Console
 
 from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.task_service import TaskService
-from todopro_cli.utils.ui.formatters import format_success
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
 

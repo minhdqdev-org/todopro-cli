@@ -4,8 +4,8 @@ import typer
 from rich.console import Console
 
 from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.utils.ui.formatters import format_success, format_info
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_info, format_success
 
 from .decorators import command_wrapper
 
@@ -21,7 +21,7 @@ async def purge_data() -> None:
 
     console.print("[bold red]⚠️  WARNING: This will delete ALL data![/bold red]")
     console.print("This action cannot be undone.")
-    
+
     confirm1 = typer.confirm("Are you absolutely sure?")
     if not confirm1:
         format_info("Cancelled")

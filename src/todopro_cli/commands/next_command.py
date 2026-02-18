@@ -6,11 +6,11 @@ import typer
 
 from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.task_service import TaskService
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import (
     format_next_task,
     format_output,
 )
-from todopro_cli.utils.ui.console import get_console
 
 from .decorators import command_wrapper
 

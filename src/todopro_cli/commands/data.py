@@ -11,17 +11,17 @@ from rich.console import Console
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
-from todopro_cli.models import TaskFilters, ProjectFilters
+from todopro_cli.models import ProjectFilters, TaskFilters
 from todopro_cli.services.api.client import get_client
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.services.context_manager import get_strategy_context
+from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.formatters import (
     format_error,
     format_info,
     format_success,
     format_warning,
 )
-from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 from .config_command import get_context_manager
 from .decorators import command_wrapper
@@ -71,18 +71,20 @@ def export_data(
         if is_local:
             # Local export - read from SQLite repositories
             strategy = get_strategy_context()
-            
+
             # Fetch all data
             tasks = await strategy.task_repository.list_all(TaskFilters())
             projects = await strategy.project_repository.list_all(ProjectFilters())
             labels = await strategy.label_repository.list_all()
-            
+
             # Get contexts from config (not in database)
             contexts = config_svc.config.contexts
-            
+
             # Check E2EE status
-            e2ee_enabled = config_svc.config.e2ee.enabled if config_svc.config.e2ee else False
-            
+            e2ee_enabled = (
+                config_svc.config.e2ee.enabled if config_svc.config.e2ee else False
+            )
+
             # Build response matching remote API format
             response = {
                 "stats": {
@@ -91,15 +93,17 @@ def export_data(
                     "labels_count": len(labels),
                     "contexts_count": len(contexts),
                 },
-                "encryption": {
-                    "enabled": e2ee_enabled
-                },
+                "encryption": {"enabled": e2ee_enabled},
                 "data": {
-                    "tasks": [task.model_dump(mode='json') for task in tasks],
-                    "projects": [project.model_dump(mode='json') for project in projects],
-                    "labels": [label.model_dump(mode='json') for label in labels],
-                    "contexts": [context.model_dump(mode='json') for context in contexts],
-                }
+                    "tasks": [task.model_dump(mode="json") for task in tasks],
+                    "projects": [
+                        project.model_dump(mode="json") for project in projects
+                    ],
+                    "labels": [label.model_dump(mode="json") for label in labels],
+                    "contexts": [
+                        context.model_dump(mode="json") for context in contexts
+                    ],
+                },
             }
         else:
             # Remote export - call API
@@ -253,7 +257,7 @@ def import_data(
         if is_local:
             # Local import - write to SQLite repositories
             strategy = get_strategy_context()
-            
+
             # Track import results
             summary = {
                 "projects": "0 created, 0 skipped",
@@ -261,10 +265,14 @@ def import_data(
                 "contexts": "0 created, 0 skipped",
                 "tasks": "0 created, 0 skipped",
             }
-            details = {"projects": {"errors": []}, "labels": {"errors": []}, "tasks": {"errors": []}}
-            
+            details = {
+                "projects": {"errors": []},
+                "labels": {"errors": []},
+                "tasks": {"errors": []},
+            }
+
             import_data_payload = data.get("data", {})
-            
+
             # Import projects first (tasks may reference them)
             projects_created = 0
             projects_skipped = 0
@@ -277,9 +285,10 @@ def import_data(
                     if existing:
                         projects_skipped += 1
                         continue
-                    
+
                     # Create project (excluding id to let DB generate new one)
                     from todopro_cli.models import ProjectCreate
+
                     project_create = ProjectCreate(
                         name=project_data["name"],
                         description=project_data.get("description"),
@@ -289,10 +298,14 @@ def import_data(
                     await strategy.project_repository.create(project_create)
                     projects_created += 1
                 except Exception as e:
-                    details["projects"]["errors"].append(f"{project_data.get('name', 'Unknown')}: {str(e)}")
-            
-            summary["projects"] = f"{projects_created} created, {projects_skipped} skipped"
-            
+                    details["projects"]["errors"].append(
+                        f"{project_data.get('name', 'Unknown')}: {str(e)}"
+                    )
+
+            summary["projects"] = (
+                f"{projects_created} created, {projects_skipped} skipped"
+            )
+
             # Import labels
             labels_created = 0
             labels_skipped = 0
@@ -303,9 +316,10 @@ def import_data(
                     if any(l.name == label_data.get("name") for l in existing):
                         labels_skipped += 1
                         continue
-                    
+
                     # Create label
                     from todopro_cli.models import LabelCreate
+
                     label_create = LabelCreate(
                         name=label_data["name"],
                         color=label_data.get("color"),
@@ -313,10 +327,12 @@ def import_data(
                     await strategy.label_repository.create(label_create)
                     labels_created += 1
                 except Exception as e:
-                    details["labels"]["errors"].append(f"{label_data.get('name', 'Unknown')}: {str(e)}")
-            
+                    details["labels"]["errors"].append(
+                        f"{label_data.get('name', 'Unknown')}: {str(e)}"
+                    )
+
             summary["labels"] = f"{labels_created} created, {labels_skipped} skipped"
-            
+
             # Import tasks
             tasks_created = 0
             tasks_skipped = 0
@@ -330,9 +346,10 @@ def import_data(
                     if any(t.content == task_data.get("content") for t in existing):
                         tasks_skipped += 1
                         continue
-                    
+
                     # Create task (map project name to ID if present)
                     from todopro_cli.models import TaskCreate
+
                     project_id = None
                     if task_data.get("project_name"):
                         projects = await strategy.project_repository.list_all(
@@ -340,7 +357,7 @@ def import_data(
                         )
                         if projects:
                             project_id = projects[0].id
-                    
+
                     task_create = TaskCreate(
                         content=task_data["content"],
                         description=task_data.get("description"),
@@ -351,13 +368,15 @@ def import_data(
                     await strategy.task_repository.add(task_create)
                     tasks_created += 1
                 except Exception as e:
-                    details["tasks"]["errors"].append(f"{task_data.get('content', 'Unknown')[:30]}: {str(e)}")
-            
+                    details["tasks"]["errors"].append(
+                        f"{task_data.get('content', 'Unknown')[:30]}: {str(e)}"
+                    )
+
             summary["tasks"] = f"{tasks_created} created, {tasks_skipped} skipped"
-            
+
             # Contexts are handled by ConfigService (not in DB)
             summary["contexts"] = "N/A (contexts not imported to local)"
-            
+
             # Build response matching remote API format
             response = {
                 "summary": summary,

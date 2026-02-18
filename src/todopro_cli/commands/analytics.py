@@ -14,8 +14,8 @@ from rich.table import Table
 
 from todopro_cli.services.api.analytics import AnalyticsAPI
 from todopro_cli.services.api.client import get_client
-from todopro_cli.utils.ui.formatters import format_error, format_success
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_error, format_success
 
 from .decorators import command_wrapper
 
@@ -26,7 +26,9 @@ console = Console()
 @app.command("stats")
 @command_wrapper
 def analytics_stats(
-    output: str = typer.Option("table", "--output", "-o", help="Output format (table/json)"),
+    output: str = typer.Option(
+        "table", "--output", "-o", help="Output format (table/json)"
+    ),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show productivity score and basic statistics."""
@@ -137,7 +139,9 @@ def analytics_stats(
 @app.command("streaks")
 @command_wrapper
 def analytics_streaks(
-    output: str = typer.Option("table", "--output", "-o", help="Output format (table/json)"),
+    output: str = typer.Option(
+        "table", "--output", "-o", help="Output format (table/json)"
+    ),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show current and longest task completion streak."""

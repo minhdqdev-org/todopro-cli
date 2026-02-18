@@ -3,8 +3,8 @@
 import typer
 from rich.console import Console
 
-from todopro_cli.utils.ui.formatters import format_error
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_error
 
 app = typer.Typer(cls=SuggestingGroup, help="Utility commands")
 console = Console()

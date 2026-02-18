@@ -10,8 +10,8 @@ from rich.prompt import Prompt
 from todopro_cli.services.api.auth import AuthAPI
 from todopro_cli.services.api.client import get_client
 from todopro_cli.services.context_manager import get_context_manager
-from todopro_cli.utils.ui.formatters import format_error, format_success
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_error, format_success
 
 app = typer.Typer(cls=SuggestingGroup, help="Authentication commands")
 console = Console()
@@ -74,9 +74,7 @@ def login(
                     raise typer.Exit(1)
 
                 # Save credentials for current context
-                config_manager.save_credentials(
-                    token, refresh_token, context_name
-                )
+                config_manager.save_credentials(token, refresh_token, context_name)
 
                 # Get user profile
                 user = await auth_api.get_profile()

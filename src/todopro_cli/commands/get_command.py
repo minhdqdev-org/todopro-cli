@@ -4,12 +4,12 @@ import typer
 from rich.console import Console
 
 from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.services.task_service import TaskService
-from todopro_cli.services.project_service import ProjectService
 from todopro_cli.services.label_service import LabelService
-from todopro_cli.utils.ui.formatters import format_output
+from todopro_cli.services.project_service import ProjectService
+from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.formatters import format_output
 
 from .decorators import command_wrapper
 
