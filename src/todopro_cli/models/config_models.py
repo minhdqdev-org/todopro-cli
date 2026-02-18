@@ -125,9 +125,15 @@ class AppConfig(BaseModel):
         return self.get_context(self.current_context_name)
 
     def add_context(self, context: Context):
-        """Add a new context."""
-        # Remove existing context with same name
-        self.contexts = [ctx for ctx in self.contexts if ctx.name != context.name]
+        """Add a new context.
+        
+        Raises:
+            ValueError: If context with the same name already exists
+        """
+        # Check for existing context with same name
+        existing = [ctx for ctx in self.contexts if ctx.name == context.name]
+        if existing:
+            raise ValueError(f"Context '{context.name}' already exists. Use a different name or remove the existing context first.")
         self.contexts.append(context)
 
     def remove_context(self, name: str):

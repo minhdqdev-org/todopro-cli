@@ -185,7 +185,11 @@ class QuickAddApp(App):
     def compose(self) -> ComposeResult:
         """Compose the app layout."""
 
-        width = os.get_terminal_size().columns
+        try:
+            width = os.get_terminal_size().columns
+        except OSError:
+            # Fallback if not connected to a TTY (e.g., piped input)
+            width = 80
 
         with Vertical():
             yield Static(f" {self.default_project}", id="project-label")
@@ -204,8 +208,23 @@ class QuickAddApp(App):
             )
 
     def on_mount(self) -> None:
-        """Focus the input when app starts."""
-        self.query_one("#task-input", HighlightedInput).focus()
+        """Focus the input when app starts and load suggestions data."""
+        # Load projects and labels for suggestions
+        task_input = self.query_one("#task-input", HighlightedInput)
+        suggester = task_input.suggester
+        
+        try:
+            projects, labels = load_cache()
+            task_input.projects = projects
+            task_input.labels = labels
+            if isinstance(suggester, TaskSuggester):
+                suggester.projects = projects
+                suggester.labels = labels
+        except Exception:
+            # Silently fail if cache loading fails - suggestions just won't work
+            pass
+        
+        task_input.focus()
 
     @on(Input.Changed)
     def handle_input_change(self, event: Input.Changed) -> None:
@@ -244,7 +263,9 @@ class QuickAddApp(App):
 
 
 def load_cache() -> tuple[list[str], list[str]]:
-    """Load projects and labels from API and cache them."""
+    """Load projects and labels from current context and cache them."""
+    import asyncio
+    from todopro_cli.services.context_manager import get_strategy_context
 
     config_service = get_config_service()
 
@@ -261,16 +282,25 @@ def load_cache() -> tuple[list[str], list[str]]:
                 data.get("labels", []),
             )
 
-    # Fetch from API
+    # Fetch from current context using strategy pattern
+    async def _fetch_data():
+        strategy = get_strategy_context()
+        projects_data = await strategy.project_repository.list_all()
+        labels_data = await strategy.label_repository.list_all()
+        
+        projects = [p.name for p in projects_data] if projects_data else []
+        labels = [l.name for l in labels_data] if labels_data else []
+        
+        return projects, labels
 
-    projects = project_service.list_projects()
-    labels = label_service.list_labels()
-
-    projects = [p.get("name", "") for p in projects.get("data", [])]
-    # Strip @ prefix from label names if present
-    labels = [label.get("name", "").lstrip("@") for label in labels.get("data", [])]
+    try:
+        projects, labels = asyncio.run(_fetch_data())
+    except Exception:
+        # If fetching fails, return empty lists
+        return ([], [])
 
     # Save to cache file
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_file, "w", encoding="utf-8") as f:
         json.dump(
             {
@@ -280,6 +310,8 @@ def load_cache() -> tuple[list[str], list[str]]:
             },
             f,
         )
+
+    return (projects, labels)
 
     return projects, labels
 

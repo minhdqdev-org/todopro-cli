@@ -12,7 +12,8 @@ from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.models.core import TaskCreate
 from todopro_cli.utils.ui.formatters import format_error, format_success
 from todopro_cli.utils.ui.console import get_console
-from todopro_cli.utils.ui.textual_prompt import QuickAddApp
+# Lazy import QuickAddApp to avoid Textual initialization issues
+# from todopro_cli.utils.ui.textual_prompt import QuickAddApp
 from .decorators import command_wrapper
 
 app = typer.Typer()
@@ -43,18 +44,61 @@ def add(
     Note: Natural language parsing requires cloud context.
     For local context, creates a simple task with the text as content.
     """
+    import sys
 
     text = text.strip() if text else None
 
-    # If no text provided, use interactive prompt
+    # If no text provided, determine how to get it
     if not text:
-        try:
-            app = QuickAddApp(default_project="Inbox")
-            app.run()
-            text = app.result
-        except KeyboardInterrupt:
-            console.print("\n[yellow]Cancelled.[/yellow]")
-            raise typer.Exit(0) from None
+        # Check if stdin is a TTY (interactive terminal) or has data piped
+        if not sys.stdin.isatty():
+            # Stdin has piped data, read it
+            text = sys.stdin.read().strip()
+        else:
+            # Interactive terminal, use Textual UI (lazy import)
+            try:
+                from todopro_cli.utils.ui.textual_prompt import QuickAddApp
+                app_ui = QuickAddApp(default_project="Inbox")
+                app_ui.run()
+                text = app_ui.result
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Cancelled.[/yellow]")
+                raise typer.Exit(0) from None
+            except Exception as e:
+                # If Textual fails for any reason, fall back to simple input
+                console.print(f"[yellow]Interactive mode failed: {e}[/yellow]")
+                console.print("Enter task description:")
+                text = input().strip()
+
+        if not text:
+            format_error("Task text is required")
+            raise typer.Exit(1)
+
+    # If no text provided, determine how to get it
+    if not text:
+        console.print(f"[dim]DEBUG: stdin.isatty() = {sys.stdin.isatty()}[/dim]", highlight=False)
+        # Check if stdin is a TTY (interactive terminal) or has data piped
+        if not sys.stdin.isatty():
+            # Stdin has piped data, read it
+            console.print(f"[dim]DEBUG: Reading from stdin (pipe detected)[/dim]", highlight=False)
+            text = sys.stdin.read().strip()
+            console.print(f"[dim]DEBUG: Read from stdin: {repr(text)}[/dim]", highlight=False)
+        else:
+            console.print(f"[dim]DEBUG: Launching Textual UI (TTY detected)[/dim]", highlight=False)
+            # Interactive terminal, use Textual UI (lazy import)
+            try:
+                from todopro_cli.utils.ui.textual_prompt import QuickAddApp
+                app_ui = QuickAddApp(default_project="Inbox")
+                app_ui.run()
+                text = app_ui.result
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Cancelled.[/yellow]")
+                raise typer.Exit(0) from None
+            except Exception as e:
+                # If Textual fails for any reason, fall back to simple input
+                console.print(f"[yellow]Interactive mode failed: {e}[/yellow]")
+                console.print("Enter task description:")
+                text = input().strip()
 
         if not text:
             format_error("Task text is required")
@@ -175,11 +219,16 @@ def _create_local_task(text: str) -> None:
         # Parse the text for metadata
         parsed = parse_natural_language(text)
         
+        # Ensure priority is an integer, default to 1 if None
+        priority = parsed.get('priority')
+        if priority is None or not isinstance(priority, int):
+            priority = 1
+        
         # Create task with parsed metadata
         task_create = TaskCreate(
             content=parsed['content'] or text,  # Fallback to original if parsing failed
             description="",
-            priority=parsed.get('priority', 1),
+            priority=priority,
             due_date=parsed.get('due_date'),
         )
         
@@ -195,9 +244,9 @@ def _create_local_task(text: str) -> None:
             due = parsed['due_date']
             details.append(f"📅 Due: {due.strftime('%b %d, %Y')}")
         
-        if parsed.get('priority') and parsed['priority'] > 1:
+        if priority > 1:
             priority_map = {4: "P1 (Urgent)", 3: "P2 (High)", 2: "P3 (Medium)", 1: "P4 (Low)"}
-            priority_label = priority_map.get(parsed['priority'], f"P{parsed['priority']}")
+            priority_label = priority_map.get(priority, f"P{priority}")
             details.append(f"[red]⚡ {priority_label}[/red]")
         
         if parsed.get('project_name'):

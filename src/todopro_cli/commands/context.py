@@ -229,6 +229,16 @@ def use_context(name: str = typer.Argument(..., help="Context name to switch to"
     manager = get_context_manager()
 
     try:
+        # Check if already using this context
+        current = manager.get_current_context()
+        
+        if current and current.name == name:
+            console.print(
+                f"[yellow]ℹ[/yellow] Already using context '{name}' ([cyan]{current.type}[/cyan])"
+            )
+            console.print(f"  Source: {current.source}")
+            return
+        
         ctx = manager.use_context(name)
         console.print(
             f"[green]✓[/green] Switched to context '{ctx.name}' ([cyan]{ctx.type}[/cyan])"

@@ -21,5 +21,19 @@ async def use_context(
     """Switch to a different storage context."""
 
     config_service = get_config_service()
-    config_service.use_context(name)
-    format_success(f"Switched to context: {name}")
+    
+    # Check if already using this context
+    try:
+        current = config_service.get_current_context()
+        if current and current.name == name:
+            console.print(
+                f"[yellow]ℹ[/yellow] Already using context '[cyan]{name}[/cyan]' ([dim]{current.type}[/dim])"
+            )
+            console.print(f"  Source: [dim]{current.source}[/dim]")
+            return
+    except (ValueError, KeyError):
+        # No current context, continue with switch
+        pass
+    
+    ctx = config_service.use_context(name)
+    format_success(f"Switched to context: {ctx.name}")
