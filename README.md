@@ -73,8 +73,11 @@ TodoPro is a **CLI-first task manager** for power users, developers, and privacy
 ### Using uv (Recommended)
 
 ```bash
-# Install TodoPro
+# Install TodoPro CLI
 uv tool install todopro-cli
+
+# Or install from GitHub releases (latest)
+uv tool install git+https://github.com/minhdqdev-org/todopro-cli.git
 
 # Verify installation
 todopro version
@@ -83,15 +86,21 @@ todopro version
 ### Using pip
 
 ```bash
+# Install from PyPI (coming soon)
 pip install todopro-cli
+
+# Or install from GitHub
+pip install git+https://github.com/minhdqdev-org/todopro-cli.git
+
+# Verify
 todopro version
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/minhdqdev/todopro.git
-cd todopro/todopro-cli
+git clone https://github.com/minhdqdev-org/todopro-cli.git
+cd todopro-cli
 uv pip install -e .
 ```
 
