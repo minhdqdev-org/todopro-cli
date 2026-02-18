@@ -1,15 +1,16 @@
 """Authentication commands."""
 
 import asyncio
+import json
 
 import typer
 from rich.console import Console
 from rich.prompt import Prompt
 
-from todopro_cli.api.auth import AuthAPI
-from todopro_cli.api.client import get_client
-from todopro_cli.config import get_config_manager
-from todopro_cli.ui.formatters import format_error, format_output, format_success
+from todopro_cli.services.api.auth import AuthAPI
+from todopro_cli.services.api.client import get_client
+from todopro_cli.services.context_manager import get_context_manager
+from todopro_cli.utils.ui.formatters import format_error, format_success
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 app = typer.Typer(cls=SuggestingGroup, help="Authentication commands")
@@ -20,7 +21,6 @@ console = Console()
 def login(
     email: str | None = typer.Option(None, "--email", help="Email address"),
     password: str | None = typer.Option(None, "--password", help="Password"),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
     endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
     save_profile: bool = typer.Option(
         False, "--save-profile", help="Save as default profile"
@@ -29,7 +29,7 @@ def login(
     """Login to TodoPro."""
     try:
         # Get config manager
-        config_manager = get_config_manager(profile)
+        config_manager = get_context_manager()
 
         # Initialize contexts if they don't exist
         if not config_manager.config.contexts:
@@ -55,7 +55,7 @@ def login(
 
         # Perform login
         async def do_login() -> None:
-            client = get_client(profile)
+            client = get_client()
             auth_api = AuthAPI(client)
 
             try:
@@ -70,11 +70,9 @@ def login(
                     raise typer.Exit(1)
 
                 # Save credentials for current context
-                config_manager.save_context_credentials(
-                    context_name, token, refresh_token
+                config_manager.save_credentials(
+                    token, refresh_token, context_name
                 )
-                # Also save to default location for backward compatibility
-                config_manager.save_credentials(token, refresh_token)
 
                 # Get user profile
                 user = await auth_api.get_profile()
@@ -85,7 +83,7 @@ def login(
                 )
 
                 if save_profile:
-                    format_success(f"Profile '{profile}' saved as default")
+                    format_success("Profile 'default' saved as default")
 
             finally:
                 await client.close()
@@ -101,7 +99,6 @@ def login(
 def signup(
     email: str | None = typer.Option(None, "--email", help="Email address"),
     password: str | None = typer.Option(None, "--password", help="Password"),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
     endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
     auto_login: bool = typer.Option(
         True, "--auto-login/--no-auto-login", help="Automatically login after signup"
@@ -110,7 +107,7 @@ def signup(
     """Create a new TodoPro account."""
     try:
         # Get config manager
-        config_manager = get_config_manager(profile)
+        config_manager = get_context_manager()
 
         # Initialize contexts if they don't exist
         if not config_manager.config.contexts:
@@ -141,7 +138,7 @@ def signup(
 
         # Perform signup
         async def do_signup() -> None:
-            client = get_client(profile)
+            client = get_client()
             auth_api = AuthAPI(client)
 
             try:
@@ -153,8 +150,6 @@ def signup(
                     error_msg = str(e)
                     if hasattr(e, "response") and hasattr(e.response, "text"):
                         try:
-                            import json
-
                             error_data = json.loads(e.response.text)
                             if isinstance(error_data, dict):
                                 if "email" in error_data:
@@ -165,7 +160,7 @@ def signup(
                                     error_msg = error_data["error"]
                         except:
                             pass
-                    raise Exception(error_msg)
+                    raise Exception(error_msg) from e
 
                 user_id = result.get("user_id")
                 user_email = result.get("email")
@@ -185,10 +180,9 @@ def signup(
                     refresh_token = login_result.get("refresh_token")
 
                     if token:
-                        config_manager.save_context_credentials(
-                            context_name, token, refresh_token
+                        config_manager.save_credentials(
+                            token, refresh_token, context_name
                         )
-                        config_manager.save_credentials(token, refresh_token)
                         format_success(f"Logged in as {user_email}")
                     else:
                         console.print(
@@ -219,18 +213,18 @@ def logout(
     """Logout from TodoPro."""
     try:
         if all_profiles:
-            config_manager = get_config_manager(profile)
+            config_manager = get_context_manager(profile)
             profiles = config_manager.list_profiles()
             for prof in profiles:
-                prof_manager = get_config_manager(prof)
+                prof_manager = get_context_manager(prof)
                 prof_manager.clear_credentials()
             format_success("Logged out from all profiles")
         else:
-            config_manager = get_config_manager(profile)
+            config_manager = get_context_manager()
 
             # Try to logout from server
             async def do_logout() -> None:
-                client = get_client(profile)
+                client = get_client()
                 auth_api = AuthAPI(client)
                 try:
                     await auth_api.logout()
@@ -244,45 +238,10 @@ def logout(
 
             # Clear local credentials
             config_manager.clear_credentials()
-            format_success(f"Logged out from profile '{profile}'")
+            format_success("Logged out from profile 'default'")
 
     except Exception as e:
         format_error(f"Logout failed: {str(e)}")
-        raise typer.Exit(1)
-
-
-@app.command()
-def whoami(
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
-    output: str = typer.Option("table", "--output", help="Output format"),
-) -> None:
-    """Show current user information."""
-    try:
-        config_manager = get_config_manager(profile)
-
-        # Check if logged in
-        credentials = config_manager.load_credentials()
-        if not credentials:
-            format_error("Not logged in. Use 'todopro login' to authenticate.")
-            raise typer.Exit(1)
-
-        async def get_user() -> None:
-            client = get_client(profile)
-            auth_api = AuthAPI(client)
-
-            try:
-                user = await auth_api.get_profile()
-                # Remove avatar and created_at fields
-                user.pop("avatar", None)
-                user.pop("created_at", None)
-                format_output(user, output)
-            finally:
-                await client.close()
-
-        asyncio.run(get_user())
-
-    except Exception as e:
-        format_error(f"Failed to get user information: {str(e)}")
         raise typer.Exit(1) from e
 
 
@@ -291,11 +250,10 @@ def timezone(
     new_timezone: str | None = typer.Argument(
         None, help="New timezone (IANA format, e.g., 'Asia/Ho_Chi_Minh')"
     ),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Get or set user timezone."""
     try:
-        config_manager = get_config_manager(profile)
+        config_manager = get_context_manager()
 
         # Check if logged in
         credentials = config_manager.load_credentials()
@@ -304,7 +262,7 @@ def timezone(
             raise typer.Exit(1)
 
         async def handle_timezone() -> None:
-            client = get_client(profile)
+            client = get_client()
             auth_api = AuthAPI(client)
 
             try:

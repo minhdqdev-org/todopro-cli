@@ -21,9 +21,9 @@ def log_debug(msg):
         f.flush()
 
 async def complete_task(context: Dict[str, Any]):
-    from todopro_cli.api.client import get_client
-    from todopro_cli.api.tasks import TasksAPI
-    from todopro_cli.commands.tasks import resolve_task_id
+    from todopro_cli.services.api.client import get_client
+    from todopro_cli.services.api.tasks import TasksAPI
+    from .commands.tasks import resolve_task_id
 
     profile = context.get("profile", "default")
     task_id = context["task_id"]
@@ -37,9 +37,9 @@ async def complete_task(context: Dict[str, Any]):
         await client.close()
 
 async def batch_complete_tasks(context: Dict[str, Any]):
-    from todopro_cli.api.client import get_client
-    from todopro_cli.api.tasks import TasksAPI
-    from todopro_cli.commands.tasks import resolve_task_id
+    from todopro_cli.services.api.client import get_client
+    from todopro_cli.services.api.tasks import TasksAPI
+    from .commands.tasks import resolve_task_id
 
     profile = context.get("profile", "default")
     task_ids = context["task_ids"]
@@ -59,8 +59,8 @@ async def batch_complete_tasks(context: Dict[str, Any]):
         await client.close()
 
 async def run_with_retry(task_type: str, command: str, context: Dict[str, Any], max_retries: int):
-    from todopro_cli.utils.error_logger import log_error
-    from todopro_cli.utils.task_cache import get_background_cache
+    from .utils.error_logger import log_error
+    from .utils.task_cache import get_background_cache
 
     last_error = None
 

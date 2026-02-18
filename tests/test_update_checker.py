@@ -3,14 +3,15 @@
 import json
 import os
 import time
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
 from todopro_cli import __version__
 from todopro_cli.utils.update_checker import (
+    DEFAULT_BACKEND_URL,
     check_for_updates,
+    get_backend_url,
     get_latest_version,
     is_update_available,
 )
@@ -20,12 +21,14 @@ from todopro_cli.utils.update_checker import (
 def mock_cache_dir(tmp_path):
     """Fixture to use a temporary cache directory."""
     cache_dir = tmp_path / "todopro"
-    with patch("todopro_cli.utils.update_checker.CACHE_DIR", cache_dir):
-        with patch(
+    with (
+        patch("todopro_cli.utils.update_checker.CACHE_DIR", cache_dir),
+        patch(
             "todopro_cli.utils.update_checker.CACHE_FILE",
             cache_dir / "update_check.json",
-        ):
-            yield cache_dir
+        ),
+    ):
+        yield cache_dir
 
 
 def test_check_for_updates_with_newer_version(mock_cache_dir, capsys):
@@ -34,7 +37,9 @@ def test_check_for_updates_with_newer_version(mock_cache_dir, capsys):
     mock_response.status_code = 200
     mock_response.json.return_value = {"info": {"version": "99.99.99"}}
 
-    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+    with patch(
+        "todopro_cli.utils.update_checker.requests.get", return_value=mock_response
+    ):
         check_for_updates()
 
     captured = capsys.readouterr()
@@ -49,7 +54,9 @@ def test_check_for_updates_with_same_version(mock_cache_dir, capsys):
     mock_response.status_code = 200
     mock_response.json.return_value = {"info": {"version": __version__}}
 
-    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+    with patch(
+        "todopro_cli.utils.update_checker.requests.get", return_value=mock_response
+    ):
         check_for_updates()
 
     captured = capsys.readouterr()
@@ -62,7 +69,9 @@ def test_check_for_updates_with_older_version(mock_cache_dir, capsys):
     mock_response.status_code = 200
     mock_response.json.return_value = {"info": {"version": "0.0.1"}}
 
-    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+    with patch(
+        "todopro_cli.utils.update_checker.requests.get", return_value=mock_response
+    ):
         check_for_updates()
 
     captured = capsys.readouterr()
@@ -86,11 +95,8 @@ def test_check_for_updates_uses_cache(mock_cache_dir, capsys):
     """Test that cache is used when it's fresh (< 1 hour)."""
     cache_file = mock_cache_dir / "update_check.json"
     mock_cache_dir.mkdir(parents=True, exist_ok=True)
-    
-    cache_data = {
-        "last_check_timestamp": time.time(),
-        "latest_version": "99.99.99"
-    }
+
+    cache_data = {"last_check_timestamp": time.time(), "latest_version": "99.99.99"}
     cache_file.write_text(json.dumps(cache_data))
 
     # Mock requests to ensure it's NOT called
@@ -106,19 +112,18 @@ def test_check_for_updates_refreshes_expired_cache(mock_cache_dir, capsys):
     """Test that cache is refreshed when expired (> 1 hour)."""
     cache_file = mock_cache_dir / "update_check.json"
     mock_cache_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Cache from 2 hours ago
-    cache_data = {
-        "last_check_timestamp": time.time() - 7200,
-        "latest_version": "1.0.0"
-    }
+    cache_data = {"last_check_timestamp": time.time() - 7200, "latest_version": "1.0.0"}
     cache_file.write_text(json.dumps(cache_data))
 
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = {"info": {"version": "99.99.99"}}
 
-    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+    with patch(
+        "todopro_cli.utils.update_checker.requests.get", return_value=mock_response
+    ):
         check_for_updates()
 
     # Verify new version from API was used, not cached version
@@ -132,12 +137,14 @@ def test_check_for_updates_creates_cache_file(mock_cache_dir):
     mock_response.status_code = 200
     mock_response.json.return_value = {"info": {"version": "99.99.99"}}
 
-    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+    with patch(
+        "todopro_cli.utils.update_checker.requests.get", return_value=mock_response
+    ):
         check_for_updates()
 
     cache_file = mock_cache_dir / "update_check.json"
     assert cache_file.exists()
-    
+
     cache_data = json.loads(cache_file.read_text())
     assert "last_check_timestamp" in cache_data
     assert cache_data["latest_version"] == "99.99.99"
@@ -239,11 +246,7 @@ def test_is_update_available_network_error(mock_cache_dir):
 
 def test_get_backend_url_from_env_var(mock_cache_dir):
     """Test that environment variable has highest priority."""
-    with patch.dict(
-        os.environ, {"TODOPRO_BACKEND_URL": "http://localhost:8000/api"}
-    ):
-        from todopro_cli.utils.update_checker import get_backend_url
-
+    with patch.dict(os.environ, {"TODOPRO_BACKEND_URL": "http://localhost:8000/api"}):
         url = get_backend_url()
         assert url == "http://localhost:8000/api"
 
@@ -261,8 +264,6 @@ def test_get_backend_url_from_cache(mock_cache_dir):
     cache_file.write_text(json.dumps(cache_data))
 
     with patch("todopro_cli.utils.update_checker.requests.get") as mock_get:
-        from todopro_cli.utils.update_checker import get_backend_url
-
         url = get_backend_url()
         # Should use cache, not call API
         mock_get.assert_not_called()
@@ -283,8 +284,6 @@ def test_get_backend_url_from_pypi(mock_cache_dir):
     with patch(
         "todopro_cli.utils.update_checker.requests.get", return_value=mock_response
     ):
-        from todopro_cli.utils.update_checker import get_backend_url
-
         url = get_backend_url()
         assert url == "https://pypi.backend.com/api"
 
@@ -295,22 +294,13 @@ def test_get_backend_url_fallback_to_default(mock_cache_dir):
         "todopro_cli.utils.update_checker.requests.get",
         side_effect=Exception("Network error"),
     ):
-        from todopro_cli.utils.update_checker import (
-            DEFAULT_BACKEND_URL,
-            get_backend_url,
-        )
-
         url = get_backend_url()
         assert url == DEFAULT_BACKEND_URL
 
 
 def test_get_backend_url_strips_trailing_slash(mock_cache_dir):
     """Test that trailing slashes are removed."""
-    with patch.dict(
-        os.environ, {"TODOPRO_BACKEND_URL": "http://localhost:8000/api/"}
-    ):
-        from todopro_cli.utils.update_checker import get_backend_url
-
+    with patch.dict(os.environ, {"TODOPRO_BACKEND_URL": "http://localhost:8000/api/"}):
         url = get_backend_url()
         assert url == "http://localhost:8000/api"
         assert not url.endswith("/")
@@ -333,8 +323,6 @@ def test_get_backend_url_expired_cache_fallback(mock_cache_dir):
         "todopro_cli.utils.update_checker.requests.get",
         side_effect=Exception("Network error"),
     ):
-        from todopro_cli.utils.update_checker import get_backend_url
-
         url = get_backend_url()
         # Should use expired cache as fallback
         assert url == "https://expired.cache.com/api"

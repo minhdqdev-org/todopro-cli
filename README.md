@@ -1,121 +1,323 @@
 # TodoPro CLI
 
-> A professional command-line interface for TodoPro task management system, inspired by kubectl.
+> A professional CLI-first task management system with offline-first architecture and end-to-end encryption.
 
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+
+## 🎯 Why TodoPro?
+
+TodoPro is a **CLI-first task manager** for power users, developers, and privacy-conscious individuals who want:
+
+- 🖥️ **Terminal Interface:** Keyboard-driven, fast, and distraction-free
+- 💾 **Offline-First:** Works without internet, local SQLite storage
+- 🔐 **Zero-Knowledge E2EE:** Your data encrypted before leaving your device
+- 🤖 **Automation-Ready:** JSON output, scripting support, CI/CD friendly
+- 🎯 **Privacy-Focused:** You own your data, no tracking, no ads
+
+**Perfect for:** Developers, sysadmins, CLI enthusiasts, privacy advocates
+
+---
 
 ## Table of Contents
 
 - [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Development](#development)
-- [Releasing](#releasing)
 - [Documentation](#documentation)
+- [Development](#development)
+
+---
 
 ## Features
 
-- **CLI-first design**: Built for the terminal with developers in mind
-- **Natural language input**: `todopro add "Buy milk tomorrow at 2pm #groceries"`
-- **Context-aware**: Maintains authentication state and user preferences
-- **Multi-environment**: Switch between dev, staging, and prod contexts seamlessly
-- **Output flexibility**: JSON, YAML, table, and custom formats
-- **Interactive & scriptable**: Menu-driven UI for exploration, flags for automation
-- **AI-agent friendly**: JSON output, semantic exit codes, idempotent operations
-- **End-to-end encryption**: Client-side encryption with AES-256-GCM
-- **Import/Export**: Backup and restore all your data
-- **Professional UX**: Rich terminal UI with colors, progress indicators, and helpful messages
+### ✨ Core Features
+
+**Task Management:**
+- ✅ Create, update, complete, delete tasks
+- ✅ Natural language dates ("tomorrow", "next friday")
+- ✅ Priority levels (P1-P4), due dates, descriptions
+- ✅ Search, filter, sort tasks
+- ✅ Bulk operations
+
+**Organization:**
+- ✅ Projects for grouping tasks
+- ✅ Labels for tagging (#urgent, #work)
+- ✅ Multiple contexts (local, remote)
+- ✅ Archive completed projects
+
+**Sync & Backup:**
+- ✅ Bidirectional sync (push/pull)
+- ✅ Export/import data (JSON, gzip)
+- ✅ Local SQLite + Cloud backend
+- ✅ Conflict resolution
+
+**Security:**
+- ✅ End-to-end encryption (AES-256-GCM)
+- ✅ 24-word recovery phrase (BIP39)
+- ✅ Zero-knowledge architecture
+- ✅ Client-side encryption
+
+### 🚀 Coming Soon (Post-MVP1)
+
+- ⏳ Recurring tasks
+- ⏳ Subtasks & dependencies
+- ⏳ Mobile apps (iOS/Android)
+- ⏳ Web interface
+- ⏳ Team collaboration
+- ⏳ Calendar integrations
 
 ## Installation
 
-> 📖 **For detailed installation instructions and troubleshooting, see [docs/INSTALLATION.md](docs/INSTALLATION.md)**
-
-### One-Liner (Recommended)
-
-Install `uv` and `todopro-cli` in one command:
+### Using uv (Recommended)
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh && uv tool install git+https://github.com/minhdqdev-org/todopro-cli.git
+# Install TodoPro
+uv tool install todopro-cli
+
+# Verify installation
+todopro version
 ```
 
-This will:
-- Install `uv` (if not already installed)
-- Pull the CLI tool directly from GitHub
-- Build an isolated environment with all dependencies
-- Place the `todopro` and `tp` commands in your PATH
-
-### Update
+### Using pip
 
 ```bash
-uv tool upgrade todopro-cli
+pip install todopro-cli
+todopro version
 ```
 
-### Install from Source
+### From Source
 
 ```bash
-# Clone the repository
-git clone https://github.com/minhdqdev-org/todopro-cli.git
-cd todopro-cli
-
-# Install locally
-uv tool install --from . todopro-cli
+git clone https://github.com/minhdqdev/todopro.git
+cd todopro/todopro-cli
+uv pip install -e .
 ```
 
-### Install from Release
-
-```bash
-# Install a specific version from GitHub releases
-uv tool install https://github.com/minhdqdev-org/todopro-cli/releases/download/v0.1.0/todopro_cli-0.1.0-py3-none-any.whl
-```
+---
 
 ## Quick Start
 
+### 🚀 First Run (Offline)
+
+TodoPro works **offline by default**. No signup required!
+
 ```bash
-# Login to TodoPro
+# Create your first task
+todopro add "Buy groceries"
+
+# View tasks
+todopro today
+
+# Mark complete
+todopro complete <task-id>
+```
+
+**Done!** You're up and running in 30 seconds.
+
+### 📚 Learn More
+
+**→ [Getting Started Guide](./docs/GETTING_STARTED.md)** - Complete tutorial  
+**→ [FAQ](./docs/FAQ.md)** - Common questions  
+**→ [Troubleshooting](./docs/TROUBLESHOOTING.md)** - Fix issues  
+
+### ☁️ Optional: Cloud Sync
+
+Want to sync across devices?
+
+```bash
+# 1. Sign up
+todopro signup
+
+# 2. Set up encryption
+todopro encryption setup
+# ⚠️ Save your 24-word recovery phrase!
+
+# 3. Push your data
+todopro sync push
+```
+
+**On another device:**
+```bash
+# 1. Login
 todopro login
 
-# Quick add a task (natural language, just like Todoist)
-todopro add "Buy milk tomorrow at 2pm #groceries @shopping"
+# 2. Recover encryption key
+todopro encryption recover
+
+# 3. Pull data
+todopro sync pull
+```
+
+---
+
+## Essential Commands
+
+### Task Management
+
+```bash
+# Add tasks
+todopro add "Task title"
+todopro add "Task" --due tomorrow --priority 1
 
 # List tasks
-todopro tasks list
+todopro list tasks
+todopro today                    # Today's tasks
+todopro list tasks --filter=overdue
 
-# Create a task (traditional way)
-todopro tasks create "Buy groceries"
+# Complete/reopen
+todopro complete <id>
+todopro reopen <id>
 
-# Reschedule all overdue tasks to today
-todopro tasks reschedule overdue
+# Update
+todopro update task <id> --content "New title"
+todopro update task <id> --due "next monday"
 
-# Skip confirmation prompt
-todopro tasks reschedule overdue --yes
+# Delete
+todopro delete task <id>
+```
+
+### Projects & Labels
+
+```bash
+# Projects
+todopro create project "Work"
+todopro list projects
+todopro archive project <id>
+
+# Labels
+todopro create label "urgent" --color red
+todopro list labels
+```
+
+### Sync & Backup
+
+```bash
+# Sync
+todopro sync push     # Upload to cloud
+todopro sync pull     # Download from cloud
+todopro sync status   # Check sync state
+
+# Backup/Restore
+todopro data export --output backup.json
+todopro data export --compress  # Gzip compressed
+todopro data import backup.json
+```
+
+### Encryption
+
+```bash
+# Set up E2EE
+todopro encryption setup
+
+# Check status
+todopro encryption status
+
+# Show recovery phrase
+todopro encryption show-recovery
+
+# Recover on new device
+todopro encryption recover
+
+# Rotate key
+todopro encryption rotate-key
+```
+
+---
+
+## Documentation
+
+### 📖 User Guides
+
+- **[Getting Started](./docs/GETTING_STARTED.md)** - Complete walkthrough for new users
+- **[FAQ](./docs/FAQ.md)** - Frequently asked questions
+- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+### 🔧 Reference
+
+- **[CHANGELOG](./CHANGELOG.md)** - Version history
+- **[MVP1 Product Spec](../docs/MVP1.md)** - Feature roadmap
+
+### 💡 Examples
+
+**Daily Task Review Script:**
+```bash
+#!/bin/bash
+echo "📅 Today's Tasks:"
+todopro today
+echo "\n⚠️  Overdue:"
+todopro list tasks --filter=overdue
+```
+
+**Weekly Backup:**
+```bash
+#!/bin/bash
+todopro data export --compress \
+  --output ~/Dropbox/todopro-backup-$(date +%Y%m%d).json.gz
+```
+
+**Pomodoro Timer:**
+```bash
+#!/bin/bash
+TASK_ID=$1
+echo "🍅 Working on: $(todopro get task $TASK_ID --format json | jq -r '.content')"
+sleep 25m
+echo "✅ Pomodoro complete!"
+```
+
+---
+
+# Switch to local vault
+todopro use context my-vault
+
+# Now all commands work offline!
+todopro add "Work on the plane without WiFi"
+todopro list tasks
+
+# Pull tasks from cloud to local vault
+todopro pull
+
+# Make changes locally...
+todopro add "Another offline task"
+
+# Push changes back to cloud
+todopro push
+
+# Switch back to cloud
+todopro use context default-remote
+
+# List all contexts
+todopro list contexts
+
+# Check sync status
+todopro sync-status
+```
+
+### Additional Commands
+
+```bash
+# Reschedule overdue tasks
+todopro reschedule
+
+# List projects
+todopro list projects
+
+# Create a project
+todopro create project "Work"
+
+# Archive a project
+todopro archive project <project_id>
+
+# Show today's stats
+todopro show stats-today
+
+# Start a focus session
+todopro start focus
 
 # Get current timezone
-todopro auth timezone
-
-# Set timezone (IANA format)
+todopro set timezone
 todopro auth timezone Asia/Ho_Chi_Minh
-todopro auth timezone America/New_York
-todopro auth timezone Europe/London
-
-# 1. Set your timezone
-todopro auth timezone Asia/Ho_Chi_Minh
-
-# 2. Check today's tasks (includes overdue)
-todopro today
-
-# 3. Reschedule all overdue tasks to today
-todopro tasks reschedule overdue
-
-# See what's due today
-todopro today
-
-# Get the next task to work on
-todopro next
-
-# Complete a task
-todopro complete <task_id>
 
 # Reschedule a task to today (quick rescheduling)
 todopro reschedule <task_id>
@@ -141,12 +343,12 @@ todopro describe project <project_id>
 todopro --help
 
 # Data management
-todopro data export --output backup.json      # Export all data
-todopro data import backup.json               # Import data
-todopro data purge --dry-run                  # Preview data deletion
+todopro export data --output backup.json      # Export all data
+todopro import data backup.json               # Import data
+todopro purge data --dry-run                  # Preview data deletion
 
 # AI-agent friendly usage
-todopro tasks list --output json              # JSON output for parsing
+todopro list tasks --output json              # JSON output for parsing
 todopro complete task-abc --yes               # Skip confirmation prompts
 echo $?                                        # Check exit code (0=success)
 ```
@@ -183,6 +385,7 @@ This project uses automated GitHub Actions workflows for testing and releasing.
 ### Create a Release
 
 1. **Tag your code:**
+
    ```bash
    git tag v0.1.0
    git push origin v0.1.0
@@ -202,10 +405,27 @@ This project uses automated GitHub Actions workflows for testing and releasing.
 
 ## Documentation
 
-- 📦 [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions and troubleshooting
+- 🔄 [Migration Guide](docs/migration-guide.md) - **Upgrading from v1.x to v2.0**
+- 📝 [CHANGELOG](CHANGELOG.md) - What's new in v2.0
 - 🚀 [Release Process](docs/RELEASE.md) - How to create and publish releases
 - 💡 [Package Ideas](docs/PACKAGE_IDEA.md) - Original implementation ideas and rationale
 - 🤖 [AI Agent Integration](docs/AI_AGENT_INTEGRATION.md) - Guide for automation and AI agents
+- 📋 [Specifications](../docs/specs/) - Detailed technical specifications
+  - [README](../docs/specs/README.md) - Specification index and roadmap
+  - [01: Repository Abstraction](../docs/specs/01-repository-abstraction.md) - Hexagonal architecture
+  - [03: Context Switching](../docs/specs/03-context-switching.md) - Multi-environment support
+  - [10-14: Architecture Stabilization](../docs/specs/README.md#-architecture-stabilization-specs-10-15--new) - **Recent refactoring (2025-02-18)**
+
+### Recent Architecture Improvements (Feb 2025)
+
+The CLI recently underwent a major architecture stabilization effort (Specs 10-14):
+- ✅ Fixed 38+ broken import paths
+- ✅ Migrated all commands to Strategy Pattern (from Factory Pattern)
+- ✅ Cleaned up configuration layer (ConfigService as single source of truth)
+- ✅ Implemented REST API location context adapter
+- ✅ Enhanced package exports for better IDE support
+
+See [implementation summaries](../docs/specs/) for details.
 
 ## License
 

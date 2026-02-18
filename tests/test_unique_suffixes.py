@@ -1,7 +1,6 @@
 """Tests for unique suffix calculation in formatters."""
 
-
-from todopro_cli.ui.formatters import calculate_unique_suffixes
+from todopro_cli.utils.ui.formatters import calculate_unique_suffixes
 
 
 class TestCalculateUniqueSuffixes:
@@ -73,7 +72,7 @@ class TestCalculateUniqueSuffixes:
         # Need to check actual suffix lengths
         assert all(length >= 1 for length in result.values())
         # Ensure all suffixes are unique
-        suffixes = [tid[-result[tid]:] for tid in task_ids]
+        suffixes = [tid[-result[tid] :] for tid in task_ids]
         assert len(suffixes) == len(set(suffixes))  # All unique
 
     def test_partial_overlap(self):

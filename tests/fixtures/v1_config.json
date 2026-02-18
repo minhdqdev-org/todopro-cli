@@ -1,0 +1,33 @@
+{
+  "api": {
+    "endpoint": "https://todopro.minhdq.dev/api",
+    "timeout": 30,
+    "retry": 3
+  },
+  "auth": {
+    "auto_refresh": true
+  },
+  "output": {
+    "format": "pretty",
+    "color": true,
+    "icons": true,
+    "icon_style": "emoji",
+    "compact": false
+  },
+  "ui": {
+    "interactive": false,
+    "page_size": 30,
+    "language": "en",
+    "timezone": "UTC"
+  },
+  "cache": {
+    "enabled": true,
+    "ttl": 300
+  },
+  "sync": {
+    "auto": false,
+    "interval": 300
+  },
+  "current_context": "default",
+  "contexts": {}
+}

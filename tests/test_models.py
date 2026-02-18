@@ -2,9 +2,7 @@
 
 from datetime import datetime
 
-from todopro_cli.models.project import Project
-from todopro_cli.models.task import Task
-from todopro_cli.models.user import User
+from todopro_cli.models import Project, Task, User
 
 
 def test_task_model():

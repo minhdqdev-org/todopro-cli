@@ -2,12 +2,11 @@
 
 import json
 import time
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from todopro_cli.utils.task_cache import BackgroundTaskCache, get_background_cache
+from todopro_cli.services.cache_service import BackgroundTaskCache, get_background_cache
 
 
 @pytest.fixture
@@ -16,8 +15,8 @@ def mock_cache_dir(tmp_path):
     cache_dir = tmp_path / "todopro"
     cache_file = cache_dir / "processing_tasks.json"
 
-    with patch("todopro_cli.utils.task_cache.CACHE_DIR", cache_dir):
-        with patch("todopro_cli.utils.task_cache.PROCESSING_CACHE_FILE", cache_file):
+    with patch("todopro_cli.services.cache_service.CACHE_DIR", cache_dir):
+        with patch("todopro_cli.services.cache_service.PROCESSING_CACHE_FILE", cache_file):
             yield cache_dir
 
 
@@ -163,7 +162,7 @@ def test_get_background_cache_singleton(mock_cache_dir):
 
 def test_cache_ttl(mock_cache_dir):
     """Test that cache respects TTL."""
-    from todopro_cli.utils.task_cache import CACHE_TTL
+    from todopro_cli.services.cache_service import CACHE_TTL
 
     cache = BackgroundTaskCache()
 

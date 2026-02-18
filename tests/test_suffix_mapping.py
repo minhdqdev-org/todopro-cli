@@ -2,11 +2,10 @@
 
 import json
 import time
-from pathlib import Path
 
 import pytest
 
-from todopro_cli.utils.task_cache import (
+from todopro_cli.services.cache_service import (
     SUFFIX_MAPPING_FILE,
     SUFFIX_MAPPING_TTL,
     get_suffix_mapping,

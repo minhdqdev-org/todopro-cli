@@ -1,0 +1,1211 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0 -- /home/minhdqdev/Projects/todopro/todopro-cli/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/minhdqdev/Projects/todopro/todopro-cli
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.0.0, mock-3.15.1, anyio-4.12.1, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 448 items
+
+tests/api/test_api_auth.py::test_login PASSED                            [  0%]
+tests/api/test_api_auth.py::test_refresh_token PASSED                    [  0%]
+tests/api/test_api_auth.py::test_get_profile PASSED                      [  0%]
+tests/api/test_api_auth.py::test_logout PASSED                           [  0%]
+tests/api/test_api_auth.py::test_update_profile PASSED                   [  1%]
+tests/api/test_api_client.py::test_client_initialization FAILED          [  1%]
+tests/api/test_api_client.py::test_get_headers_without_auth FAILED       [  1%]
+tests/api/test_api_client.py::test_get_headers_with_auth FAILED          [  1%]
+tests/api/test_api_client.py::test_get_client_creates_httpx_client FAILED [  2%]
+tests/api/test_api_client.py::test_close_client FAILED                   [  2%]
+tests/api/test_api_client.py::test_request_success FAILED                [  2%]
+tests/api/test_api_client.py::test_request_with_retry_on_server_error FAILED [  2%]
+tests/api/test_api_client.py::test_request_no_retry_on_client_error FAILED [  2%]
+tests/api/test_api_client.py::test_get_method FAILED                     [  3%]
+tests/api/test_api_client.py::test_post_method FAILED                    [  3%]
+tests/api/test_api_client.py::test_put_method FAILED                     [  3%]
+tests/api/test_api_client.py::test_patch_method FAILED                   [  3%]
+tests/api/test_api_client.py::test_delete_method FAILED                  [  4%]
+tests/api/test_api_client.py::test_get_client_factory FAILED             [  4%]
+tests/api/test_api_labels.py::test_list_labels PASSED                    [  4%]
+tests/api/test_api_labels.py::test_create_label PASSED                   [  4%]
+tests/api/test_api_labels.py::test_update_label PASSED                   [  4%]
+tests/api/test_api_labels.py::test_delete_label PASSED                   [  5%]
+tests/api/test_api_labels.py::test_get_label PASSED                      [  5%]
+tests/api/test_api_projects.py::test_list_projects PASSED                [  5%]
+tests/api/test_api_projects.py::test_get_project PASSED                  [  5%]
+tests/api/test_api_projects.py::test_create_project PASSED               [  6%]
+tests/api/test_api_projects.py::test_update_project PASSED               [  6%]
+tests/api/test_api_projects.py::test_delete_project PASSED               [  6%]
+tests/api/test_api_projects.py::test_archive_project PASSED              [  6%]
+tests/api/test_api_projects.py::test_unarchive_project PASSED            [  6%]
+tests/api/test_api_tasks.py::test_list_tasks_no_filters PASSED           [  7%]
+tests/api/test_api_tasks.py::test_list_tasks_with_filters PASSED         [  7%]
+tests/api/test_api_tasks.py::test_get_task PASSED                        [  7%]
+tests/api/test_api_tasks.py::test_create_task_minimal PASSED             [  7%]
+tests/api/test_api_tasks.py::test_create_task_full PASSED                [  8%]
+tests/api/test_api_tasks.py::test_update_task PASSED                     [  8%]
+tests/api/test_api_tasks.py::test_delete_task PASSED                     [  8%]
+tests/api/test_api_tasks.py::test_complete_task PASSED                   [  8%]
+tests/api/test_api_tasks.py::test_reopen_task PASSED                     [  8%]
+tests/api/test_api_tasks.py::test_get_task_comments PASSED               [  9%]
+tests/api/test_api_tasks.py::test_add_comment PASSED                     [  9%]
+tests/api/test_api_tasks.py::test_today_tasks PASSED                     [  9%]
+tests/api/test_api_tasks.py::test_next_task PASSED                       [  9%]
+tests/api/test_api_tasks.py::test_reschedule_overdue PASSED              [ 10%]
+tests/api/test_api_tasks.py::test_quick_add PASSED                       [ 10%]
+tests/api/test_api_tasks.py::test_eisenhower_matrix PASSED               [ 10%]
+tests/api/test_api_tasks.py::test_classify_task PASSED                   [ 10%]
+tests/api/test_api_tasks.py::test_bulk_classify PASSED                   [ 10%]
+tests/commands/test_create_command.py::TestCreateTask::test_create_task_minimal FAILED [ 11%]
+tests/commands/test_create_command.py::TestCreateTask::test_create_task_with_options FAILED [ 11%]
+tests/commands/test_create_command.py::TestCreateProject::test_create_project_minimal FAILED [ 11%]
+tests/commands/test_create_command.py::TestCreateCommandStructure::test_create_help PASSED [ 11%]
+tests/commands/test_create_command.py::TestCreateCommandStructure::test_create_task_help PASSED [ 12%]
+tests/commands/test_create_command.py::TestCreateCommandStructure::test_create_project_help PASSED [ 12%]
+tests/commands/test_get_command.py::TestGetTask::test_get_task_success FAILED [ 12%]
+tests/commands/test_get_command.py::TestGetProject::test_get_project_success FAILED [ 12%]
+tests/commands/test_get_command.py::TestGetCommandStructure::test_get_help PASSED [ 12%]
+tests/commands/test_get_command.py::TestGetCommandStructure::test_get_task_help PASSED [ 13%]
+tests/commands/test_get_command.py::TestGetCommandStructure::test_get_project_help PASSED [ 13%]
+tests/commands/test_labels_command.py::TestListCommand::test_list_labels_success FAILED [ 13%]
+tests/commands/test_labels_command.py::TestListCommand::test_list_labels_json_output FAILED [ 13%]
+tests/commands/test_labels_command.py::TestGetCommand::test_get_label_success FAILED [ 14%]
+tests/commands/test_labels_command.py::TestCreateCommand::test_create_label_minimal FAILED [ 14%]
+tests/commands/test_labels_command.py::TestCreateCommand::test_create_label_with_color FAILED [ 14%]
+tests/commands/test_labels_command.py::TestUpdateCommand::test_update_label_name FAILED [ 14%]
+tests/commands/test_labels_command.py::TestUpdateCommand::test_update_label_color FAILED [ 14%]
+tests/commands/test_labels_command.py::TestUpdateCommand::test_update_label_no_changes FAILED [ 15%]
+tests/commands/test_labels_command.py::TestDeleteCommand::test_delete_label_with_yes_flag FAILED [ 15%]
+tests/commands/test_labels_command.py::TestDeleteCommand::test_delete_label_cancelled FAILED [ 15%]
+tests/commands/test_list_command.py::TestListTasks::test_list_tasks_success FAILED [ 15%]
+tests/commands/test_list_command.py::TestListTasks::test_list_tasks_with_filters FAILED [ 16%]
+tests/commands/test_list_command.py::TestListProjects::test_list_projects_success FAILED [ 16%]
+tests/commands/test_list_command.py::TestListLabels::test_list_labels_success FAILED [ 16%]
+tests/commands/test_list_command.py::TestListCommandStructure::test_list_help PASSED [ 16%]
+tests/commands/test_list_command.py::TestListCommandStructure::test_list_tasks_help PASSED [ 16%]
+tests/commands/test_list_command.py::TestListCommandStructure::test_list_projects_help PASSED [ 17%]
+tests/commands/test_list_command.py::TestListCommandStructure::test_list_labels_help PASSED [ 17%]
+tests/commands/test_projects_command.py::TestListProjects::test_list_projects_default FAILED [ 17%]
+tests/commands/test_projects_command.py::TestListProjects::test_list_projects_archived FAILED [ 17%]
+tests/commands/test_projects_command.py::TestListProjects::test_list_projects_favorites FAILED [ 18%]
+tests/commands/test_projects_command.py::TestListProjects::test_list_projects_empty PASSED [ 18%]
+tests/commands/test_projects_command.py::TestGetProject::test_get_project_success PASSED [ 18%]
+tests/commands/test_projects_command.py::TestGetProject::test_get_project_not_found PASSED [ 18%]
+tests/commands/test_projects_command.py::TestGetProject::test_get_project_with_output_format PASSED [ 18%]
+tests/commands/test_projects_command.py::TestCreateProject::test_create_project_basic PASSED [ 19%]
+tests/commands/test_projects_command.py::TestCreateProject::test_create_project_with_color PASSED [ 19%]
+tests/commands/test_projects_command.py::TestCreateProject::test_create_project_as_favorite PASSED [ 19%]
+tests/commands/test_projects_command.py::TestCreateProject::test_create_project_with_all_options PASSED [ 19%]
+tests/commands/test_projects_command.py::TestUpdateProject::test_update_project_name PASSED [ 20%]
+tests/commands/test_projects_command.py::TestUpdateProject::test_update_project_color PASSED [ 20%]
+tests/commands/test_projects_command.py::TestUpdateProject::test_update_project_both_fields PASSED [ 20%]
+tests/commands/test_projects_command.py::TestUpdateProject::test_update_project_no_updates PASSED [ 20%]
+tests/commands/test_projects_command.py::TestDeleteProject::test_delete_project_with_yes_flag PASSED [ 20%]
+tests/commands/test_projects_command.py::TestDeleteProject::test_delete_project_with_confirmation PASSED [ 21%]
+tests/commands/test_projects_command.py::TestDeleteProject::test_delete_project_cancelled PASSED [ 21%]
+tests/commands/test_projects_command.py::TestArchiveProject::test_archive_project_success PASSED [ 21%]
+tests/commands/test_projects_command.py::TestArchiveProject::test_archive_project_with_output PASSED [ 21%]
+tests/commands/test_projects_command.py::TestUnarchiveProject::test_unarchive_project_success PASSED [ 22%]
+tests/commands/test_projects_command.py::TestUnarchiveProject::test_unarchive_project_with_output PASSED [ 22%]
+tests/commands/test_projects_command.py::TestViewProject::test_view_project_unsupported_layout PASSED [ 22%]
+tests/commands/test_projects_command.py::TestProjectCommandsIntegration::test_help_command PASSED [ 22%]
+tests/commands/test_projects_command.py::TestProjectCommandsIntegration::test_list_help PASSED [ 22%]
+tests/commands/test_projects_command.py::TestProjectCommandsIntegration::test_create_help PASSED [ 23%]
+tests/commands/test_projects_command.py::TestProjectCommandsIntegration::test_update_help PASSED [ 23%]
+tests/commands/test_projects_command.py::TestProjectCommandsErrorHandling::test_service_error_propagates PASSED [ 23%]
+tests/commands/test_projects_command.py::TestProjectCommandsErrorHandling::test_repository_error_propagates PASSED [ 23%]
+tests/commands/test_projects_command.py::TestProjectCommandsErrorHandling::test_network_error_handling PASSED [ 24%]
+tests/commands/test_tasks_command.py::TestListCommand::test_list_tasks_success PASSED [ 24%]
+tests/commands/test_tasks_command.py::TestListCommand::test_list_with_filters PASSED [ 24%]
+tests/commands/test_tasks_command.py::TestGetCommand::test_get_task_success PASSED [ 24%]
+tests/commands/test_tasks_command.py::TestCreateCommand::test_create_task_minimal PASSED [ 25%]
+tests/commands/test_tasks_command.py::TestCreateCommand::test_create_task_with_options PASSED [ 25%]
+tests/commands/test_tasks_command.py::TestUpdateCommand::test_update_task_success PASSED [ 25%]
+tests/commands/test_tasks_command.py::TestUpdateCommand::test_update_task_no_updates PASSED [ 25%]
+tests/commands/test_tasks_command.py::TestDeleteCommand::test_delete_task_with_yes_flag PASSED [ 25%]
+tests/commands/test_tasks_command.py::TestDeleteCommand::test_delete_task_cancelled PASSED [ 26%]
+tests/commands/test_tasks_command.py::TestReopenCommand::test_reopen_task PASSED [ 26%]
+tests/commands/test_tasks_command.py::TestRescheduleCommand::test_reschedule_single_task PASSED [ 26%]
+tests/commands/test_tasks_command.py::TestRescheduleCommand::test_reschedule_overdue_none PASSED [ 26%]
+tests/commands/test_timer_command.py::TestTimerHistory::test_history_no_sessions PASSED [ 27%]
+tests/commands/test_timer_command.py::TestTimerHistory::test_history_with_sessions PASSED [ 27%]
+tests/commands/test_timer_command.py::TestTimerHistory::test_history_with_task_filter PASSED [ 27%]
+tests/commands/test_timer_command.py::TestTimerHistory::test_history_with_limit PASSED [ 27%]
+tests/commands/test_timer_command.py::TestTimerHistory::test_history_api_error PASSED [ 27%]
+tests/commands/test_timer_command.py::TestTimerStats::test_stats_success PASSED [ 28%]
+tests/commands/test_timer_command.py::TestTimerStats::test_stats_with_task_filter PASSED [ 28%]
+tests/commands/test_timer_command.py::TestTimerStats::test_stats_with_custom_days PASSED [ 28%]
+tests/commands/test_timer_command.py::TestTimerStats::test_stats_api_error PASSED [ 28%]
+tests/commands/test_timer_command.py::TestTimerStart::test_start_basic PASSED [ 29%]
+tests/commands/test_timer_command.py::TestTimerStart::test_start_invalid_type PASSED [ 29%]
+tests/commands/test_timer_command.py::TestTimerStart::test_start_with_task_id PASSED [ 29%]
+tests/commands/test_timer_command.py::TestTimerStart::test_start_api_error PASSED [ 29%]
+tests/commands/test_timer_command.py::TestTimerQuick::test_quick_timer_default_duration PASSED [ 29%]
+tests/commands/test_timer_command.py::TestTimerQuick::test_quick_timer_custom_duration PASSED [ 30%]
+tests/commands/test_timer_command.py::TestTimerIntegration::test_help_command PASSED [ 30%]
+tests/commands/test_timer_command.py::TestTimerIntegration::test_start_help PASSED [ 30%]
+tests/commands/test_timer_command.py::TestTimerIntegration::test_history_help PASSED [ 30%]
+tests/commands/test_timer_command.py::TestTimerIntegration::test_stats_help PASSED [ 31%]
+tests/commands/test_version_command.py::TestVersionCommand::test_version_output FAILED [ 31%]
+tests/integration/test_e2ee_sync.py::TestE2EEIntegration::test_prepare_task_for_storage_encrypts_content PASSED [ 31%]
+tests/integration/test_e2ee_sync.py::TestE2EEIntegration::test_extract_task_content_decrypts_data PASSED [ 31%]
+tests/integration/test_e2ee_sync.py::TestE2EEIntegration::test_roundtrip_encryption_decryption PASSED [ 31%]
+tests/integration/test_e2ee_sync.py::TestE2EEIntegration::test_e2ee_handler_disabled_mode PASSED [ 32%]
+tests/integration/test_e2ee_sync.py::TestE2EESyncIntegration::test_rest_api_repository_encrypts_on_create PASSED [ 32%]
+tests/integration/test_e2ee_sync.py::TestE2EESyncIntegration::test_get_e2ee_handler_respects_config PASSED [ 32%]
+tests/integration/test_e2ee_sync.py::TestE2EEConfigIntegration::test_app_config_has_e2ee_field PASSED [ 32%]
+tests/integration/test_e2ee_sync.py::TestE2EEConfigIntegration::test_e2ee_config_can_be_enabled PASSED [ 33%]
+tests/integration/test_e2ee_sync.py::TestE2EEConfigIntegration::test_encryption_setup_enables_e2ee_in_config PASSED [ 33%]
+tests/services/test_auth_service.py::TestAuthService::test_is_authenticated_with_no_credentials PASSED [ 33%]
+tests/services/test_auth_service.py::TestAuthService::test_is_authenticated_with_credentials PASSED [ 33%]
+tests/services/test_encryption_edge_cases.py::TestEncryptionEdgeCases::test_decrypt_corrupted_ciphertext PASSED [ 33%]
+tests/services/test_encryption_edge_cases.py::TestEncryptionEdgeCases::test_decrypt_missing_iv PASSED [ 34%]
+tests/services/test_encryption_edge_cases.py::TestEncryptionEdgeCases::test_decrypt_invalid_tag PASSED [ 34%]
+tests/services/test_encryption_edge_cases.py::TestEncryptionEdgeCases::test_encrypt_empty_string PASSED [ 34%]
+tests/services/test_encryption_edge_cases.py::TestEncryptionEdgeCases::test_encrypt_unicode_data PASSED [ 34%]
+tests/services/test_encryption_edge_cases.py::TestEncryptionEdgeCases::test_encrypt_large_data PASSED [ 35%]
+tests/services/test_encryption_edge_cases.py::TestEncryptionEdgeCases::test_recover_with_wrong_word_order PASSED [ 35%]
+tests/services/test_encryption_edge_cases.py::TestEncryptionEdgeCases::test_recover_with_extra_spaces PASSED [ 35%]
+tests/services/test_encryption_edge_cases.py::TestKeyRotation::test_rotate_key_old_data_still_readable PASSED [ 35%]
+tests/services/test_encryption_edge_cases.py::TestKeyRotation::test_rotate_key_generates_different_phrase PASSED [ 35%]
+tests/services/test_encryption_edge_cases.py::TestKeyRotation::test_old_phrase_fails_after_rotation PASSED [ 36%]
+tests/services/test_encryption_edge_cases.py::TestCryptoPrimitives::test_encryption_uses_unique_iv_per_operation PASSED [ 36%]
+tests/services/test_encryption_edge_cases.py::TestCryptoPrimitives::test_iv_length_is_96_bits PASSED [ 36%]
+tests/services/test_encryption_edge_cases.py::TestCryptoPrimitives::test_tag_length_is_128_bits PASSED [ 36%]
+tests/services/test_encryption_edge_cases.py::TestCryptoPrimitives::test_encrypted_data_base64_encoded PASSED [ 37%]
+tests/services/test_encryption_edge_cases.py::TestSecurityProperties::test_no_plaintext_in_encrypted_output PASSED [ 37%]
+tests/services/test_encryption_edge_cases.py::TestSecurityProperties::test_ciphertext_looks_random PASSED [ 37%]
+tests/services/test_encryption_edge_cases.py::TestSecurityProperties::test_dict_encryption_no_plaintext_leakage PASSED [ 37%]
+tests/services/test_encryption_edge_cases.py::TestSecurityProperties::test_same_plaintext_different_ciphertext PASSED [ 37%]
+tests/services/test_encryption_edge_cases.py::TestE2EEPerformance::test_batch_encryption_performance PASSED [ 38%]
+tests/services/test_encryption_service.py::TestEncryptionSetup::test_setup_generates_manager_and_phrase PASSED [ 38%]
+tests/services/test_encryption_service.py::TestEncryptionSetup::test_setup_generates_unique_keys PASSED [ 38%]
+tests/services/test_encryption_service.py::TestEncryptionSetup::test_save_manager_persists_key PASSED [ 38%]
+tests/services/test_encryption_service.py::TestEncryptionStatus::test_is_enabled_returns_false_when_no_key PASSED [ 39%]
+tests/services/test_encryption_service.py::TestEncryptionStatus::test_is_enabled_returns_true_after_setup PASSED [ 39%]
+tests/services/test_encryption_service.py::TestEncryptionStatus::test_get_status_when_not_set_up PASSED [ 39%]
+tests/services/test_encryption_service.py::TestEncryptionStatus::test_get_status_when_set_up PASSED [ 39%]
+tests/services/test_encryption_service.py::TestRecoveryPhrase::test_get_recovery_phrase_returns_phrase PASSED [ 39%]
+tests/services/test_encryption_service.py::TestRecoveryPhrase::test_verify_recovery_phrase_correct PASSED [ 40%]
+tests/services/test_encryption_service.py::TestRecoveryPhrase::test_verify_recovery_phrase_incorrect PASSED [ 40%]
+tests/services/test_encryption_service.py::TestRecoveryPhrase::test_recover_from_phrase PASSED [ 40%]
+tests/services/test_encryption_service.py::TestRecoveryPhrase::test_recover_with_invalid_phrase_raises PASSED [ 40%]
+tests/services/test_encryption_service.py::TestEncryptionDecryption::test_encrypt_returns_dict_with_required_fields PASSED [ 41%]
+tests/services/test_encryption_service.py::TestEncryptionDecryption::test_encrypt_decrypt_roundtrip PASSED [ 41%]
+tests/services/test_encryption_service.py::TestEncryptionDecryption::test_encrypt_produces_different_ciphertexts PASSED [ 41%]
+tests/services/test_encryption_service.py::TestEncryptionDecryption::test_encrypt_dict_encrypts_multiple_fields PASSED [ 41%]
+tests/services/test_encryption_service.py::TestEncryptionDecryption::test_encrypt_decrypt_dict_roundtrip PASSED [ 41%]
+tests/services/test_encryption_service.py::TestKeyManagement::test_rotate_key_generates_new_key PASSED [ 42%]
+tests/services/test_encryption_service.py::TestKeyManagement::test_delete_key_removes_storage PASSED [ 42%]
+tests/services/test_encryption_service.py::TestKeyManagement::test_backup_to_server_not_implemented PASSED [ 42%]
+tests/services/test_encryption_service.py::TestKeyManagement::test_restore_from_server_not_implemented PASSED [ 42%]
+tests/test_config.py::test_default_config PASSED                         [ 43%]
+tests/test_config.py::test_config_manager_creation FAILED                [ 43%]
+tests/test_config.py::test_config_save_load FAILED                       [ 43%]
+tests/test_config.py::test_credentials_save_load FAILED                  [ 43%]
+tests/test_config.py::test_config_reset FAILED                           [ 43%]
+tests/test_config.py::test_config_reset_specific_key FAILED              [ 44%]
+tests/test_config.py::test_list_profiles FAILED                          [ 44%]
+tests/test_config.py::test_load_corrupted_config FAILED                  [ 44%]
+tests/test_config.py::test_load_credentials_corrupted FAILED             [ 44%]
+tests/test_config.py::test_save_credentials_without_refresh_token FAILED [ 45%]
+tests/test_config.py::test_get_context_manager FAILED                    [ 45%]
+tests/test_config.py::test_get_from_config FAILED                        [ 45%]
+tests/test_config.py::test_config_property FAILED                        [ 45%]
+tests/test_config.py::test_api_config PASSED                             [ 45%]
+tests/test_config.py::test_auth_config PASSED                            [ 46%]
+tests/test_config.py::test_output_config PASSED                          [ 46%]
+tests/test_config.py::test_ui_config PASSED                              [ 46%]
+tests/test_config.py::test_cache_config PASSED                           [ 46%]
+tests/test_config.py::test_sync_config PASSED                            [ 47%]
+tests/test_core_factory.py::TestRepositoryFactory::test_factory_initialization FAILED [ 47%]
+tests/test_core_factory.py::TestRepositoryFactory::test_storage_type_local FAILED [ 47%]
+tests/test_core_factory.py::TestRepositoryFactory::test_storage_type_remote FAILED [ 47%]
+tests/test_core_factory.py::TestRepositoryFactory::test_storage_type_defaults_to_remote FAILED [ 47%]
+tests/test_core_factory.py::TestRepositoryFactory::test_get_task_repository_local FAILED [ 48%]
+tests/test_core_factory.py::TestRepositoryFactory::test_get_task_repository_remote FAILED [ 48%]
+tests/test_core_factory.py::TestRepositoryFactory::test_get_project_repository_local FAILED [ 48%]
+tests/test_core_factory.py::TestRepositoryFactory::test_get_label_repository_local FAILED [ 48%]
+tests/test_core_factory.py::TestRepositoryFactory::test_get_context_repository_local FAILED [ 49%]
+tests/test_core_factory.py::TestRepositoryFactory::test_lazy_loading FAILED [ 49%]
+tests/test_core_factory.py::TestRepositoryFactory::test_storage_type_caching FAILED [ 49%]
+tests/test_formatters.py::test_format_error PASSED                       [ 49%]
+tests/test_formatters.py::test_format_success PASSED                     [ 50%]
+tests/test_formatters.py::test_format_warning PASSED                     [ 50%]
+tests/test_formatters.py::test_format_info PASSED                        [ 50%]
+tests/test_formatters.py::test_format_output_json PASSED                 [ 50%]
+tests/test_formatters.py::test_format_output_yaml PASSED                 [ 50%]
+tests/test_formatters.py::test_format_output_quiet PASSED                [ 51%]
+tests/test_formatters.py::test_format_output_table PASSED                [ 51%]
+tests/test_formatters.py::test_format_output_pretty PASSED               [ 51%]
+tests/test_formatters.py::test_format_table_empty_data PASSED            [ 51%]
+tests/test_formatters.py::test_format_table_with_dict_list PASSED        [ 52%]
+tests/test_formatters.py::test_format_table_with_single_dict PASSED      [ 52%]
+tests/test_formatters.py::test_format_table_with_items_key PASSED        [ 52%]
+tests/test_formatters.py::test_format_pretty_empty_data PASSED           [ 52%]
+tests/test_formatters.py::test_format_pretty_with_tasks PASSED           [ 52%]
+tests/test_formatters.py::test_format_pretty_with_projects PASSED        [ 53%]
+tests/test_formatters.py::test_format_quiet_with_list PASSED             [ 53%]
+tests/test_formatters.py::test_format_quiet_with_dict PASSED             [ 53%]
+tests/test_formatters.py::test_is_today_with_today_date PASSED           [ 53%]
+tests/test_formatters.py::test_is_today_with_old_date PASSED             [ 54%]
+tests/test_formatters.py::test_is_today_with_none PASSED                 [ 54%]
+tests/test_formatters.py::test_is_overdue_with_past_date PASSED          [ 54%]
+tests/test_formatters.py::test_is_overdue_with_future_date PASSED        [ 54%]
+tests/test_formatters.py::test_is_overdue_with_none PASSED               [ 54%]
+tests/test_formatters.py::test_format_due_date_today PASSED              [ 55%]
+tests/test_formatters.py::test_format_due_date_tomorrow PASSED           [ 55%]
+tests/test_formatters.py::test_format_due_date_past PASSED               [ 55%]
+tests/test_formatters.py::test_format_relative_time_just_now PASSED      [ 55%]
+tests/test_formatters.py::test_format_relative_time_minutes PASSED       [ 56%]
+tests/test_formatters.py::test_format_relative_time_hours PASSED         [ 56%]
+tests/test_formatters.py::test_format_relative_time_days PASSED          [ 56%]
+tests/test_formatters.py::test_format_relative_time_none PASSED          [ 56%]
+tests/test_formatters.py::test_get_project_icon_work PASSED              [ 56%]
+tests/test_formatters.py::test_get_project_icon_personal PASSED          [ 57%]
+tests/test_formatters.py::test_get_project_icon_tech PASSED              [ 57%]
+tests/test_formatters.py::test_get_project_icon_default PASSED           [ 57%]
+tests/test_formatters.py::test_get_progress_bar_empty PASSED             [ 57%]
+tests/test_formatters.py::test_get_progress_bar_half PASSED              [ 58%]
+tests/test_formatters.py::test_get_progress_bar_full PASSED              [ 58%]
+tests/test_formatters.py::test_get_completion_color_high PASSED          [ 58%]
+tests/test_formatters.py::test_get_completion_color_medium PASSED        [ 58%]
+tests/test_formatters.py::test_get_completion_color_low PASSED           [ 58%]
+tests/test_formatters_complete.py::test_format_table_with_simple_list PASSED [ 59%]
+tests/test_formatters_complete.py::test_format_table_with_string PASSED  [ 59%]
+tests/test_formatters_complete.py::test_format_pretty_with_string PASSED [ 59%]
+tests/test_formatters_complete.py::test_format_pretty_with_non_dict_list PASSED [ 59%]
+tests/test_formatters_complete.py::test_format_task_item_compact_completed PASSED [ 60%]
+tests/test_formatters_complete.py::test_format_task_item_compact_with_overdue PASSED [ 60%]
+tests/test_formatters_complete.py::test_format_task_item_without_project_name PASSED [ 60%]
+tests/test_formatters_complete.py::test_format_project_item_with_updated_at PASSED [ 60%]
+tests/test_formatters_complete.py::test_format_project_item_without_color PASSED [ 60%]
+tests/test_formatters_complete.py::test_format_project_item_compact_without_color PASSED [ 61%]
+tests/test_formatters_complete.py::test_is_overdue_invalid PASSED        [ 61%]
+tests/test_formatters_complete.py::test_format_relative_time_invalid PASSED [ 61%]
+tests/test_formatters_complete.py::test_get_project_icon_launch PASSED   [ 61%]
+tests/test_formatters_complete.py::test_get_project_icon_mobile PASSED   [ 62%]
+tests/test_formatters_complete.py::test_get_project_icon_analytics PASSED [ 62%]
+tests/test_formatters_extended.py::test_format_output_default PASSED     [ 62%]
+tests/test_formatters_extended.py::test_format_output_json_pretty PASSED [ 62%]
+tests/test_formatters_extended.py::test_format_output_wide PASSED        [ 62%]
+tests/test_formatters_extended.py::test_format_dict_table_with_boolean PASSED [ 63%]
+tests/test_formatters_extended.py::test_format_dict_table_with_list_values PASSED [ 63%]
+tests/test_formatters_extended.py::test_format_dict_table_with_none_values PASSED [ 63%]
+tests/test_formatters_extended.py::test_format_single_item_with_various_types PASSED [ 63%]
+tests/test_formatters_extended.py::test_format_table_with_tasks_key PASSED [ 64%]
+tests/test_formatters_extended.py::test_format_table_with_projects_key PASSED [ 64%]
+tests/test_formatters_extended.py::test_format_pretty_with_dict_items PASSED [ 64%]
+tests/test_formatters_extended.py::test_format_pretty_with_dict_tasks PASSED [ 64%]
+tests/test_formatters_extended.py::test_format_pretty_with_dict_projects PASSED [ 64%]
+tests/test_formatters_extended.py::test_format_pretty_single_item PASSED [ 65%]
+tests/test_formatters_extended.py::test_format_tasks_pretty_with_completed PASSED [ 65%]
+tests/test_formatters_extended.py::test_format_tasks_pretty_with_overdue PASSED [ 65%]
+tests/test_formatters_extended.py::test_format_tasks_pretty_compact PASSED [ 65%]
+tests/test_formatters_extended.py::test_format_task_item_recurring PASSED [ 66%]
+tests/test_formatters_extended.py::test_format_task_item_with_metadata PASSED [ 66%]
+tests/test_formatters_extended.py::test_format_projects_pretty_with_archived PASSED [ 66%]
+tests/test_formatters_extended.py::test_format_projects_pretty_with_favorites PASSED [ 66%]
+tests/test_formatters_extended.py::test_format_project_item_with_stats PASSED [ 66%]
+tests/test_formatters_extended.py::test_format_project_item_compact PASSED [ 67%]
+tests/test_formatters_extended.py::test_format_generic_list_pretty PASSED [ 67%]
+tests/test_formatters_extended.py::test_format_single_item_pretty_task PASSED [ 67%]
+tests/test_formatters_extended.py::test_format_single_item_pretty_project PASSED [ 67%]
+tests/test_formatters_extended.py::test_format_single_item_pretty_generic PASSED [ 68%]
+tests/test_formatters_extended.py::test_format_due_date_this_week PASSED [ 68%]
+tests/test_formatters_extended.py::test_format_due_date_multiple_days_ago PASSED [ 68%]
+tests/test_formatters_extended.py::test_format_due_date_invalid PASSED   [ 68%]
+tests/test_formatters_extended.py::test_is_today_invalid_date PASSED     [ 68%]
+tests/test_formatters_extended.py::test_format_quiet_with_items_key PASSED [ 69%]
+tests/test_models.py::test_task_model PASSED                             [ 69%]
+tests/test_models.py::test_project_model PASSED                          [ 69%]
+tests/test_models.py::test_user_model PASSED                             [ 69%]
+tests/test_services.py::TestTaskService::test_list_tasks PASSED          [ 70%]
+tests/test_services.py::TestTaskService::test_get_task PASSED            [ 70%]
+tests/test_services.py::TestTaskService::test_add_task PASSED            [ 70%]
+tests/test_services.py::TestTaskService::test_update_task PASSED         [ 70%]
+tests/test_services.py::TestTaskService::test_delete_task PASSED         [ 70%]
+tests/test_services.py::TestTaskService::test_complete_task PASSED       [ 71%]
+tests/test_services.py::TestTaskService::test_bulk_complete_tasks PASSED [ 71%]
+tests/test_services.py::TestProjectService::test_list_projects PASSED    [ 71%]
+tests/test_services.py::TestProjectService::test_create_project PASSED   [ 71%]
+tests/test_services.py::TestProjectService::test_archive_project PASSED  [ 72%]
+tests/test_services.py::TestProjectService::test_favorite_project PASSED [ 72%]
+tests/test_services.py::TestLabelService::test_list_labels PASSED        [ 72%]
+tests/test_services.py::TestLabelService::test_create_label PASSED       [ 72%]
+tests/test_services.py::TestLabelService::test_search_labels PASSED      [ 72%]
+tests/test_services.py::TestLabelService::test_get_or_create_label_existing PASSED [ 73%]
+tests/test_services.py::TestLabelService::test_get_or_create_label_new PASSED [ 73%]
+tests/test_services.py::TestContextService::test_list_contexts PASSED    [ 73%]
+tests/test_services.py::TestContextService::test_create_context PASSED   [ 73%]
+tests/test_services.py::TestContextService::test_get_available_contexts PASSED [ 74%]
+tests/test_services.py::TestContextService::test_get_or_create_context_existing PASSED [ 74%]
+tests/test_services.py::TestContextService::test_get_or_create_context_new PASSED [ 74%]
+tests/test_strategy_pattern.py::TestLocalStrategy::test_initialization PASSED [ 74%]
+tests/test_strategy_pattern.py::TestLocalStrategy::test_get_task_repository PASSED [ 75%]
+tests/test_strategy_pattern.py::TestLocalStrategy::test_get_project_repository PASSED [ 75%]
+tests/test_strategy_pattern.py::TestLocalStrategy::test_get_label_repository PASSED [ 75%]
+tests/test_strategy_pattern.py::TestLocalStrategy::test_repositories_created_once PASSED [ 75%]
+tests/test_strategy_pattern.py::TestRemoteStrategy::test_initialization PASSED [ 75%]
+tests/test_strategy_pattern.py::TestRemoteStrategy::test_get_task_repository PASSED [ 76%]
+tests/test_strategy_pattern.py::TestRemoteStrategy::test_repositories_created_once PASSED [ 76%]
+tests/test_strategy_pattern.py::TestStrategyContext::test_initialization_with_local_strategy PASSED [ 76%]
+tests/test_strategy_pattern.py::TestStrategyContext::test_initialization_with_remote_strategy PASSED [ 76%]
+tests/test_strategy_pattern.py::TestStrategyContext::test_task_repository_property PASSED [ 77%]
+tests/test_strategy_pattern.py::TestStrategyContext::test_project_repository_property PASSED [ 77%]
+tests/test_strategy_pattern.py::TestStrategyContext::test_label_repository_property PASSED [ 77%]
+tests/test_strategy_pattern.py::TestStrategyContext::test_property_access_no_runtime_branching PASSED [ 77%]
+tests/test_strategy_pattern.py::TestContextManagerBootstrap::test_bootstrap_local_context SKIPPEDnstead) [ 77%]
+tests/test_strategy_pattern.py::TestContextManagerBootstrap::test_bootstrap_remote_context SKIPPEDnstead) [ 78%]
+tests/test_strategy_pattern.py::TestContextManagerBootstrap::test_bootstrap_no_context_uses_default_local SKIPPEDnstead) [ 78%]
+tests/test_strategy_pattern.py::TestContextManagerBootstrap::test_bootstrap_invalid_context_type_raises_error SKIPPED [ 78%]
+tests/test_strategy_pattern.py::TestStrategyPatternIntegration::test_strategy_isolation_local_and_remote_dont_touch PASSED [ 78%]
+tests/test_strategy_pattern.py::TestStrategyPatternIntegration::test_service_layer_decoupling PASSED [ 79%]
+tests/test_strategy_pattern.py::TestStrategyPatternIntegration::test_caching_same_profile_returns_same_strategy PASSED [ 79%]
+tests/test_strategy_pattern.py::TestStrategyPatternPerformance::test_bootstrap_performance SKIPPED [ 79%]
+tests/test_strategy_pattern.py::TestStrategyPatternPerformance::test_cached_access_performance SKIPPED [ 79%]
+tests/test_suffix_mapping.py::test_save_and_get_suffix_mapping PASSED    [ 79%]
+tests/test_suffix_mapping.py::test_suffix_mapping_ttl_expiration PASSED  [ 80%]
+tests/test_suffix_mapping.py::test_suffix_mapping_missing_file PASSED    [ 80%]
+tests/test_suffix_mapping.py::test_suffix_mapping_corrupted_file PASSED  [ 80%]
+tests/test_suffix_mapping.py::test_suffix_mapping_overwrite PASSED       [ 80%]
+tests/test_suffix_mapping.py::test_suffix_mapping_timestamp PASSED       [ 81%]
+tests/test_suffix_mapping.py::test_suffix_mapping_empty_dict PASSED      [ 81%]
+tests/test_sync_conflicts.py::test_initial_state PASSED                  [ 81%]
+tests/test_sync_conflicts.py::test_add_conflict PASSED                   [ 81%]
+tests/test_sync_conflicts.py::test_conflict_to_dict PASSED               [ 81%]
+tests/test_sync_conflicts.py::test_save_conflicts PASSED                 [ 82%]
+tests/test_sync_conflicts.py::test_clear_conflicts PASSED                [ 82%]
+tests/test_sync_conflicts.py::test_compare_timestamps_remote_newer PASSED [ 82%]
+tests/test_sync_conflicts.py::test_compare_timestamps_local_newer PASSED [ 82%]
+tests/test_sync_conflicts.py::test_compare_timestamps_equal PASSED       [ 83%]
+tests/test_sync_conflicts.py::test_compare_timestamps_none PASSED        [ 83%]
+tests/test_sync_conflicts.py::test_save_empty_conflicts PASSED           [ 83%]
+tests/test_sync_conflicts.py::test_append_to_existing_conflicts PASSED   [ 83%]
+tests/test_sync_state.py::test_initial_state PASSED                      [ 83%]
+tests/test_sync_state.py::test_set_and_get_last_sync PASSED              [ 84%]
+tests/test_sync_state.py::test_set_last_sync_without_timestamp PASSED    [ 84%]
+tests/test_sync_state.py::test_clear_last_sync PASSED                    [ 84%]
+tests/test_sync_state.py::test_get_all_sync_times PASSED                 [ 84%]
+tests/test_sync_state.py::test_persistence PASSED                        [ 85%]
+tests/test_sync_state.py::test_make_context_key PASSED                   [ 85%]
+tests/test_sync_state.py::test_corrupted_file_handling PASSED            [ 85%]
+tests/test_task_cache.py::test_cache_initialization PASSED               [ 85%]
+tests/test_task_cache.py::test_add_completing_task PASSED                [ 85%]
+tests/test_task_cache.py::test_add_completing_tasks_batch PASSED         [ 86%]
+tests/test_task_cache.py::test_remove_task PASSED                        [ 86%]
+tests/test_task_cache.py::test_get_completing_tasks PASSED               [ 86%]
+tests/test_task_cache.py::test_cache_persistence PASSED                  [ 86%]
+tests/test_task_cache.py::test_expired_entries_cleaned PASSED            [ 87%]
+tests/test_task_cache.py::test_clear_expired PASSED                      [ 87%]
+tests/test_task_cache.py::test_clear_all PASSED                          [ 87%]
+tests/test_task_cache.py::test_cache_file_not_exists PASSED              [ 87%]
+tests/test_task_cache.py::test_corrupted_cache_file PASSED               [ 87%]
+tests/test_task_cache.py::test_get_background_cache_singleton PASSED     [ 88%]
+tests/test_task_cache.py::test_cache_ttl PASSED                          [ 88%]
+tests/test_task_helpers.py::test_find_shortest_unique_suffix PASSED      [ 88%]
+tests/test_task_helpers.py::test_find_shortest_unique_suffix_with_collisions PASSED [ 88%]
+tests/test_task_helpers.py::test_resolve_task_id_full_id PASSED          [ 89%]
+tests/test_task_helpers.py::test_resolve_task_id_suffix PASSED           [ 89%]
+tests/test_task_helpers.py::test_resolve_task_id_suffix_no_match PASSED  [ 89%]
+tests/test_task_helpers.py::test_resolve_task_id_suffix_multiple_matches PASSED [ 89%]
+tests/test_task_helpers.py::test_resolve_task_id_with_tasks_key PASSED   [ 89%]
+tests/test_task_helpers.py::test_resolve_task_id_with_list_response PASSED [ 90%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_empty_list PASSED [ 90%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_single_task PASSED [ 90%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_no_conflicts_all_different PASSED [ 90%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_suffix_collision_needs_longer PASSED [ 91%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_multiple_collisions PASSED [ 91%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_realistic_uuids PASSED [ 91%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_partial_overlap PASSED [ 91%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_all_same_suffix_needs_full_length PASSED [ 91%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_short_ids PASSED [ 92%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_identical_ids_use_full_length PASSED [ 92%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_maintains_uniqueness PASSED [ 92%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_progressive_collision PASSED [ 92%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_real_world_scenario PASSED [ 93%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_minimum_is_one_char PASSED [ 93%]
+tests/test_unique_suffixes.py::TestCalculateUniqueSuffixes::test_handles_numeric_ids PASSED [ 93%]
+tests/test_update_checker.py::test_check_for_updates_with_newer_version PASSED [ 93%]
+tests/test_update_checker.py::test_check_for_updates_with_same_version PASSED [ 93%]
+tests/test_update_checker.py::test_check_for_updates_with_older_version PASSED [ 94%]
+tests/test_update_checker.py::test_check_for_updates_network_error PASSED [ 94%]
+tests/test_update_checker.py::test_check_for_updates_uses_cache PASSED   [ 94%]
+tests/test_update_checker.py::test_check_for_updates_refreshes_expired_cache PASSED [ 94%]
+tests/test_update_checker.py::test_check_for_updates_creates_cache_file PASSED [ 95%]
+tests/test_update_checker.py::test_check_for_updates_timeout PASSED      [ 95%]
+tests/test_update_checker.py::test_get_latest_version_success PASSED     [ 95%]
+tests/test_update_checker.py::test_get_latest_version_network_error PASSED [ 95%]
+tests/test_update_checker.py::test_get_latest_version_uses_cache PASSED  [ 95%]
+tests/test_update_checker.py::test_is_update_available_newer_version PASSED [ 96%]
+tests/test_update_checker.py::test_is_update_available_same_version PASSED [ 96%]
+tests/test_update_checker.py::test_is_update_available_network_error PASSED [ 96%]
+tests/test_update_checker.py::test_get_backend_url_from_env_var PASSED   [ 96%]
+tests/test_update_checker.py::test_get_backend_url_from_cache PASSED     [ 97%]
+tests/test_update_checker.py::test_get_backend_url_from_pypi PASSED      [ 97%]
+tests/test_update_checker.py::test_get_backend_url_fallback_to_default FAILED [ 97%]
+tests/test_update_checker.py::test_get_backend_url_strips_trailing_slash PASSED [ 97%]
+tests/test_update_checker.py::test_get_backend_url_expired_cache_fallback PASSED [ 97%]
+tests/test_uuid_utils.py::test_uuid_validation PASSED                    [ 98%]
+tests/test_uuid_utils.py::test_full_uuid_detection PASSED                [ 98%]
+tests/test_uuid_utils.py::test_uuid_shortening PASSED                    [ 98%]
+tests/test_uuid_utils.py::test_uuid_field_validation PASSED              [ 98%]
+tests/test_uuid_utils.py::test_task_uuid_resolution PASSED               [ 99%]
+tests/test_uuid_utils.py::test_project_uuid_resolution PASSED            [ 99%]
+tests/test_uuid_utils.py::test_id_prefix_filtering PASSED                [ 99%]
+tests/test_uuid_utils.py::test_ambiguous_uuid_resolution PASSED          [ 99%]
+tests/test_uuid_utils.py::test_uuid_case_insensitivity PASSED            [100%]
+
+=================================== FAILURES ===================================
+__________________________ test_client_initialization __________________________
+tests/api/test_api_client.py:27: in test_client_initialization
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+________________________ test_get_headers_without_auth _________________________
+tests/api/test_api_client.py:39: in test_get_headers_without_auth
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+__________________________ test_get_headers_with_auth __________________________
+tests/api/test_api_client.py:53: in test_get_headers_with_auth
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+_____________________ test_get_client_creates_httpx_client _____________________
+tests/api/test_api_client.py:68: in test_get_client_creates_httpx_client
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+______________________________ test_close_client _______________________________
+tests/api/test_api_client.py:83: in test_close_client
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+_____________________________ test_request_success _____________________________
+tests/api/test_api_client.py:98: in test_request_success
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+___________________ test_request_with_retry_on_server_error ____________________
+tests/api/test_api_client.py:122: in test_request_with_retry_on_server_error
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+____________________ test_request_no_retry_on_client_error _____________________
+tests/api/test_api_client.py:151: in test_request_no_retry_on_client_error
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+_______________________________ test_get_method ________________________________
+tests/api/test_api_client.py:180: in test_get_method
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+_______________________________ test_post_method _______________________________
+tests/api/test_api_client.py:203: in test_post_method
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+_______________________________ test_put_method ________________________________
+tests/api/test_api_client.py:226: in test_put_method
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+______________________________ test_patch_method _______________________________
+tests/api/test_api_client.py:247: in test_patch_method
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+______________________________ test_delete_method ______________________________
+tests/api/test_api_client.py:270: in test_delete_method
+    with patch(
+/usr/lib/python3.12/unittest/mock.py:1442: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+/usr/lib/python3.12/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+             ^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'todopro_cli' has no attribute 'api'
+___________________________ test_get_client_factory ____________________________
+tests/api/test_api_client.py:292: in test_get_client_factory
+    assert client.config_manager.profile == "test"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'ConfigService' object has no attribute 'profile'
+___________________ TestCreateTask.test_create_task_minimal ____________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+_________________ TestCreateTask.test_create_task_with_options _________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+________________ TestCreateProject.test_create_project_minimal _________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+______________________ TestGetTask.test_get_task_success _______________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+___________________ TestGetProject.test_get_project_success ____________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+___________________ TestListCommand.test_list_labels_success ___________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+_________________ TestListCommand.test_list_labels_json_output _________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+____________________ TestGetCommand.test_get_label_success _____________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+_________________ TestCreateCommand.test_create_label_minimal __________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+________________ TestCreateCommand.test_create_label_with_color ________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+___________________ TestUpdateCommand.test_update_label_name ___________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+__________________ TestUpdateCommand.test_update_label_color ___________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+________________ TestUpdateCommand.test_update_label_no_changes ________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+______________ TestDeleteCommand.test_delete_label_with_yes_flag _______________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+________________ TestDeleteCommand.test_delete_label_cancelled _________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+____________________ TestListTasks.test_list_tasks_success _____________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+__________________ TestListTasks.test_list_tasks_with_filters __________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+_________________ TestListProjects.test_list_projects_success __________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+___________________ TestListLabels.test_list_labels_success ____________________
+/usr/lib/python3.12/unittest/mock.py:1387: in patched
+    with self.decoration_helper(patched,
+/usr/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1369: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+_________________ TestListProjects.test_list_projects_default __________________
+tests/commands/test_projects_command.py:73: in test_list_projects_default
+    assert result.exit_code == 0
+E   assert 1 == 0
+E    +  where 1 = <Result SystemExit(1)>.exit_code
+_________________ TestListProjects.test_list_projects_archived _________________
+tests/commands/test_projects_command.py:86: in test_list_projects_archived
+    assert result.exit_code == 0
+E   assert 1 == 0
+E    +  where 1 = <Result SystemExit(1)>.exit_code
+________________ TestListProjects.test_list_projects_favorites _________________
+tests/commands/test_projects_command.py:97: in test_list_projects_favorites
+    assert result.exit_code == 0
+E   assert 1 == 0
+E    +  where 1 = <Result SystemExit(1)>.exit_code
+____________________ TestVersionCommand.test_version_output ____________________
+tests/commands/test_version_command.py:17: in test_version_output
+    assert result.exit_code == 0
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+_________________________ test_config_manager_creation _________________________
+tests/test_config.py:22: in test_config_manager_creation
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+____________________________ test_config_save_load _____________________________
+tests/test_config.py:42: in test_config_save_load
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+__________________________ test_credentials_save_load __________________________
+tests/test_config.py:73: in test_credentials_save_load
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+______________________________ test_config_reset _______________________________
+tests/test_config.py:102: in test_config_reset
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+________________________ test_config_reset_specific_key ________________________
+tests/test_config.py:125: in test_config_reset_specific_key
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+______________________________ test_list_profiles ______________________________
+tests/test_config.py:149: in test_list_profiles
+    config_manager = ContextManager(profile="test1")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+__________________________ test_load_corrupted_config __________________________
+tests/test_config.py:168: in test_load_corrupted_config
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+_______________________ test_load_credentials_corrupted ________________________
+tests/test_config.py:185: in test_load_credentials_corrupted
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+_________________ test_save_credentials_without_refresh_token __________________
+tests/test_config.py:204: in test_save_credentials_without_refresh_token
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+___________________________ test_get_context_manager ___________________________
+tests/test_config.py:223: in test_get_context_manager
+    from .config import get_context_manager
+E   ModuleNotFoundError: No module named 'tests.config'
+_____________________________ test_get_from_config _____________________________
+tests/test_config.py:241: in test_get_from_config
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+_____________________________ test_config_property _____________________________
+tests/test_config.py:254: in test_config_property
+    config_manager = ContextManager(profile="test")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+______________ TestRepositoryFactory.test_factory_initialization _______________
+tests/test_core_factory.py:34: in test_factory_initialization
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+________________ TestRepositoryFactory.test_storage_type_local _________________
+tests/test_core_factory.py:52: in test_storage_type_local
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+________________ TestRepositoryFactory.test_storage_type_remote ________________
+tests/test_core_factory.py:68: in test_storage_type_remote
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+__________ TestRepositoryFactory.test_storage_type_defaults_to_remote __________
+tests/test_core_factory.py:76: in test_storage_type_defaults_to_remote
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+_____________ TestRepositoryFactory.test_get_task_repository_local _____________
+tests/test_core_factory.py:91: in test_get_task_repository_local
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+____________ TestRepositoryFactory.test_get_task_repository_remote _____________
+tests/test_core_factory.py:108: in test_get_task_repository_remote
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+___________ TestRepositoryFactory.test_get_project_repository_local ____________
+tests/test_core_factory.py:124: in test_get_project_repository_local
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+____________ TestRepositoryFactory.test_get_label_repository_local _____________
+tests/test_core_factory.py:140: in test_get_label_repository_local
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+___________ TestRepositoryFactory.test_get_context_repository_local ____________
+tests/test_core_factory.py:156: in test_get_context_repository_local
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+___________________ TestRepositoryFactory.test_lazy_loading ____________________
+tests/test_core_factory.py:172: in test_lazy_loading
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+_______________ TestRepositoryFactory.test_storage_type_caching ________________
+tests/test_core_factory.py:196: in test_storage_type_caching
+    with patch("todopro_cli.models.factory.get_config_service", return_value=config_service):
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:1431: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+___________________ test_get_backend_url_fallback_to_default ___________________
+tests/test_update_checker.py:297: in test_get_backend_url_fallback_to_default
+    assert url == DEFAULT_BACKEND_URL
+                  ^^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DEFAULT_BACKEND_URL' is not defined
+=============================== warnings summary ===============================
+src/todopro_cli/services/label_service.py:5
+  /home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/services/label_service.py:5: DeprecationWarning: Importing from 'todopro_cli.core.repository' is deprecated. Use 'from todopro_cli.repositories import TaskRepository' instead.
+    from todopro_cli.core.repository import LabelRepository
+
+tests/test_core_factory.py:9
+  /home/minhdqdev/Projects/todopro/todopro-cli/tests/test_core_factory.py:9: DeprecationWarning: Importing from 'todopro_cli.core.factory' is deprecated. Use 'from todopro_cli.models.factory import get_repository_factory' instead. Better yet, migrate to the Strategy Pattern: 'from todopro_cli.services.context_manager import get_strategy_context'
+    from todopro_cli.core.factory import RepositoryFactory
+
+tests/api/test_api_client.py::test_get_client_factory
+  /home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/services/api/client.py:20: DeprecationWarning: get_context_manager() is deprecated. Use get_config_service() instead.
+    self.config_manager = get_context_manager()
+
+tests/commands/test_tasks_command.py::TestDeleteCommand::test_delete_task_with_yes_flag
+tests/commands/test_timer_command.py::TestTimerHistory::test_history_with_task_filter
+  /usr/lib/python3.12/unittest/mock.py:2188: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    def __init__(self, name, parent):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/api/test_api_client.py::test_client_initialization - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_get_headers_without_auth - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_get_headers_with_auth - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_get_client_creates_httpx_client - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_close_client - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_request_success - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_request_with_retry_on_server_error - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_request_no_retry_on_client_error - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_get_method - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_post_method - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_put_method - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_patch_method - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_delete_method - AttributeError: module 'todopro_cli' has no attribute 'api'
+FAILED tests/api/test_api_client.py::test_get_client_factory - AttributeError: 'ConfigService' object has no attribute 'profile'
+FAILED tests/commands/test_create_command.py::TestCreateTask::test_create_task_minimal - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_create_command.py::TestCreateTask::test_create_task_with_options - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_create_command.py::TestCreateProject::test_create_project_minimal - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_get_command.py::TestGetTask::test_get_task_success - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_get_command.py::TestGetProject::test_get_project_success - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_labels_command.py::TestListCommand::test_list_labels_success - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestListCommand::test_list_labels_json_output - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestGetCommand::test_get_label_success - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestCreateCommand::test_create_label_minimal - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestCreateCommand::test_create_label_with_color - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestUpdateCommand::test_update_label_name - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestUpdateCommand::test_update_label_color - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestUpdateCommand::test_update_label_no_changes - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestDeleteCommand::test_delete_label_with_yes_flag - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_labels_command.py::TestDeleteCommand::test_delete_label_cancelled - AttributeError: <module 'todopro_cli.commands.labels' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/labels.py'> does not have the attribute 'get_repository_factory'
+FAILED tests/commands/test_list_command.py::TestListTasks::test_list_tasks_success - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_list_command.py::TestListTasks::test_list_tasks_with_filters - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_list_command.py::TestListProjects::test_list_projects_success - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_list_command.py::TestListLabels::test_list_labels_success - AttributeError: <module 'todopro_cli.commands.utils' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/commands/utils.py'> does not have the attribute 'require_auth'
+FAILED tests/commands/test_projects_command.py::TestListProjects::test_list_projects_default - assert 1 == 0
+ +  where 1 = <Result SystemExit(1)>.exit_code
+FAILED tests/commands/test_projects_command.py::TestListProjects::test_list_projects_archived - assert 1 == 0
+ +  where 1 = <Result SystemExit(1)>.exit_code
+FAILED tests/commands/test_projects_command.py::TestListProjects::test_list_projects_favorites - assert 1 == 0
+ +  where 1 = <Result SystemExit(1)>.exit_code
+FAILED tests/commands/test_version_command.py::TestVersionCommand::test_version_output - assert 2 == 0
+ +  where 2 = <Result SystemExit(2)>.exit_code
+FAILED tests/test_config.py::test_config_manager_creation - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_config_save_load - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_credentials_save_load - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_config_reset - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_config_reset_specific_key - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_list_profiles - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_load_corrupted_config - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_load_credentials_corrupted - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_save_credentials_without_refresh_token - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_get_context_manager - ModuleNotFoundError: No module named 'tests.config'
+FAILED tests/test_config.py::test_get_from_config - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_config.py::test_config_property - TypeError: ContextManager.__init__() got an unexpected keyword argument 'profile'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_factory_initialization - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_storage_type_local - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+/home/minhdqdev/Projects/todopro/todopro-cli/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py:33: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+  gc.collect()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_storage_type_remote - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_storage_type_defaults_to_remote - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_get_task_repository_local - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_get_task_repository_remote - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_get_project_repository_local - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_get_label_repository_local - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_get_context_repository_local - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_lazy_loading - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_core_factory.py::TestRepositoryFactory::test_storage_type_caching - AttributeError: <module 'todopro_cli.models.factory' from '/home/minhdqdev/Projects/todopro/todopro-cli/src/todopro_cli/models/factory.py'> does not have the attribute 'get_config_service'
+FAILED tests/test_update_checker.py::test_get_backend_url_fallback_to_default - NameError: name 'DEFAULT_BACKEND_URL' is not defined
+============ 61 failed, 381 passed, 6 skipped, 5 warnings in 12.82s ============

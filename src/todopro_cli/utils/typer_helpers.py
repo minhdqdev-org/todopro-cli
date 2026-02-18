@@ -17,7 +17,7 @@ class SuggestingGroup(TyperGroup):
         """Override to provide command suggestions on errors."""
         try:
             return super().resolve_command(ctx, args)
-        except Exception:
+        except Exception as e:
             # Get the attempted command
             if args:
                 attempted = args[0]
@@ -41,5 +41,5 @@ class SuggestingGroup(TyperGroup):
                         console.print("[yellow]Did you mean one of these?[/yellow]")
                     for suggestion in suggestions:
                         console.print(f"        {suggestion}")
-                    raise typer.Exit(1)
+                    raise typer.Exit(1) from e
             raise

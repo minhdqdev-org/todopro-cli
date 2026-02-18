@@ -1,37 +1,37 @@
 """Final tests to complete formatter coverage."""
 
-import pytest
+from datetime import datetime, timedelta
 from io import StringIO
 from unittest.mock import patch
-from datetime import datetime, timedelta
-from todopro_cli.ui.formatters import format_table, format_pretty
+
+from todopro_cli.utils.ui.formatters import format_pretty, format_table
 
 
 def test_format_table_with_simple_list():
     """Test formatting a simple list (not dict)."""
     data = ["item1", "item2", "item3"]
-    with patch('sys.stdout', new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()) as fake_out:
         format_table(data)
 
 
 def test_format_table_with_string():
     """Test formatting a string."""
     data = "simple string"
-    with patch('sys.stdout', new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()) as fake_out:
         format_table(data)
 
 
 def test_format_pretty_with_string():
     """Test pretty format with a string."""
     data = "simple string"
-    with patch('sys.stdout', new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()) as fake_out:
         format_pretty(data)
 
 
 def test_format_pretty_with_non_dict_list():
     """Test pretty format with non-dict list items."""
     data = ["item1", "item2"]
-    with patch('sys.stdout', new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()) as fake_out:
         format_pretty(data)
 
 
@@ -46,8 +46,9 @@ def test_format_task_item_compact_completed():
         "priority": 2,
         "labels": [],
     }
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        from todopro_cli.ui.formatters import format_task_item
+    with patch("sys.stdout", new=StringIO()) as fake_out:
+        from todopro_cli.utils.ui.formatters import format_task_item
+
         format_task_item(task, compact=True)
 
 
@@ -62,8 +63,9 @@ def test_format_task_item_compact_with_overdue():
         "priority": 2,
         "labels": ["work", "urgent", "critical"],
     }
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        from todopro_cli.ui.formatters import format_task_item
+    with patch("sys.stdout", new=StringIO()) as fake_out:
+        from todopro_cli.utils.ui.formatters import format_task_item
+
         format_task_item(task, compact=True)
 
 
@@ -78,8 +80,9 @@ def test_format_task_item_without_project_name():
         "labels": [],
         "created_at": (now - timedelta(hours=2)).isoformat(),
     }
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        from todopro_cli.ui.formatters import format_task_item
+    with patch("sys.stdout", new=StringIO()) as fake_out:
+        from todopro_cli.utils.ui.formatters import format_task_item
+
         format_task_item(task, compact=False)
 
 
@@ -94,8 +97,9 @@ def test_format_project_item_with_updated_at():
         "is_archived": False,
         "updated_at": (now - timedelta(hours=3)).isoformat(),
     }
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        from todopro_cli.ui.formatters import format_project_item
+    with patch("sys.stdout", new=StringIO()) as fake_out:
+        from todopro_cli.utils.ui.formatters import format_project_item
+
         format_project_item(project, compact=False)
 
 
@@ -108,8 +112,9 @@ def test_format_project_item_without_color():
         "is_favorite": False,
         "is_archived": False,
     }
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        from todopro_cli.ui.formatters import format_project_item
+    with patch("sys.stdout", new=StringIO()) as fake_out:
+        from todopro_cli.utils.ui.formatters import format_project_item
+
         format_project_item(project, compact=False)
 
 
@@ -120,38 +125,44 @@ def test_format_project_item_compact_without_color():
         "name": "Project",
         "color": "#808080",
     }
-    with patch('sys.stdout', new=StringIO()) as fake_out:
-        from todopro_cli.ui.formatters import format_project_item
+    with patch("sys.stdout", new=StringIO()) as fake_out:
+        from todopro_cli.utils.ui.formatters import format_project_item
+
         format_project_item(project, compact=True)
 
 
 def test_is_overdue_invalid():
     """Test is_overdue with invalid date string."""
-    from todopro_cli.ui.formatters import is_overdue
+    from todopro_cli.utils.ui.formatters import is_overdue
+
     result = is_overdue("invalid_date")
     assert result is False
 
 
 def test_format_relative_time_invalid():
     """Test format_relative_time with invalid date."""
-    from todopro_cli.ui.formatters import format_relative_time
+    from todopro_cli.utils.ui.formatters import format_relative_time
+
     result = format_relative_time("invalid_date")
     assert result == ""
 
 
 def test_get_project_icon_launch():
     """Test getting icon for launch project."""
-    from todopro_cli.ui.formatters import get_project_icon
+    from todopro_cli.utils.ui.formatters import get_project_icon
+
     assert get_project_icon("Sprint Launch") == "🚀"
 
 
 def test_get_project_icon_mobile():
     """Test getting icon for mobile project."""
-    from todopro_cli.ui.formatters import get_project_icon
+    from todopro_cli.utils.ui.formatters import get_project_icon
+
     assert get_project_icon("Mobile App") == "📱"
 
 
 def test_get_project_icon_analytics():
     """Test getting icon for analytics project."""
-    from todopro_cli.ui.formatters import get_project_icon
+    from todopro_cli.utils.ui.formatters import get_project_icon
+
     assert get_project_icon("Data Analytics") == "📊"

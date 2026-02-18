@@ -1,0 +1,57 @@
+.task-card {
+    min-height: 5;
+    border: round gray;
+}
+
+.task-card:hover {
+    border: round lightgray;
+}
+
+.highlighted {
+    border: round blue;
+}
+
+.highlighted-section-title {
+    background: gray;
+}
+
+Body {
+    margin-top: 1;
+    scrollbar-visibility: hidden;
+}
+
+TaskCheckbox {
+    width: 1;
+    margin: 1;
+    content-align: left top;
+}
+
+RichLog {
+    height: 3;
+}
+
+.add-task-button {
+    width: 100%;
+    height: 3;
+    margin-top: 1;
+}
+
+SectionSeparator {
+    color: gray;
+}
+
+SectionSeparator:hover {
+    color: blue;
+}
+
+.highlighted-separator {
+    color: blue;
+}
+
+SectionTitle {
+    height: 1;
+}
+
+.section-name {
+    text-style: underline;
+}

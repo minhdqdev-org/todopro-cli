@@ -14,8 +14,6 @@ from todopro_cli import __version__
 CACHE_DIR = Path(user_cache_dir("todopro"))
 CACHE_FILE = CACHE_DIR / "update_check.json"
 
-# TODO: Replace PyPI URL with Github Releases API instead for more reliable metadata
-PYPI_URL = "https://pypi.org/pypi/todopro-cli/json"
 CHECK_INTERVAL = 3600  # 1 hour in seconds
 DEFAULT_BACKEND_URL = "https://todopro.minhdq.dev/api"
 
@@ -41,28 +39,24 @@ def check_for_updates() -> None:
         except Exception:
             pass
 
-    # 2. If cache expired or missing, call PyPI
+    # 2. If cache expired or missing, fetch from PyPI
     if not latest_version:
         try:
-            # Short timeout to avoid blocking the CLI
-            res = requests.get(PYPI_URL, timeout=0.5)
-            if res.status_code == 200:
-                data = res.json()
-                latest_version = data["info"]["version"]
-                # Also fetch backend URL from PyPI metadata
-                project_urls = data["info"].get("project_urls", {})
-                backend_url = project_urls.get("Backend", DEFAULT_BACKEND_URL)
-
-                # Update cache
+            response = requests.get(
+                "https://pypi.org/pypi/todopro-cli/json", timeout=0.5
+            )
+            if response.status_code == 200:
+                latest_version = response.json()["info"]["version"]
+                # Save to cache
                 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-                cache_data = {
-                    "last_check_timestamp": now,
-                    "latest_version": latest_version,
-                    "backend_url": backend_url,
-                }
-                CACHE_FILE.write_text(json.dumps(cache_data))
+                CACHE_FILE.write_text(
+                    json.dumps(
+                        {"latest_version": latest_version, "last_check_timestamp": now}
+                    )
+                )
         except Exception:
-            return  # Fail silently on network errors
+            # Silently fail on network errors
+            pass
 
     # 3. Display notification if newer version available
     if latest_version and version.parse(latest_version) > version.parse(__version__):
@@ -92,22 +86,16 @@ def get_latest_version() -> str | None:
 
     # Fetch from PyPI
     try:
-        res = requests.get(PYPI_URL, timeout=2.0)
-        if res.status_code == 200:
-            data = res.json()
-            latest_version = data["info"]["version"]
-            # Also fetch backend URL from PyPI metadata
-            project_urls = data["info"].get("project_urls", {})
-            backend_url = project_urls.get("Backend", DEFAULT_BACKEND_URL)
-
-            # Update cache
+        response = requests.get("https://pypi.org/pypi/todopro-cli/json", timeout=2)
+        if response.status_code == 200:
+            latest_version = response.json()["info"]["version"]
+            # Cache the result
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            cache_data = {
-                "last_check_timestamp": now,
-                "latest_version": latest_version,
-                "backend_url": backend_url,
-            }
-            CACHE_FILE.write_text(json.dumps(cache_data))
+            CACHE_FILE.write_text(
+                json.dumps(
+                    {"latest_version": latest_version, "last_check_timestamp": now}
+                )
+            )
             return latest_version
     except Exception:
         pass
@@ -157,24 +145,23 @@ def get_backend_url() -> str:
 
     # Priority 3: Fetch from PyPI metadata
     try:
-        res = requests.get(PYPI_URL, timeout=0.5)
-        if res.status_code == 200:
-            data = res.json()
-            latest_version = data["info"]["version"]
-            # Get backend URL from project_urls.Backend field
-            project_urls = data["info"].get("project_urls", {})
-            backend_url = project_urls.get("Backend", DEFAULT_BACKEND_URL)
-
-            # Update cache with both version and backend URL
-            CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            cache_data = {
-                "last_check_timestamp": time.time(),
-                "latest_version": latest_version,
-                "backend_url": backend_url,
-            }
-            CACHE_FILE.write_text(json.dumps(cache_data))
-
-            return backend_url.rstrip("/")
+        response = requests.get("https://pypi.org/pypi/todopro-cli/json", timeout=2)
+        if response.status_code == 200:
+            data = response.json()
+            backend_url = data.get("info", {}).get("project_urls", {}).get("Backend")
+            if backend_url:
+                # Cache it
+                cache_data = {}
+                if CACHE_FILE.exists():
+                    try:
+                        cache_data = json.loads(CACHE_FILE.read_text())
+                    except Exception:
+                        pass
+                cache_data["backend_url"] = backend_url
+                cache_data["last_check_timestamp"] = time.time()
+                CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                CACHE_FILE.write_text(json.dumps(cache_data))
+                return backend_url.rstrip("/")
     except Exception:
         pass
 
