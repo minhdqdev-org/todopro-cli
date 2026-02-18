@@ -27,16 +27,26 @@ async def complete_command(
     task_ids: Annotated[
         list[str], typer.Argument(help="Task ID(s) - can specify multiple")
     ],
-    output: Annotated[str, typer.Option("--output", help="Output format")] = "table",
+    output: Annotated[str, typer.Option("--output", "-o", help="Output format")] = "table",
+    json_opt: Annotated[bool, typer.Option("--json", help="Output as JSON (alias for --output json)")] = False,
     sync_opt: Annotated[
         bool, typer.Option("--sync", help="Wait for completion")
     ] = False,
 ) -> None:
     """Mark one or more tasks as completed."""
+    if json_opt:
+        output = "json"
 
     strategy = get_strategy_context()
     task_repo = strategy.task_repository
     task_service = TaskService(task_repo)
+
+    # For local context, background mode uses the remote API which doesn't apply.
+    # Always use sync mode so the local SQLite DB is updated directly.
+    from todopro_cli.services.config_service import get_config_service
+    _config_svc = get_config_service()
+    if _config_svc.get_current_context().type == "local":
+        sync_opt = True
 
     # Single task - use original logic
     if len(task_ids) == 1:
@@ -54,7 +64,7 @@ async def complete_command(
                 content = content[:57] + "..."
 
             format_success(f"✓ Completed: {content}")
-            console.print(f"[dim]To undo: tp tasks reopen {task_id}[/dim]")
+            console.print(f"[dim]To undo: tp reopen {task_id}[/dim]")
 
             # Only show full output if explicitly requested
             if output not in ["table", "pretty"]:

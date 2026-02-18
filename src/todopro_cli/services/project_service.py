@@ -116,6 +116,10 @@ class ProjectService:
             is_archived=is_archived,
             workspace_id=workspace_id,
         )
+        if name is not None:
+            current = await self.repository.get(project_id)
+            if current.name.lower() == "inbox" and name.lower() != "inbox":
+                raise ValueError("Cannot rename the Inbox project")
         return await self.repository.update(project_id, updates)
 
     async def delete_project(self, project_id: str) -> bool:
@@ -127,6 +131,9 @@ class ProjectService:
         Returns:
             True if deletion was successful
         """
+        project = await self.repository.get(project_id)
+        if project.name.lower() == "inbox":
+            raise ValueError("Cannot delete the Inbox project")
         return await self.repository.delete(project_id)
 
     async def archive_project(self, project_id: str) -> Project:
@@ -138,6 +145,9 @@ class ProjectService:
         Returns:
             Updated Project object with is_archived=True
         """
+        project = await self.repository.get(project_id)
+        if project.name.lower() == "inbox":
+            raise ValueError("Cannot archive the Inbox project")
         return await self.repository.archive(project_id)
 
     async def favorite_project(self, project_id: str) -> Project:

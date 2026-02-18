@@ -166,22 +166,24 @@ todopro sync pull
 ### Task Management
 
 ```bash
-# Add tasks
+# Add tasks (natural language)
 todopro add "Task title"
 todopro add "Task" --due tomorrow --priority 1
+todopro add "Buy groceries today" --project Inbox  # assign to project by name
+todopro add "Stand-up at 9am #Work" --output json  # JSON output (-o json / --json also works)
 
 # List tasks
 todopro list tasks
-todopro today                    # Today's tasks
+todopro today                    # Today's tasks (shows unique short suffix like #3f)
 todopro list tasks --filter=overdue
 
 # Complete/reopen
-todopro complete <id>
-todopro reopen <id>
+todopro complete <suffix>        # suffix shown in brackets, e.g. [3f]
+todopro reopen <suffix>          # undo a completion
 
-# Update
-todopro update task <id> --content "New title"
-todopro update task <id> --due "next monday"
+# Edit a task interactively
+todopro edit <id>                # interactive mode
+todopro edit <id> --content "New title" --project Work  # flag mode (project by name)
 
 # Delete
 todopro delete task <id>
@@ -191,8 +193,12 @@ todopro delete task <id>
 
 ```bash
 # Projects
+# The default project is "Inbox" (ID: 00000000-0000-0000-0000-000000000000).
+# All tasks without an explicit project belong to Inbox.
+# Inbox cannot be archived, deleted, or renamed.
 todopro create project "Work"
-todopro list projects
+todopro list project             # pretty list (default)
+todopro list project --json      # JSON output
 todopro archive project <id>
 
 # Labels
@@ -336,10 +342,11 @@ todopro reschedule <task_id> --date tomorrow
 todopro reschedule <task_id> --date 2026-02-15
 
 # Task ID Shortcuts
-# You can use task ID suffixes instead of full IDs for convenience
-# If the full ID is "task-abc123def", you can use:
-todopro complete abc123def    # Uses suffix
-todopro complete 123def       # Even shorter suffix
+# Task ID suffixes are globally unique — the minimum suffix length is shown in brackets [3f].
+# Use the bracketed suffix from `tp today` or `tp list tasks` directly:
+todopro complete 3f            # complete task [3f]
+todopro reopen 3f              # undo completion
+todopro complete abc123def     # longer suffix still works
 todopro reschedule e562bb     # Reschedule to today by suffix
 todopro get e562bb            # Get task details by suffix
 todopro update 123def --content "Updated task"
@@ -356,10 +363,17 @@ todopro export data --output backup.json      # Export all data
 todopro import data backup.json               # Import data
 todopro purge data --dry-run                  # Preview data deletion
 
-# AI-agent friendly usage
+# AI-agent and scripting friendly usage
 todopro list tasks --output json              # JSON output for parsing
+todopro list tasks -o json                    # shorthand
+todopro add "task" --json                     # also --json flag
+todopro list contexts --json --limit 5        # contexts with limit
 todopro complete task-abc --yes               # Skip confirmation prompts
 echo $?                                        # Check exit code (0=success)
+
+# login/logout/signup only apply in remote context
+todopro login      # remote context only
+todopro logout     # remote context only
 ```
 
 ## Development

@@ -89,9 +89,9 @@ async def delete_context(
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ) -> None:
     """Delete a storage context."""
-    from todopro_cli.services.context_service import ContextService
+    from todopro_cli.services.config_service import get_config_service
 
-    context_service = ContextService()
+    config_service = get_config_service()
 
     if not force:
         confirm = typer.confirm(f"Delete context {name}?")
@@ -99,7 +99,7 @@ async def delete_context(
             format_info("Cancelled")
             raise typer.Exit(0)
 
-    context_service.delete_context(name)
+    config_service.remove_context(name)
     format_success(f"Context deleted: {name}")
 
 

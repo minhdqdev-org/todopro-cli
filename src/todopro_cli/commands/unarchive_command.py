@@ -18,7 +18,7 @@ console = Console()
 @command_wrapper
 async def unarchive_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Unarchive a project."""
     strategy = get_strategy_context()

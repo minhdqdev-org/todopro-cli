@@ -19,7 +19,7 @@ async def start_focus(
     task_id: str | None = typer.Option(None, "--task", help="Task ID to focus on"),
     duration: int = typer.Option(25, "--duration", help="Session duration in minutes"),
     template: str | None = typer.Option(None, "--template", help="Template ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Start a focus session."""
     from todopro_cli.services.focus_service import FocusService
@@ -42,7 +42,7 @@ async def start_focus(
 async def start_timer(
     duration: int = typer.Argument(25, help="Duration in minutes"),
     task_id: str | None = typer.Option(None, "--task", help="Task ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Start a Pomodoro timer."""
     from todopro_cli.services.timer_service import TimerService

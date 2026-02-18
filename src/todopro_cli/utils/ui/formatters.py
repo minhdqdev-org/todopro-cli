@@ -50,7 +50,10 @@ def calculate_unique_suffixes(task_ids: list[str]) -> dict[str, int]:
 
 
 def format_output(
-    data: Any, output_format: str = "pretty", compact: bool = False
+    data: Any,
+    output_format: str = "pretty",
+    compact: bool = False,
+    all_task_ids: list[str] | None = None,
 ) -> None:
     """Format and display output based on format."""
     if output_format == "json":
@@ -62,12 +65,12 @@ def format_output(
     elif output_format in ("table", "wide"):
         format_table(data, wide=output_format == "wide")
     elif output_format == "pretty":
-        format_pretty(data, compact=compact)
+        format_pretty(data, compact=compact, all_task_ids=all_task_ids)
     elif output_format == "quiet":
         format_quiet(data)
     else:
         # Default to pretty
-        format_pretty(data, compact=compact)
+        format_pretty(data, compact=compact, all_task_ids=all_task_ids)
 
 
 def format_table(data: Any, wide: bool = False) -> None:
@@ -242,7 +245,7 @@ PROJECT_ICONS = {
 }
 
 
-def format_pretty(data: Any, compact: bool = False) -> None:
+def format_pretty(data: Any, compact: bool = False, all_task_ids: list[str] | None = None) -> None:
     """Format data in pretty format with colors and icons."""
     if not data:
         console.print("[yellow]No data to display[/yellow]")
@@ -258,7 +261,7 @@ def format_pretty(data: Any, compact: bool = False) -> None:
         if data and isinstance(data[0], dict):
             first_item = data[0]
             if "content" in first_item or "is_completed" in first_item:
-                format_tasks_pretty(data, compact)
+                format_tasks_pretty(data, compact, all_task_ids=all_task_ids)
             elif "name" in first_item and "color" in first_item:
                 format_projects_pretty(data, compact)
             else:
@@ -266,9 +269,9 @@ def format_pretty(data: Any, compact: bool = False) -> None:
     elif isinstance(data, dict):
         # Check for paginated response
         if "items" in data:
-            format_pretty(data["items"], compact)
+            format_pretty(data["items"], compact, all_task_ids=all_task_ids)
         elif "tasks" in data:
-            format_tasks_pretty(data["tasks"], compact)
+            format_tasks_pretty(data["tasks"], compact, all_task_ids=all_task_ids)
         elif "projects" in data:
             format_projects_pretty(data["projects"], compact)
         else:
@@ -278,7 +281,7 @@ def format_pretty(data: Any, compact: bool = False) -> None:
         console.print(data)
 
 
-def format_tasks_pretty(tasks: list[dict], compact: bool = False) -> None:
+def format_tasks_pretty(tasks: list[dict], compact: bool = False, all_task_ids: list[str] | None = None) -> None:
     """Format tasks in pretty format."""
     # Count tasks by status
     active_tasks = [t for t in tasks if not t.get("is_completed", False)]
@@ -296,9 +299,10 @@ def format_tasks_pretty(tasks: list[dict], compact: bool = False) -> None:
     console.print(header)
     console.print()
 
-    # Calculate unique suffix lengths for all task IDs
-    task_ids = [task["id"] for task in tasks if task.get("id")]
-    suffix_map = calculate_unique_suffixes(task_ids)
+    # Calculate unique suffix lengths against all task IDs (globally unique)
+    displayed_ids = [task["id"] for task in tasks if task.get("id")]
+    suffix_ids = all_task_ids if all_task_ids is not None else displayed_ids
+    suffix_map = calculate_unique_suffixes(suffix_ids)
 
     # Save suffix mapping to cache for later resolution
     from todopro_cli.services.cache_service import save_suffix_mapping
@@ -625,18 +629,15 @@ def format_quiet(data: Any) -> None:
 
 
 def is_today(date_str: str | None) -> bool:
-    """Check if date is today."""
+    """Check if date is today (in local timezone)."""
     if not date_str:
         return False
     try:
         date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-
-        # Make naive datetime timezone-aware if needed
-        if date.tzinfo is None:
-            date = date.replace(tzinfo=UTC)
-
-        now = datetime.now(UTC)
-        return date.date() == now.date()
+        if date.tzinfo is not None:
+            # Convert aware datetime to local time before comparing
+            date = date.astimezone()
+        return date.date() == datetime.now().date()
     except Exception:  # pylint: disable=broad-exception-catch
         return False
 
@@ -702,6 +703,10 @@ def format_relative_time(date_str: str | datetime | None) -> str:
         return ""  # Return empty string for invalid dates
         
     now = datetime.now()
+    # Use timezone-aware now if date is timezone-aware
+    if date.tzinfo is not None:
+        from datetime import timezone
+        now = datetime.now(tz=timezone.utc)
     diff = now - date
 
     seconds = diff.total_seconds()

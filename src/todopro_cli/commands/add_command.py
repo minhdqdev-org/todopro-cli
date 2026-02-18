@@ -25,6 +25,9 @@ console = get_console()
 def add(
     text: str | None = typer.Argument(None, help="Natural language task description"),
     profile: str = typer.Option("default", "--profile", help="Profile name"),
+    project: str | None = typer.Option(None, "--project", "-p", help="Project name or ID (overrides #project in text)"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format (pretty/json/table)"),
+    json_opt: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
 ) -> None:
     """
     Quick add a task using natural language.
@@ -46,13 +49,15 @@ def add(
     """
     import sys
 
+    if json_opt:
+        output = "json"
+
     text = text.strip() if text else None
 
     # If no text provided, determine how to get it
     if not text:
         # Check if stdin is a TTY (interactive terminal) or has data piped
         if not sys.stdin.isatty():
-            # Stdin has piped data, read it
             text = sys.stdin.read().strip()
         else:
             # Interactive terminal, use Textual UI (lazy import)
@@ -65,37 +70,6 @@ def add(
                 console.print("\n[yellow]Cancelled.[/yellow]")
                 raise typer.Exit(0) from None
             except Exception as e:
-                # If Textual fails for any reason, fall back to simple input
-                console.print(f"[yellow]Interactive mode failed: {e}[/yellow]")
-                console.print("Enter task description:")
-                text = input().strip()
-
-        if not text:
-            format_error("Task text is required")
-            raise typer.Exit(1)
-
-    # If no text provided, determine how to get it
-    if not text:
-        console.print(f"[dim]DEBUG: stdin.isatty() = {sys.stdin.isatty()}[/dim]", highlight=False)
-        # Check if stdin is a TTY (interactive terminal) or has data piped
-        if not sys.stdin.isatty():
-            # Stdin has piped data, read it
-            console.print(f"[dim]DEBUG: Reading from stdin (pipe detected)[/dim]", highlight=False)
-            text = sys.stdin.read().strip()
-            console.print(f"[dim]DEBUG: Read from stdin: {repr(text)}[/dim]", highlight=False)
-        else:
-            console.print(f"[dim]DEBUG: Launching Textual UI (TTY detected)[/dim]", highlight=False)
-            # Interactive terminal, use Textual UI (lazy import)
-            try:
-                from todopro_cli.utils.ui.textual_prompt import QuickAddApp
-                app_ui = QuickAddApp(default_project="Inbox")
-                app_ui.run()
-                text = app_ui.result
-            except KeyboardInterrupt:
-                console.print("\n[yellow]Cancelled.[/yellow]")
-                raise typer.Exit(0) from None
-            except Exception as e:
-                # If Textual fails for any reason, fall back to simple input
                 console.print(f"[yellow]Interactive mode failed: {e}[/yellow]")
                 console.print("Enter task description:")
                 text = input().strip()
@@ -107,10 +81,10 @@ def add(
     # Check current context type
     config_svc = get_config_service()
     current_context = config_svc.get_current_context()
-    
+
     # For local context, use simple task creation
     if current_context.type == "local":
-        _create_local_task(text)
+        _create_local_task(text, project_override=project, output=output)
         return
 
     # For remote context, use NLP parsing
@@ -120,9 +94,6 @@ def add(
             # Get API client
             client = get_client()
             tasks_api = TasksAPI(client)
-
-            # Show parsing preview
-            # console.print(f"\n[cyan]Parsing:[/cyan] {text}")
 
             response = await tasks_api.quick_add(text)
 
@@ -152,6 +123,11 @@ def add(
 
             task = response.get("task", {})
             parsed = response.get("parsed", {})
+
+            if output == "json":
+                import json as _json
+                console.print(_json.dumps({"task": task, "parsed": parsed}, indent=2, default=str))
+                return
 
             # Show parsed elements
             console.print("\n[bold green]✓[/bold green] Task created successfully!")
@@ -203,77 +179,104 @@ def add(
         raise typer.Exit(1) from e
 
 
-def _create_local_task(text: str) -> None:
-    """Create a task in local context with NLP parsing.
-    
-    Args:
-        text: Task content with optional metadata
-    """
+def _create_local_task(text: str, project_override: str | None = None, output: str = "pretty") -> None:
+    """Create a task in local context with NLP parsing."""
     import asyncio
     from todopro_cli.utils.nlp_parser import parse_natural_language
-    
+
     async def _do_create():
         strategy = get_strategy_context()
         task_repo = strategy.task_repository
-        
+
         # Parse the text for metadata
         parsed = parse_natural_language(text)
-        
+
         # Ensure priority is an integer, default to 1 if None
         priority = parsed.get('priority')
         if priority is None or not isinstance(priority, int):
             priority = 1
-        
+
+        # Resolve project_id: --project flag has higher precedence than #project in text
+        project_id: str | None = None
+        effective_project_name: str | None = None
+
+        if project_override is not None:
+            # Resolve project by name/ID (fuzzy)
+            from todopro_cli.services.project_service import ProjectService
+            from todopro_cli.commands.edit_command import _resolve_project_name
+            project_repo = strategy.project_repository
+            try:
+                project_id = await _resolve_project_name(project_override, strategy)
+                proj = await ProjectService(project_repo).get_project(project_id)
+                effective_project_name = proj.name
+            except ValueError as e:
+                from todopro_cli.utils.ui.formatters import format_error
+                format_error(str(e))
+                raise typer.Exit(1) from e
+        elif parsed.get('project_name'):
+            # Resolve project name from NLP
+            from todopro_cli.services.project_service import ProjectService
+            import difflib
+            project_repo = strategy.project_repository
+            project_service = ProjectService(project_repo)
+            all_projects = await project_service.list_projects()
+            names = [p.name for p in all_projects]
+            matches = difflib.get_close_matches(parsed['project_name'], names, n=1, cutoff=0.6)
+            if matches:
+                proj = next(p for p in all_projects if p.name == matches[0])
+                project_id = proj.id
+                effective_project_name = proj.name
+            else:
+                effective_project_name = parsed['project_name']  # will note it wasn't found
+
         # Create task with parsed metadata
         task_create = TaskCreate(
-            content=parsed['content'] or text,  # Fallback to original if parsing failed
+            content=parsed['content'] or text,
             description="",
             priority=priority,
             due_date=parsed.get('due_date'),
+            project_id=project_id,
         )
-        
+
         task = await task_repo.add(task_create)
-        
+
+        if output == "json":
+            import json as _json
+            console.print(_json.dumps(task.model_dump(), indent=2, default=str))
+            return
+
         # Show success message with parsed details
         format_success("Task created successfully!")
         console.print(f"\n[bold cyan]Task:[/bold cyan] {task.content}")
-        
-        # Show what was parsed
+
         details = []
         if parsed.get('due_date'):
             due = parsed['due_date']
-            details.append(f"📅 Due: {due.strftime('%b %d, %Y')}")
-        
+            details.append(f"📅 Due: {due.strftime('%b %d, %Y at %H:%M')}")
+
         if priority > 1:
             priority_map = {4: "P1 (Urgent)", 3: "P2 (High)", 2: "P3 (Medium)", 1: "P4 (Low)"}
-            priority_label = priority_map.get(priority, f"P{priority}")
-            details.append(f"[red]⚡ {priority_label}[/red]")
-        
-        if parsed.get('project_name'):
-            details.append(f"[magenta]📁 #{parsed['project_name']}[/magenta]")
-        
+            details.append(f"[red]⚡ {priority_map.get(priority, f'P{priority}')}[/red]")
+
+        if effective_project_name:
+            details.append(f"[magenta]📁 #{effective_project_name}[/magenta]")
+
         if parsed.get('labels'):
             labels_str = " ".join([f"@{l}" for l in parsed['labels']])
             details.append(f"[yellow]🏷️  {labels_str}[/yellow]")
-        
+
         if details:
             console.print()
             for detail in details:
                 console.print(f"  {detail}")
-        
+
         console.print(f"\n[dim]Task ID: {task.id}[/dim]")
-        
-        # Show tip about project/label creation if referenced but not created
-        if parsed.get('project_name') or parsed.get('labels'):
-            console.print("\n[yellow]💡 Note:[/yellow] Projects and labels must be created first:")
-            if parsed.get('project_name'):
-                console.print(f"   [cyan]todopro create project '{parsed['project_name']}'[/cyan]")
-            if parsed.get('labels'):
-                for label in parsed['labels']:
-                    console.print(f"   [cyan]todopro create label '{label}'[/cyan]")
-    
+
     try:
         asyncio.run(_do_create())
+    except (typer.Exit, SystemExit):
+        raise
     except Exception as e:
-        format_error(f"Failed to create task: {str(e)}")
+        from todopro_cli.utils.ui.formatters import format_error as _fe
+        _fe(f"Failed to create task: {str(e)}")
         raise typer.Exit(1) from e

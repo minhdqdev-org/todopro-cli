@@ -64,10 +64,10 @@ async def resolve_task_id(task_service: TaskService, task_id_or_suffix: str) -> 
     else:
         tasks = tasks_response
 
-    matching_tasks = [task for task in tasks if task.get("id", "").endswith(task_id_or_suffix) if isinstance(task, dict)]
-    
-    # If tasks are objects, not dicts
-    if tasks and not isinstance(tasks[0], dict):
+    # Handle both dict and object tasks
+    if tasks and isinstance(tasks[0], dict):
+        matching_tasks = [task for task in tasks if task.get("id", "").endswith(task_id_or_suffix)]
+    else:
         matching_tasks = [task for task in tasks if task.id.endswith(task_id_or_suffix)]
 
     if not matching_tasks:

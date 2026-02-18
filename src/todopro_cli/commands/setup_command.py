@@ -16,7 +16,7 @@ console = Console()
 @command_wrapper
 async def setup_encryption(
     passphrase: str | None = typer.Option(None, "--passphrase", help="Encryption passphrase"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Setup end-to-end encryption."""
     from todopro_cli.services.encryption_service import EncryptionService

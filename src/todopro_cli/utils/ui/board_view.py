@@ -665,25 +665,42 @@ class BoardViewApp(App):
 
 def run_board_view(project_code: str):
     """Run the board view app."""
-    # Pre-load data synchronously before starting the app
+    from todopro_cli.services.config_service import get_config_service
+
+    config_svc = get_config_service()
+    current_context = config_svc.get_current_context()
 
     async def preload_data():
         """Preload task data before app starts."""
-        client = get_client()
-        tasks_api = TasksAPI(client)
+        if current_context.type == "local":
+            from todopro_cli.services.context_manager import get_strategy_context
+            from todopro_cli.services.task_service import TaskService
 
-        try:
+            strategy = get_strategy_context()
+            task_service = TaskService(strategy.task_repository)
+
             if project_code.lower() == "inbox":
-                tasks_data = await tasks_api.list_tasks()
+                tasks = await task_service.list_tasks(status="active")
             else:
-                tasks_data = await tasks_api.list_tasks(project_id=project_code)
+                tasks = await task_service.list_tasks(project_id=project_code)
 
-            # Handle both list and dict responses
-            if isinstance(tasks_data, dict):
-                return tasks_data.get("tasks", [])
-            return tasks_data
-        finally:
-            await client.close()
+            return [t.model_dump() for t in tasks]
+        else:
+            client = get_client()
+            tasks_api = TasksAPI(client)
+
+            try:
+                if project_code.lower() == "inbox":
+                    tasks_data = await tasks_api.list_tasks()
+                else:
+                    tasks_data = await tasks_api.list_tasks(project_id=project_code)
+
+                # Handle both list and dict responses
+                if isinstance(tasks_data, dict):
+                    return tasks_data.get("tasks", [])
+                return tasks_data
+            finally:
+                await client.close()
 
     # Load tasks before starting the app
     tasks_list = asyncio.run(preload_data())

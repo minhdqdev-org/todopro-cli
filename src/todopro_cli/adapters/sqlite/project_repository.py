@@ -11,6 +11,8 @@ from todopro_cli.adapters.sqlite.utils import generate_uuid, now_iso, row_to_dic
 from todopro_cli.repositories import ProjectRepository
 from todopro_cli.models import Project, ProjectCreate, ProjectFilters, ProjectUpdate
 
+INBOX_PROJECT_ID = "00000000-0000-0000-0000-000000000000"
+
 
 class SqliteProjectRepository(ProjectRepository):
     """SQLite implementation of project repository."""
@@ -35,12 +37,41 @@ class SqliteProjectRepository(ProjectRepository):
         return self._connection
 
     def _get_user_id(self) -> str:
-        """Get current user ID."""
+        """Get current user ID and ensure default data exists."""
         if self._user_id is not None:
             return self._user_id
 
         self._user_id = get_or_create_local_user(self.connection)
+        self._ensure_inbox_project(self._user_id)
         return self._user_id
+
+    def _ensure_inbox_project(self, user_id: str) -> None:
+        """Create the Inbox project with fixed ID if it doesn't exist, and migrate NULL project_ids."""
+        now = now_iso()
+        # Ensure the Inbox project exists with the fixed all-zeros ID
+        cursor = self.connection.execute(
+            "SELECT id FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1",
+            (INBOX_PROJECT_ID, user_id),
+        )
+        if cursor.fetchone() is None:
+            # Check for an old Inbox with a random ID and remove it if present
+            self.connection.execute(
+                "DELETE FROM projects WHERE user_id = ? AND LOWER(name) = 'inbox' AND id != ?",
+                (user_id, INBOX_PROJECT_ID),
+            )
+            self.connection.execute(
+                """INSERT OR IGNORE INTO projects (id, name, color, is_favorite, is_archived,
+                       user_id, created_at, updated_at, version, display_order)
+                   VALUES (?, 'Inbox', '#4a90d9', 0, 0, ?, ?, ?, 1, 0)""",
+                (INBOX_PROJECT_ID, user_id, now, now),
+            )
+            self.connection.commit()
+        # Migrate tasks with NULL project_id to Inbox
+        self.connection.execute(
+            "UPDATE tasks SET project_id = ? WHERE user_id = ? AND project_id IS NULL AND deleted_at IS NULL",
+            (INBOX_PROJECT_ID, user_id),
+        )
+        self.connection.commit()
 
     async def list_all(self, filters: ProjectFilters) -> list[Project]:
         """List all projects with filtering."""
@@ -103,6 +134,20 @@ class SqliteProjectRepository(ProjectRepository):
 
         data = project_data.model_dump()
 
+        # Enforce case-insensitive name uniqueness per user
+        cursor = self.connection.execute(
+            "SELECT name FROM projects WHERE user_id = ? AND LOWER(name) = LOWER(?) AND deleted_at IS NULL LIMIT 1",
+            (user_id, data["name"]),
+        )
+        existing = cursor.fetchone()
+        if existing:
+            existing_name = existing[0]
+            if existing_name == data["name"]:
+                raise ValueError(f"A project named '{data['name']}' already exists")
+            raise ValueError(
+                f"A project named '{existing_name}' already exists (project names are case-insensitive)"
+            )
+
         self.connection.execute(
             """INSERT INTO projects (
                 id, name, color, is_favorite, is_archived,
@@ -134,6 +179,21 @@ class SqliteProjectRepository(ProjectRepository):
 
         if not update_dict:
             return await self.get(project_id)
+
+        # Enforce case-insensitive name uniqueness per user when renaming
+        if "name" in update_dict:
+            cursor = self.connection.execute(
+                "SELECT name FROM projects WHERE user_id = ? AND LOWER(name) = LOWER(?) AND id != ? AND deleted_at IS NULL LIMIT 1",
+                (user_id, update_dict["name"], project_id),
+            )
+            existing = cursor.fetchone()
+            if existing:
+                existing_name = existing[0]
+                if existing_name == update_dict["name"]:
+                    raise ValueError(f"A project named '{update_dict['name']}' already exists")
+                raise ValueError(
+                    f"A project named '{existing_name}' already exists (project names are case-insensitive)"
+                )
 
         set_parts = []
         params = []

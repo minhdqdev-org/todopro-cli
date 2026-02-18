@@ -18,7 +18,7 @@ console = Console()
 async def set_config(
     key: str = typer.Argument(..., help="Configuration key"),
     value: str = typer.Argument(..., help="Configuration value"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Set a configuration value."""
     from todopro_cli.services.config_service import ConfigService
@@ -36,7 +36,7 @@ async def set_config(
 async def set_goal(
     goal_type: str = typer.Argument(..., help="Goal type (daily/weekly/monthly)"),
     target: int = typer.Argument(..., help="Target value"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Set a focus goal."""
     from todopro_cli.services.focus_service import FocusService

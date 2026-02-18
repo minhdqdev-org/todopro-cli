@@ -10,6 +10,7 @@ from .commands.create_command import app as create_app
 from .commands.data import app as data_app  # Working export/import commands
 from .commands.delete_command import app as delete_app
 from .commands.describe_command import app as describe_command_app
+from .commands.edit_command import app as edit_command_app
 from .commands.encryption import app as encryption_app  # E2EE commands (setup, status, recover, rotate, show-recovery)
 # from .commands.export_command import app as export_app  # DISABLED: Duplicate of data.py export, references undefined factory
 from .commands.get_command import app as get_app
@@ -61,6 +62,7 @@ app.add_typer(login_command_app, name="", help="Login to TodoPro")
 app.add_typer(complete_command_app, name="", help="Complete a task by ID or suffix")
 app.add_typer(reschedule_command_app, name="", help="Reschedule tasks to today")
 app.add_typer(add_command_app, name="", help="Quick add a task using natural language")
+app.add_typer(edit_command_app, name="", help="Edit a task interactively or via flags")
 app.add_typer(view_command_app, name="", help="View project in interactive board mode")
 app.add_typer(describe_command_app, name="", help="Describe a resource (e.g., project)")
 app.add_typer(today_command_app, name="", help="View today's tasks in interactive mode")
@@ -83,7 +85,7 @@ app.add_typer(use_app, name="use", help="Switch/use contexts")
 # app.add_typer(import_app, name="import", help="Import data")  # DISABLED: Duplicate + broken factory
 app.add_typer(archive_app, name="archive", help="Archive projects")
 app.add_typer(unarchive_app, name="unarchive", help="Unarchive projects")
-app.add_typer(reopen_app, name="reopen", help="Reopen completed tasks")
+app.add_typer(reopen_app, name="", help="Reopen completed tasks")
 app.add_typer(rename_app, name="rename", help="Rename contexts")
 # app.add_typer(check_app, name="check", help="Check achievements and location")  # DISABLED: Gamification/location - deferred
 # app.add_typer(reset_app, name="reset", help="Reset configuration and goals")  # DISABLED: Focus mode goals - deferred

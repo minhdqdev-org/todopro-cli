@@ -62,8 +62,14 @@ def mock_project_service():
     service_mock.archive_project = AsyncMock()
     service_mock.unarchive_project = AsyncMock()
 
+    async def _passthrough_uuid(project_id, repo, **kwargs):
+        return project_id
+
     with patch(
         "todopro_cli.commands.projects.ProjectService", return_value=service_mock
+    ), patch(
+        "todopro_cli.commands.projects.resolve_project_uuid",
+        side_effect=_passthrough_uuid,
     ):
         yield service_mock
 

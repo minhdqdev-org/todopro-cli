@@ -113,7 +113,9 @@ async def today_command(
     if all_tasks_today:
         # Display with pretty format by default
         result = {"tasks": [t.model_dump() for t in all_tasks_today]}
-        format_output(result["tasks"], output, compact=compact)
+        # Pass all active task IDs so suffixes are globally unique
+        all_task_ids = [t.id for t in all_tasks]
+        format_output(result["tasks"], output, compact=compact, all_task_ids=all_task_ids)
 
         # Summary (skip for JSON output)
         if output not in ["json"]:

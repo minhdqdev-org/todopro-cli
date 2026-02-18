@@ -16,7 +16,7 @@ console = Console()
 @app.command("focus")
 @command_wrapper
 async def stop_focus(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Stop the current focus session."""
     from todopro_cli.services.focus_service import FocusService

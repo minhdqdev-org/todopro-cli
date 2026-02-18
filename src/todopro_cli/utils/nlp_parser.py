@@ -92,19 +92,40 @@ class LocalNLPParser:
         Returns:
             Parsed datetime or None
         """
+        # Always try simple pattern matching first — reliable for full sentences
+        simple_result = self._simple_date_parse(text)
+        if simple_result:
+            return simple_result
+
         if HAS_DATEPARSER:
-            # Use dateparser for robust parsing
-            parsed = dateparser.parse(
-                text,
-                settings={
-                    'PREFER_DATES_FROM': 'future',
-                    'RELATIVE_BASE': datetime.now(),
-                }
-            )
-            return parsed
-        else:
-            # Fallback to simple patterns
-            return self._simple_date_parse(text)
+            # Extract date-related tokens and pass only those to dateparser
+            fragment = self._extract_date_fragment(text)
+            if fragment:
+                parsed = dateparser.parse(
+                    fragment,
+                    settings={
+                        'PREFER_DATES_FROM': 'future',
+                        'RELATIVE_BASE': datetime.now(),
+                    }
+                )
+                return parsed
+
+        return None
+
+    def _extract_date_fragment(self, text: str) -> str | None:
+        """Extract date-related tokens from text for dateparser."""
+        patterns = [
+            r'\bnext \w+\b',
+            r'\bin \d+ \w+\b',
+            r'\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+\d{1,2}(?:st|nd|rd|th)?\b',
+            r'\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b',
+            r'\bat \d{1,2}(?::\d{2})?\s*(?:am|pm)?\b',
+        ]
+        fragments = []
+        for pattern in patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            fragments.extend(matches)
+        return ' '.join(fragments) if fragments else None
     
     def _simple_date_parse(self, text: str) -> datetime | None:
         """Simple date parsing fallback without dateparser.
@@ -117,24 +138,44 @@ class LocalNLPParser:
         """
         now = datetime.now()
         text_lower = text.lower()
-        
+
+        # Extract time component: "at HH", "at HH:MM", "at HHam/pm"
+        time_hour: int | None = None
+        time_minute: int = 0
+        time_match = re.search(
+            r'\bat (\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b', text_lower
+        )
+        if time_match:
+            time_hour = int(time_match.group(1))
+            time_minute = int(time_match.group(2)) if time_match.group(2) else 0
+            meridiem = time_match.group(3)
+            if meridiem == "pm" and time_hour < 12:
+                time_hour += 12
+            elif meridiem == "am" and time_hour == 12:
+                time_hour = 0
+
+        def _apply_time(dt: datetime) -> datetime:
+            if time_hour is not None:
+                return dt.replace(hour=time_hour, minute=time_minute, second=0, microsecond=0)
+            return dt.replace(hour=23, minute=59, second=59)
+
         # Today
         if 'today' in text_lower:
-            return now.replace(hour=23, minute=59, second=59)
+            return _apply_time(now)
         
         # Tomorrow
         if 'tomorrow' in text_lower:
-            return (now + timedelta(days=1)).replace(hour=23, minute=59, second=59)
+            return _apply_time(now + timedelta(days=1))
         
         # Next week
         if 'next week' in text_lower:
-            return (now + timedelta(days=7)).replace(hour=23, minute=59, second=59)
+            return _apply_time(now + timedelta(days=7))
         
         # In N days
         match = re.search(r'in (\d+) days?', text_lower)
         if match:
             days = int(match.group(1))
-            return (now + timedelta(days=days)).replace(hour=23, minute=59, second=59)
+            return _apply_time(now + timedelta(days=days))
         
         # Weekdays
         weekdays = {
@@ -149,8 +190,12 @@ class LocalNLPParser:
                 if days_ahead == 0:
                     days_ahead = 7  # Next week if today
                 target = now + timedelta(days=days_ahead)
-                return target.replace(hour=23, minute=59, second=59)
+                return _apply_time(target)
         
+        # Time only (e.g. "at 22") with no date keyword — assume today
+        if time_hour is not None:
+            return _apply_time(now)
+
         return None
     
     def _remove_date_phrases(self, text: str) -> str:
@@ -169,8 +214,10 @@ class LocalNLPParser:
             r'\bin \d+ days?\b',
             r'\bmonday\b', r'\btuesday\b', r'\bwednesday\b', r'\bthursday\b',
             r'\bfriday\b', r'\bsaturday\b', r'\bsunday\b',
-            r'\bat \d+:\d+\s*[ap]m\b',
-            r'\bat \d+[ap]m\b',
+            r'\bat \d{1,2}:\d{2}\s*[ap]m\b',
+            r'\bat \d{1,2}\s*[ap]m\b',
+            r'\bat \d{1,2}:\d{2}\b',
+            r'\bat \d{1,2}\b',
         ]
         
         for pattern in date_phrases:

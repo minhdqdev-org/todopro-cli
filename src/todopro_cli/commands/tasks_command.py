@@ -30,10 +30,13 @@ async def list_tasks(
     search: str | None = typer.Option(None, "--search", help="Search tasks"),
     limit: int = typer.Option(30, "--limit", help="Limit results"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
-    output: str = typer.Option("pretty", "--output", help="Output format"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
+    json_opt: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
     """List tasks."""
+    if json_opt:
+        output = "json"
     # TODO: consider deprecated --status in favor of dedicated commands to view project tasks, etc.
 
     strategy = get_strategy_context()
@@ -69,7 +72,7 @@ async def list_tasks(
 @command_wrapper
 async def get_task(
     task_id: str = typer.Argument(..., help="Task ID or suffix"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get task details."""
     strategy = get_strategy_context()
@@ -90,7 +93,7 @@ async def create_task(
     due: str | None = typer.Option(None, "--due", help="Due date"),
     priority: int | None = typer.Option(None, "--priority", help="Priority (1-4)"),
     labels: str | None = typer.Option(None, "--labels", help="Comma-separated labels"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Create a new task."""
     strategy = get_strategy_context()
@@ -123,7 +126,7 @@ async def update_task(
     project: str | None = typer.Option(None, "--project", help="Project ID"),
     due: str | None = typer.Option(None, "--due", help="Due date"),
     priority: int | None = typer.Option(None, "--priority", help="Priority (1-4)"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a task."""
     strategy = get_strategy_context()
@@ -173,7 +176,7 @@ async def delete_task(
 @command_wrapper
 async def reopen_task(
     task_id: str = typer.Argument(..., help="Task ID or suffix"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Reopen a completed task."""
     strategy = get_strategy_context()

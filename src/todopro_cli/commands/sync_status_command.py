@@ -16,7 +16,7 @@ console = Console()
 @app.command()
 @command_wrapper
 async def sync_status(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show synchronization status."""
     from todopro_cli.services.sync_service import SyncService

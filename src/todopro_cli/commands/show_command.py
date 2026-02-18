@@ -16,7 +16,7 @@ console = Console()
 @app.command("stats-today")
 @command_wrapper
 async def show_stats_today(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show today's focus statistics."""
     from todopro_cli.services.focus_service import FocusService
@@ -32,7 +32,7 @@ async def show_stats_today(
 @app.command("stats-week")
 @command_wrapper
 async def show_stats_week(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show this week's focus statistics."""
     from todopro_cli.services.focus_service import FocusService
@@ -48,7 +48,7 @@ async def show_stats_week(
 @app.command("stats-month")
 @command_wrapper
 async def show_stats_month(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show this month's focus statistics."""
     from todopro_cli.services.focus_service import FocusService
@@ -64,7 +64,7 @@ async def show_stats_month(
 @app.command("streak")
 @command_wrapper
 async def show_streak(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show current focus streak."""
     from todopro_cli.services.focus_service import FocusService
@@ -80,7 +80,7 @@ async def show_streak(
 @app.command("score")
 @command_wrapper
 async def show_score(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show productivity score."""
     from todopro_cli.services.analytics_service import AnalyticsService
@@ -96,7 +96,7 @@ async def show_score(
 @app.command("goals")
 @command_wrapper
 async def show_goals(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show focus goals."""
     from todopro_cli.services.focus_service import FocusService
@@ -112,7 +112,7 @@ async def show_goals(
 @app.command("analytics")
 @command_wrapper
 async def show_analytics(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show productivity analytics."""
     from todopro_cli.services.analytics_service import AnalyticsService
@@ -128,7 +128,7 @@ async def show_analytics(
 @app.command("streaks")
 @command_wrapper
 async def show_streaks(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show productivity streaks."""
     from todopro_cli.services.analytics_service import AnalyticsService
@@ -144,7 +144,7 @@ async def show_streaks(
 @app.command("heatmap")
 @command_wrapper
 async def show_heatmap(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show activity heatmap."""
     from todopro_cli.services.focus_service import FocusService
@@ -160,7 +160,7 @@ async def show_heatmap(
 @app.command("quality")
 @command_wrapper
 async def show_quality(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show focus session quality metrics."""
     from todopro_cli.services.focus_service import FocusService
@@ -176,7 +176,7 @@ async def show_quality(
 @app.command("recovery-key")
 @command_wrapper
 async def show_recovery_key(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show encryption recovery key."""
     from todopro_cli.services.encryption_service import EncryptionService
@@ -189,7 +189,7 @@ async def show_recovery_key(
 @app.command("config")
 @command_wrapper
 async def show_config(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show current configuration."""
     from todopro_cli.services.config_service import ConfigService
@@ -203,7 +203,7 @@ async def show_config(
 @command_wrapper
 async def show_timer_history(
     limit: int = typer.Option(10, "--limit", help="Number of sessions to show"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show timer session history."""
     from todopro_cli.services.timer_service import TimerService
@@ -219,7 +219,7 @@ async def show_timer_history(
 @app.command("timer-stats")
 @command_wrapper
 async def show_timer_stats(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show timer statistics."""
     from todopro_cli.services.timer_service import TimerService
@@ -236,7 +236,7 @@ async def show_timer_stats(
 @command_wrapper
 async def show_project_stats(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show statistics for a specific project."""
     from todopro_cli.services.focus_service import FocusService
@@ -252,7 +252,7 @@ async def show_project_stats(
 @app.command("achievement-stats")
 @command_wrapper
 async def show_achievement_stats(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show achievement statistics."""
     from todopro_cli.services.achievement_service import AchievementService

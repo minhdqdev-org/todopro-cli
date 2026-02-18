@@ -21,7 +21,7 @@ console = Console()
 @command_wrapper
 async def get_task(
     task_id: str = typer.Argument(..., help="Task ID or suffix"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get task details."""
     strategy = get_strategy_context()
@@ -37,7 +37,7 @@ async def get_task(
 @command_wrapper
 async def get_project(
     project_id: str = typer.Argument(..., help="Project ID or suffix"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get project details."""
     strategy = get_strategy_context()
@@ -52,7 +52,7 @@ async def get_project(
 @command_wrapper
 async def get_label(
     label_id: str = typer.Argument(..., help="Label ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get label details."""
     strategy = get_strategy_context()
@@ -67,7 +67,7 @@ async def get_label(
 @command_wrapper
 async def get_config(
     key: str = typer.Argument(..., help="Configuration key"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get a configuration value."""
     from todopro_cli.services.config_service import ConfigService
@@ -83,7 +83,7 @@ async def get_config(
 # @command_wrapper
 # async def get_focus_template(
 #     template_id: str = typer.Argument(..., help="Template ID"),
-#     output: str = typer.Option("table", "--output", help="Output format"),
+#     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 # ) -> None:
 #     """Get focus template details."""
 #     from todopro_cli.services.focus_service import FocusService

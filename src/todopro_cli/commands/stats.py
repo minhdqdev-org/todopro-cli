@@ -38,7 +38,7 @@ def render_progress_bar(value: float, max_value: float, width: int = 10) -> str:
 @app.command("today")
 @app.command()
 def show_today(
-    output: str = typer.Option(None, "--output", help="Output format (json)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show today's focus summary (default command)."""
     analytics = FocusAnalytics()
@@ -111,7 +111,7 @@ def show_today(
 
 @app.command("week")
 def show_week(
-    output: str = typer.Option(None, "--output", help="Output format (json)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show weekly focus report (last 7 days)."""
     analytics = FocusAnalytics()
@@ -191,7 +191,7 @@ def show_month(
     month_str: str = typer.Argument(
         None, help="Month in YYYY-MM format (default: current month)"
     ),
-    output: str = typer.Option(None, "--output", help="Output format (json)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show monthly overview."""
     # Parse month
@@ -256,7 +256,7 @@ def show_month(
 
 @app.command("streak")
 def show_streak(
-    output: str = typer.Option(None, "--output", help="Output format (json)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show focus streak information."""
     analytics = FocusAnalytics()
@@ -306,7 +306,7 @@ def show_streak(
 
 @app.command("score")
 def show_score(
-    output: str = typer.Option(None, "--output", help="Output format (json)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show productivity score."""
     analytics = FocusAnalytics()
@@ -350,7 +350,7 @@ def show_score(
 def show_project(
     context: str = typer.Argument(..., help="Project/context name"),
     days: int = typer.Option(30, "--days", help="Number of days to analyze"),
-    output: str = typer.Option(None, "--output", help="Output format (json)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show statistics for a specific project."""
     analytics = FocusAnalytics()
@@ -387,7 +387,7 @@ def show_project(
 @app.command("heatmap")
 def show_heatmap(
     days: int = typer.Option(30, "--days", help="Number of days to analyze"),
-    output: str = typer.Option(None, "--output", help="Output format (json)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show time-of-day focus heatmap."""
     analytics = FocusAnalytics()
@@ -548,7 +548,7 @@ def export_data(
 @app.command("quality")
 def show_quality(
     days: int = typer.Option(7, "--days", help="Number of days to analyze"),
-    output: str = typer.Option(None, "--output", help="Output format (json)"),
+    output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show focus quality metrics."""
     analytics = FocusAnalytics()

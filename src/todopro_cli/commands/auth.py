@@ -31,17 +31,21 @@ def login(
         # Get config manager
         config_manager = get_context_manager()
 
-        # Initialize contexts if they don't exist
-        if not config_manager.config.contexts:
-            config_manager.init_default_contexts()
+        # Require remote context
+        current_context = config_manager.get_current_context()
+        if current_context and current_context.type != "remote":
+            format_error(
+                f"Login is only available for remote contexts. "
+                f"Current context '{current_context.name}' is '{current_context.type}'. "
+                f"Use 'tp use cloud' to switch to a remote context."
+            )
+            raise typer.Exit(1)
+
+        context_name = current_context.name if current_context else "unknown"
 
         # Update endpoint if provided
         if endpoint:
             config_manager.set("api.endpoint", endpoint)
-
-        # Get current context
-        current_context = config_manager.get_current_context()
-        context_name = current_context.name if current_context else "unknown"
 
         # Prompt for credentials if not provided
         if not email:
@@ -90,6 +94,8 @@ def login(
 
         asyncio.run(do_login())
 
+    except typer.Exit:
+        raise
     except Exception as e:
         format_error(f"Login failed: {str(e)}")
         raise typer.Exit(1) from e
@@ -109,17 +115,21 @@ def signup(
         # Get config manager
         config_manager = get_context_manager()
 
-        # Initialize contexts if they don't exist
-        if not config_manager.config.contexts:
-            config_manager.init_default_contexts()
+        # Require remote context
+        current_context = config_manager.get_current_context()
+        if current_context and current_context.type != "remote":
+            format_error(
+                f"Signup is only available for remote contexts. "
+                f"Current context '{current_context.name}' is '{current_context.type}'. "
+                f"Use 'tp use cloud' to switch to a remote context."
+            )
+            raise typer.Exit(1)
+
+        context_name = current_context.name if current_context else "unknown"
 
         # Update endpoint if provided
         if endpoint:
             config_manager.set("api.endpoint", endpoint)
-
-        # Get current context
-        current_context = config_manager.get_current_context()
-        context_name = current_context.name if current_context else "unknown"
 
         # Prompt for credentials if not provided
         if not email:
@@ -200,6 +210,8 @@ def signup(
 
         asyncio.run(do_signup())
 
+    except typer.Exit:
+        raise
     except Exception as e:
         format_error(f"Signup failed: {str(e)}")
         raise typer.Exit(1) from e
@@ -207,21 +219,28 @@ def signup(
 
 @app.command()
 def logout(
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
-    all_profiles: bool = typer.Option(False, "--all", help="Logout from all profiles"),
+    all_profiles: bool = typer.Option(False, "--all", help="Logout from all contexts"),
 ) -> None:
     """Logout from TodoPro."""
     try:
-        if all_profiles:
-            config_manager = get_context_manager(profile)
-            profiles = config_manager.list_profiles()
-            for prof in profiles:
-                prof_manager = get_context_manager(prof)
-                prof_manager.clear_credentials()
-            format_success("Logged out from all profiles")
-        else:
-            config_manager = get_context_manager()
+        config_manager = get_context_manager()
 
+        # Require remote context
+        current_context = config_manager.get_current_context()
+        if current_context and current_context.type != "remote":
+            format_error(
+                f"Logout is only available for remote contexts. "
+                f"Current context '{current_context.name}' is '{current_context.type}'. "
+                f"Use 'tp use cloud' to switch to a remote context."
+            )
+            raise typer.Exit(1)
+
+        if all_profiles:
+            contexts = config_manager.list_contexts()
+            for ctx in contexts:
+                config_manager.clear_credentials(ctx.name)
+            format_success("Logged out from all contexts")
+        else:
             # Try to logout from server
             async def do_logout() -> None:
                 client = get_client()
@@ -237,9 +256,12 @@ def logout(
             asyncio.run(do_logout())
 
             # Clear local credentials
+            context_name = current_context.name if current_context else "default"
             config_manager.clear_credentials()
-            format_success("Logged out from profile 'default'")
+            format_success(f"Logged out from context '{context_name}'")
 
+    except typer.Exit:
+        raise
     except Exception as e:
         format_error(f"Logout failed: {str(e)}")
         raise typer.Exit(1) from e

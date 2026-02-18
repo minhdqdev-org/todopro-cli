@@ -8,6 +8,7 @@ from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.utils.ui.formatters import format_output
 from todopro_cli.utils.ui.console import get_console
+from todopro_cli.utils.uuid_utils import resolve_project_uuid
 
 from .decorators import command_wrapper
 
@@ -25,7 +26,7 @@ def run_async(func, *args, **kwargs):
 def describe(
     resource_type: str = typer.Argument(..., help="Resource type (project)"),
     resource_id: str = typer.Argument(..., help="Resource ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Describe a resource in detail."""
     if resource_type.lower() == "project":
@@ -33,6 +34,9 @@ def describe(
         strategy = get_strategy_context()
         project_repo = strategy.project_repository
         project_service = ProjectService(project_repo)
+
+        # Resolve partial UUID prefix to full UUID
+        project_id = run_async(resolve_project_uuid, project_id, project_repo)
 
         project = run_async(project_service.get_project, project_id)
 

@@ -6,6 +6,7 @@ from rich.console import Console
 from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
+from todopro_cli.utils.uuid_utils import resolve_project_uuid
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 from .decorators import command_wrapper
@@ -19,7 +20,7 @@ console = Console()
 async def list_projects(
     archived: bool = typer.Option(False, "--archived", help="Show archived projects"),
     favorites: bool = typer.Option(False, "--favorites", help="Show only favorites"),
-    output: str = typer.Option("pretty", "--output", help="Output format"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
     """List projects."""
@@ -48,6 +49,7 @@ async def get_project(
     project_repo = strategy.project_repository
     project_service = ProjectService(project_repo)
 
+    project_id = await resolve_project_uuid(project_id, project_repo)
     project = await project_service.get_project(project_id)
     format_output(project.model_dump(), output)
 
@@ -58,7 +60,7 @@ async def create_project(
     name: str = typer.Argument(..., help="Project name"),
     color: str | None = typer.Option(None, "--color", help="Project color"),
     favorite: bool = typer.Option(False, "--favorite", help="Mark as favorite"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Create a new project."""
     strategy = get_strategy_context()
@@ -78,7 +80,7 @@ async def update_project(
     project_id: str = typer.Argument(..., help="Project ID"),
     name: str | None = typer.Option(None, "--name", help="Project name"),
     color: str | None = typer.Option(None, "--color", help="Project color"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a project."""
     if name is None and color is None:
@@ -89,6 +91,7 @@ async def update_project(
     project_repo = strategy.project_repository
     project_service = ProjectService(project_repo)
 
+    project_id = await resolve_project_uuid(project_id, project_repo)
     project = await project_service.update_project(project_id, name=name, color=color)
     format_success(f"Project updated: {project_id}")
     format_output(project.model_dump(), output)
@@ -111,6 +114,7 @@ async def delete_project(
     project_repo = strategy.project_repository
     project_service = ProjectService(project_repo)
 
+    project_id = await resolve_project_uuid(project_id, project_repo)
     await project_service.delete_project(project_id)
     format_success(f"Project deleted: {project_id}")
 
@@ -119,13 +123,14 @@ async def delete_project(
 @command_wrapper
 async def archive_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Archive a project."""
     strategy = get_strategy_context()
     project_repo = strategy.project_repository
     project_service = ProjectService(project_repo)
 
+    project_id = await resolve_project_uuid(project_id, project_repo)
     project = await project_service.archive_project(project_id)
     format_success(f"Project archived: {project_id}")
     format_output(project.model_dump(), output)
@@ -135,13 +140,14 @@ async def archive_project(
 @command_wrapper
 async def unarchive_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Unarchive a project."""
     strategy = get_strategy_context()
     project_repo = strategy.project_repository
     project_service = ProjectService(project_repo)
 
+    project_id = await resolve_project_uuid(project_id, project_repo)
     project = await project_service.unarchive_project(project_id)
     format_success(f"Project unarchived: {project_id}")
     format_output(project.model_dump(), output)

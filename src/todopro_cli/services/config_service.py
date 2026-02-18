@@ -243,6 +243,21 @@ class ConfigService:
         cred_path.chmod(0o600)
 
 
+    def clear_credentials(self, context_name: str | None = None) -> None:
+        """Clear credentials for a context.
+
+        Args:
+            context_name: Context name (defaults to current context)
+        """
+        if context_name is None:
+            try:
+                current_context = self.config.get_current_context()
+                context_name = current_context.name
+            except (ValueError, KeyError):
+                return
+        self.remove_context_credentials(context_name)
+
+
 @lru_cache(maxsize=1)
 def get_config_service() -> ConfigService:
     """Get a cached ConfigService instance."""

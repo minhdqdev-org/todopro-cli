@@ -6,6 +6,7 @@ from rich.console import Console
 from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.utils.ui.formatters import format_success, format_output
+from todopro_cli.utils.uuid_utils import resolve_project_uuid
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 from .decorators import command_wrapper
@@ -18,13 +19,14 @@ console = Console()
 @command_wrapper
 async def archive_project(
     project_id: str = typer.Argument(..., help="Project ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Archive a project."""
     strategy = get_strategy_context()
     project_repo = strategy.project_repository
     project_service = ProjectService(project_repo)
 
+    project_id = await resolve_project_uuid(project_id, project_repo)
     project = await project_service.archive_project(project_id)
     format_success(f"Project archived: {project.id}")
     format_output(project.model_dump(), output)

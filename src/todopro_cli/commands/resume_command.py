@@ -16,7 +16,7 @@ console = Console()
 @app.command("focus")
 @command_wrapper
 async def resume_focus(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Resume a paused focus session."""
     from todopro_cli.services.focus_service import FocusService

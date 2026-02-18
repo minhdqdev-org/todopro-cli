@@ -12,9 +12,8 @@ console = get_console()
 
 @app.command("logout")
 def logout_command(
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
-    all_profiles: bool = typer.Option(False, "--all", help="Logout from all profiles"),
+    all_profiles: bool = typer.Option(False, "--all", help="Logout from all contexts"),
 ) -> None:
     """Logout from TodoPro."""
     # Delegate to auth command
-    logout(profile=profile, all_profiles=all_profiles)
+    logout(all_profiles=all_profiles)

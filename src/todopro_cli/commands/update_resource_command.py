@@ -26,7 +26,7 @@ async def update_task(
     project: str | None = typer.Option(None, "--project", help="Project ID"),
     due: str | None = typer.Option(None, "--due", help="Due date"),
     priority: int | None = typer.Option(None, "--priority", help="Priority (1-4)"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a task."""
     strategy = get_strategy_context()
@@ -56,7 +56,7 @@ async def update_project(
     project_id: str = typer.Argument(..., help="Project ID"),
     name: str | None = typer.Option(None, "--name", help="Project name"),
     color: str | None = typer.Option(None, "--color", help="Project color"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a project."""
     if name is None and color is None:
@@ -80,7 +80,7 @@ async def update_label(
     label_id: str = typer.Argument(..., help="Label ID"),
     name: str | None = typer.Option(None, "--name", help="Label name"),
     color: str | None = typer.Option(None, "--color", help="Label color"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a label."""
     if not any([name, color]):

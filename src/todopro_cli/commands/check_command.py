@@ -16,7 +16,7 @@ console = Console()
 @app.command("achievements")
 @command_wrapper
 async def check_achievements(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Check for new achievements."""
     from todopro_cli.services.achievement_service import AchievementService
@@ -33,7 +33,7 @@ async def check_achievements(
 @app.command("location")
 @command_wrapper
 async def check_location(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Check current location context."""
     from todopro_cli.services.location_context_service import LocationContextService

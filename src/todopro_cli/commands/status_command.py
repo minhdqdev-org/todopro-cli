@@ -16,7 +16,7 @@ console = Console()
 @app.command("focus")
 @command_wrapper
 async def status_focus(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show current focus session status."""
     from todopro_cli.services.focus_service import FocusService
@@ -32,7 +32,7 @@ async def status_focus(
 @app.command("encryption")
 @command_wrapper
 async def status_encryption(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show encryption status."""
     from todopro_cli.services.encryption_service import EncryptionService

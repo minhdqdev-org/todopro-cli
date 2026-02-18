@@ -17,7 +17,7 @@ console = Console()
 @app.command("list")
 @command_wrapper
 async def list_labels(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all labels."""
     strategy = get_strategy_context()
@@ -33,7 +33,7 @@ async def list_labels(
 @command_wrapper
 async def get_label(
     label_id: str = typer.Argument(..., help="Label ID"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get label details."""
     strategy = get_strategy_context()
@@ -49,7 +49,7 @@ async def get_label(
 async def create_label(
     name: str = typer.Argument(..., help="Label name"),
     color: str | None = typer.Option(None, "--color", help="Label color"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Create a new label."""
     strategy = get_strategy_context()
@@ -67,7 +67,7 @@ async def update_label(
     label_id: str = typer.Argument(..., help="Label ID"),
     name: str | None = typer.Option(None, "--name", help="Label name"),
     color: str | None = typer.Option(None, "--color", help="Label color"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a label."""
     if not any([name, color]):

@@ -17,7 +17,7 @@ console = Console()
 @app.command("view")
 def view_config(
     profile: str = typer.Option("default", "--profile", help="Profile name"),
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """View current configuration."""
     try:
@@ -144,7 +144,7 @@ def use_context(
 @app.command("current-context")
 @command_wrapper(auth_required=False)
 def current_context(
-    output: str = typer.Option("default", "--output", help="Output format"),
+    output: str = typer.Option("default", "--output", "-o", help="Output format"),
 ) -> None:
     """Show the current context."""
 
@@ -177,7 +177,7 @@ def current_context(
 @app.command("get-contexts")
 @command_wrapper(auth_required=False)
 def get_contexts(
-    output: str = typer.Option("table", "--output", help="Output format"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all available contexts."""
     context_manager = get_context_manager()
