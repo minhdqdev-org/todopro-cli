@@ -4,6 +4,7 @@ This module tests the Pomodoro timer commands using CliRunner.
 """
 # pylint: disable=redefined-outer-name
 
+import re
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -11,6 +12,12 @@ import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.timer import app
+
+
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from text."""
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
 
 runner = CliRunner()
 
@@ -320,26 +327,29 @@ class TestTimerIntegration:
     def test_start_help(self):
         """Test timer start help."""
         result = runner.invoke(app, ["start", "--help"])
+        clean_output = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "Start a Pomodoro timer session" in result.stdout
-        assert "--task-id" in result.stdout
-        assert "--duration" in result.stdout
-        assert "--type" in result.stdout
+        assert "Start a Pomodoro timer session" in clean_output
+        assert "--task-id" in clean_output
+        assert "--duration" in clean_output
+        assert "--type" in clean_output
 
     def test_history_help(self):
         """Test timer history help."""
         result = runner.invoke(app, ["history", "--help"])
+        clean_output = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "Show Pomodoro session history" in result.stdout
-        assert "--task-id" in result.stdout
-        assert "--limit" in result.stdout
+        assert "Show Pomodoro session history" in clean_output
+        assert "--task-id" in clean_output
+        assert "--limit" in clean_output
 
     def test_stats_help(self):
         """Test timer stats help."""
         result = runner.invoke(app, ["stats", "--help"])
+        clean_output = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "Show Pomodoro statistics" in result.stdout
-        assert "--days" in result.stdout
+        assert "Show Pomodoro statistics" in clean_output
+        assert "--days" in clean_output

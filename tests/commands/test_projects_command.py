@@ -4,6 +4,7 @@ This module tests all project management commands using mocked services.
 """
 # pylint: disable=redefined-outer-name
 
+import re
 import tempfile
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -14,6 +15,12 @@ from typer.testing import CliRunner
 from todopro_cli.commands.projects import app
 from todopro_cli.models import Project
 from todopro_cli.services.config_service import ConfigService
+
+
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from text."""
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
 
 runner = CliRunner()
 
@@ -348,29 +355,32 @@ class TestProjectCommandsIntegration:
     def test_list_help(self):
         """Test list command help."""
         result = runner.invoke(app, ["list", "--help"])
+        clean_output = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "List projects" in result.stdout
-        assert "--archived" in result.stdout
-        assert "--favorites" in result.stdout
+        assert "List projects" in clean_output
+        assert "--archived" in clean_output
+        assert "--favorites" in clean_output
 
     def test_create_help(self):
         """Test create command help."""
         result = runner.invoke(app, ["create", "--help"])
+        clean_output = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "Create a new project" in result.stdout
-        assert "--color" in result.stdout
-        assert "--favorite" in result.stdout
+        assert "Create a new project" in clean_output
+        assert "--color" in clean_output
+        assert "--favorite" in clean_output
 
     def test_update_help(self):
         """Test update command help."""
         result = runner.invoke(app, ["update", "--help"])
+        clean_output = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "Update a project" in result.stdout
-        assert "--name" in result.stdout
-        assert "--color" in result.stdout
+        assert "Update a project" in clean_output
+        assert "--name" in clean_output
+        assert "--color" in clean_output
 
 
 class TestProjectCommandsErrorHandling:
