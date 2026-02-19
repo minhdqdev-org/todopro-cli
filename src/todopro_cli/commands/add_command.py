@@ -235,11 +235,12 @@ def _create_local_task(
             project_service = ProjectService(project_repo)
             all_projects = await project_service.list_projects()
             names = [p.name for p in all_projects]
+            parsed_lower = parsed["project_name"].lower()
             matches = difflib.get_close_matches(
-                parsed["project_name"], names, n=1, cutoff=0.6
+                parsed_lower, [n.lower() for n in names], n=1, cutoff=0.6
             )
             if matches:
-                proj = next(p for p in all_projects if p.name == matches[0])
+                proj = next(p for p in all_projects if p.name.lower() == matches[0])
                 project_id = proj.id
                 effective_project_name = proj.name
             else:
