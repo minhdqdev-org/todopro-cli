@@ -14,6 +14,7 @@ from .commands.edit_command import app as edit_command_app
 from .commands.encryption import app as encryption_app  # E2EE commands (setup, status, recover, rotate, show-recovery)
 # from .commands.export_command import app as export_app  # DISABLED: Duplicate of data.py export, references undefined factory
 from .commands.get_command import app as get_app
+from .commands.task_command import app as task_command_app
 # from .commands.import_command import app as import_app  # DISABLED: Duplicate of data.py import, references undefined factory
 from .commands.list_command import app as list_app
 from .commands.login_command import app as login_command_app
@@ -71,6 +72,7 @@ app.add_typer(today_command_app, name="", help="View today's tasks in interactiv
 app.add_typer(
     list_app, name="list", help="List resources (tasks, projects, labels, etc.)"
 )
+app.add_typer(task_command_app, name="", help="Get task details by ID or suffix")
 app.add_typer(get_app, name="get", help="Get resource details")
 app.add_typer(create_app, name="create", help="Create new resources")
 app.add_typer(update_resource_app, name="update", help="Update existing resources")
