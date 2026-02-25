@@ -1,30 +1,19 @@
 """Stop command - Stop focus sessions."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
-from todopro_cli.utils.ui.formatters import format_output, format_success
-
-from .decorators import command_wrapper
+from todopro_cli.utils.ui.console import get_console
 
 app = typer.Typer(cls=SuggestingGroup, help="Stop focus sessions")
-console = Console()
+console = get_console()
 
 
 @app.command("focus")
-@command_wrapper
-async def stop_focus(
+def stop_focus(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Stop the current focus session."""
-    from todopro_cli.services.focus_service import FocusService
+    from todopro_cli.commands.focus import stop_focus as _impl
 
-    strategy = get_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
-    service = FocusService(focus_repo)
-
-    session = await service.stop_session()
-    format_success("Focus session stopped")
-    format_output(session.model_dump(), output)
+    _impl()

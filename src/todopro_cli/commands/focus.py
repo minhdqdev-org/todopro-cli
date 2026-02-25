@@ -9,7 +9,6 @@ import uuid
 from datetime import datetime, timedelta
 
 import typer
-from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
 # Import focus mode modules
@@ -23,15 +22,16 @@ from todopro_cli.focus.ui import (
     show_completion_message,
     show_stopped_message,
 )
+from todopro_cli.services.config_service import (
+    get_config_service,
+    get_storage_strategy_context,
+)
 
 # Import strategy context and service layer
-from todopro_cli.services.context_manager import (
-    get_context_manager,
-    get_strategy_context,
-)
 from todopro_cli.services.task_service import TaskService
+from todopro_cli.utils.ui.console import get_console
 
-console = Console()
+console = get_console()
 app = typer.Typer(help="Focus mode with Pomodoro timer")
 
 
@@ -53,9 +53,7 @@ def get_task_service() -> TaskService:
     Returns:
         TaskService: Service with injected repository strategy
     """
-    strategy_context = get_strategy_context()
-    task_repository = strategy_context.task_repository
-    return TaskService(task_repository)
+    return TaskService(get_storage_strategy_context().task_repository)
 
 
 @app.command("start")
@@ -104,11 +102,11 @@ def start_focus(
         task_title = task.content  # Task model uses 'content' field
     except Exception as e:
         console.print(f"[red]Error fetching task: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     # Get current context
-    context_manager = get_context_manager()
-    current_context = context_manager.config.current_context
+    config_service = get_config_service()
+    current_context = config_service.config.current_context_name
 
     # Create session state
     now = datetime.now().astimezone()
@@ -461,18 +459,18 @@ def auto_cycle(
 
     # Initialize cycle config
     config = PomodoroConfig(
-        work_duration=work,
-        short_break_duration=short_break,
-        long_break_duration=long_break,
-        cycles_before_long_break=cycles,
+        focus_duration=work,
+        short_break=short_break,
+        long_break=long_break,
+        sessions_before_long_break=cycles,
     )
 
-    cycle_state = CycleState(config)
+    cycle_state = CycleState()
     history = HistoryLogger()
     state_manager = SessionStateManager()
 
-    context_manager = get_context_manager()
-    current_context = context_manager.config.current_context
+    config_service = get_config_service()
+    current_context = config_service.config.current_context
 
     console.print("\n[bold green]🍅 Starting auto-cycle mode[/bold green]")
     console.print(
@@ -484,7 +482,7 @@ def auto_cycle(
     while True:
         # Determine phase and duration
         phase = cycle_state.current_phase
-        duration = cycle_state.get_duration()
+        duration = cycle_state.get_duration(config)
 
         if phase == "focus":
             session_type = "focus"
@@ -503,9 +501,11 @@ def auto_cycle(
         session = SessionState(
             session_id=str(uuid.uuid4()),
             task_id=current_task_id if phase == "focus" else "break",
-            task_title=current_task_title
-            if phase == "focus"
-            else f"{phase.replace('_', ' ').title()}",
+            task_title=(
+                current_task_title
+                if phase == "focus"
+                else f"{phase.replace('_', ' ').title()}"
+            ),
             start_time=now.isoformat(),
             end_time=end_time.isoformat(),
             duration_minutes=duration,

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from todopro_cli.services.context_manager import get_context_manager
+from todopro_cli.services.config_service import get_config_service
 
 DEFAULT_TEMPLATES = {
     "deep_work": {
@@ -31,10 +31,10 @@ DEFAULT_TEMPLATES = {
 class TemplateManager:
     """Manage focus session templates."""
 
-    def __init__(self, profile: str = "default"):
+    def __init__(self):
         """Initialize template manager."""
-        self.context_manager = get_context_manager(profile)
-        self.config = self.context_manager.load_config()
+        self.config_service = get_config_service()
+        self.config = self.config_service.load_config()
 
     def get_templates(self) -> dict[str, dict[str, Any]]:
         """Get all templates (default + custom)."""
@@ -63,7 +63,7 @@ class TemplateManager:
             "description": description or f"Custom {duration}-minute session",
         }
 
-        self.context_manager.save_config(self.config)
+        self.config_service.save_config(self.config)
 
     def delete_template(self, name: str) -> bool:
         """Delete a custom template (can't delete defaults)."""
@@ -72,7 +72,7 @@ class TemplateManager:
 
         if self.config.focus_templates and name in self.config.focus_templates:
             del self.config.focus_templates[name]
-            self.context_manager.save_config(self.config)
+            self.config_service.save_config(self.config)
             return True
 
         return False

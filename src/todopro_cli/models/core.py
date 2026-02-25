@@ -118,8 +118,11 @@ class Task(BaseModel):
         description: Optional detailed description
         project_id: Optional reference to parent project
         due_date: Optional due date with timezone
-        priority: Priority level (1=lowest, 4=highest)
+        priority: Priority level (4=lowest, 1=highest)
         is_completed: Completion status
+        is_recurring: Whether this is a recurring task
+        recurrence_rule: iCalendar RRULE string (e.g., "FREQ=DAILY")
+        recurrence_end: Optional date when recurrence stops
         labels: List of label IDs associated with task
         contexts: List of context IDs associated with task
         created_at: Creation timestamp
@@ -133,8 +136,11 @@ class Task(BaseModel):
     description: str | None = None
     project_id: str | None = None
     due_date: datetime | None = None
-    priority: int = Field(default=1, ge=1, le=4)
+    priority: int = Field(default=4, ge=1, le=4)
     is_completed: bool = False
+    is_recurring: bool = False
+    recurrence_rule: str | None = None
+    recurrence_end: datetime | None = None
     labels: list[str] = Field(default_factory=list)
     contexts: list[str] = Field(default_factory=list)
     created_at: datetime
@@ -151,18 +157,26 @@ class TaskCreate(BaseModel):
         description: Optional detailed description
         project_id: Optional reference to parent project
         due_date: Optional due date with timezone
-        priority: Priority level (1=lowest, 4=highest)
+        priority: Priority level (4=lowest, 1=highest)
+        is_recurring: Whether to make this a recurring task
+        recurrence_rule: iCalendar RRULE string (required if is_recurring=True)
+        recurrence_end: Optional date when recurrence stops
         labels: List of label IDs
         contexts: List of context IDs
+        parent_id: Optional parent task ID for subtasks
     """
 
     content: str
     description: str | None = None
     project_id: str | None = None
     due_date: datetime | None = None
-    priority: int = Field(default=1, ge=1, le=4)
+    priority: int = Field(default=4, ge=1, le=4)
+    is_recurring: bool = False
+    recurrence_rule: str | None = None
+    recurrence_end: datetime | None = None
     labels: list[str] = Field(default_factory=list)
     contexts: list[str] = Field(default_factory=list)
+    parent_id: str | None = None
 
 
 class TaskUpdate(BaseModel):
@@ -175,8 +189,11 @@ class TaskUpdate(BaseModel):
         description: Detailed description
         project_id: Reference to parent project
         due_date: Due date with timezone
-        priority: Priority level (1=lowest, 4=highest)
+        priority: Priority level (4=lowest, 1=highest)
         is_completed: Completion status
+        is_recurring: Whether this is a recurring task
+        recurrence_rule: iCalendar RRULE string
+        recurrence_end: Optional date when recurrence stops
         labels: List of label IDs
         contexts: List of context IDs
     """
@@ -187,6 +204,9 @@ class TaskUpdate(BaseModel):
     due_date: datetime | None = None
     priority: int | None = Field(default=None, ge=1, le=4)
     is_completed: bool | None = None
+    is_recurring: bool | None = None
+    recurrence_rule: str | None = None
+    recurrence_end: datetime | None = None
     labels: list[str] | None = None
     contexts: list[str] | None = None
 
@@ -199,6 +219,7 @@ class TaskFilters(BaseModel):
         status: Filter by status ("active", "completed", "all")
         project_id: Filter by project ID
         priority: Filter by priority level
+        is_recurring: Filter to only recurring tasks when True
         labels: Filter by label IDs (match any)
         contexts: Filter by context IDs (match any)
         search: Full-text search query
@@ -213,6 +234,7 @@ class TaskFilters(BaseModel):
     status: str | None = Field(default=None, pattern="^(active|completed|all)$")
     project_id: str | None = None
     priority: int | None = Field(default=None, ge=1, le=4)
+    is_recurring: bool | None = None
     labels: list[str] | None = None
     contexts: list[str] | None = None
     search: str | None = None
@@ -221,6 +243,39 @@ class TaskFilters(BaseModel):
     limit: int | None = Field(default=None, ge=1)
     offset: int | None = Field(default=None, ge=0)
     sort: str | None = None
+
+
+class Reminder(BaseModel):
+    """Task reminder model."""
+
+    id: str
+    task_id: str
+    reminder_date: datetime
+    is_sent: bool = False
+    sent_at: datetime | None = None
+    is_snoozed: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
+class SavedFilter(BaseModel):
+    """Saved filter/smart view model.
+
+    Attributes:
+        id: Unique identifier
+        name: Human-readable filter name
+        color: Hex color code (e.g., "#FF5733")
+        criteria: Filter criteria dict (priority, project_ids, label_ids, due_within_days)
+        created_at: Creation timestamp
+        updated_at: Last update timestamp
+    """
+
+    id: str
+    name: str
+    color: str
+    criteria: dict
+    created_at: datetime
+    updated_at: datetime
 
 
 class User(BaseModel):

@@ -5,14 +5,14 @@ import time
 from datetime import datetime
 
 import typer
-from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from todopro_cli.services.api.client import APIClient
+
 from .utils import handle_api_error
 
-console = Console()
+console = get_console()
 app = typer.Typer(help="Pomodoro timer for focus sessions")
 
 
@@ -92,7 +92,8 @@ def start_timer(
                 # Session interrupted
                 console.print("\n[yellow]⚠️  Session Interrupted[/yellow]")
                 await client.post(
-                    f"/v1/pomodoro/{session_id}/interrupt", json={"notes": "Interrupted by user"}
+                    f"/v1/pomodoro/{session_id}/interrupt",
+                    json={"notes": "Interrupted by user"},
                 )
                 console.print("[dim]Session marked as interrupted[/dim]\n")
 
@@ -110,6 +111,7 @@ def timer_history(
     limit: int = typer.Option(20, help="Number of sessions to show"),
 ):
     """Show Pomodoro session history."""
+
     async def _history():
         client = APIClient()
 
@@ -181,6 +183,7 @@ def timer_stats(
     days: int = typer.Option(7, help="Number of days to analyze"),
 ):
     """Show Pomodoro statistics."""
+
     async def _stats():
         client = APIClient()
 

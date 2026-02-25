@@ -16,7 +16,7 @@ Architecture Notes (Post Spec 10-14 Refactoring):
 
 Example Usage:
     from todopro_cli.services.config_service import ConfigService
-    
+
     config_service = ConfigService()
     contexts = config_service.list_contexts()
     config_service.use_context("my-context")
@@ -24,12 +24,19 @@ Example Usage:
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
+from json import JSONDecodeError
 from pathlib import Path
 
 from platformdirs import user_config_dir, user_data_dir
 
 from todopro_cli.models.config_models import AppConfig, Context
+from todopro_cli.models.storage_strategy import (
+    LocalStorageStrategy,
+    RemoteStorageStrategy,
+    StorageStrategyContext,
+)
 
 
 class ConfigService:
@@ -56,12 +63,22 @@ class ConfigService:
 
         self._config: AppConfig | None = None
 
+        self._storage_strategy_context: StorageStrategyContext | None = None
+
     @property
     def config(self) -> AppConfig:
         """Get or load the current configuration."""
         if self._config is None:
             self._config = self.load_config()
         return self._config
+
+    @property
+    def storage_strategy_context(self) -> StorageStrategyContext:
+        """Get a StorageStrategyContext based on the current configuration."""
+        assert self._storage_strategy_context is not None, (
+            "StorageStrategyContext should be initialized"
+        )
+        return self._storage_strategy_context
 
     def load_config(self) -> AppConfig:
         """Load configuration from storage."""
@@ -71,10 +88,22 @@ class ConfigService:
         try:
             with open(self.config_path, encoding="utf-8") as f:
                 self._config = AppConfig.model_validate_json(f.read())
+
+                # After loading config, initialize the storage strategy context
+                context = self.get_current_context()
+                if context.type == "remote":
+                    strategy = RemoteStorageStrategy()
+                else:
+                    strategy = LocalStorageStrategy(db_path=context.source)
+                self._storage_strategy_context = StorageStrategyContext(strategy)
+
         except FileNotFoundError:
             # Config file doesn't exist yet - create default config
             # This is expected on first run
             self._config = self.create_default_cloud_config()
+            self._storage_strategy_context = StorageStrategyContext(
+                strategy=RemoteStorageStrategy()
+            )
             self.save_config()
         except Exception as e:
             raise RuntimeError(f"Failed to load config: {e}") from e
@@ -97,9 +126,27 @@ class ConfigService:
         except Exception as e:
             raise RuntimeError(f"Failed to save config: {e}") from e
 
+    def reset_config(self):
+        """Reset configuration to defaults."""
+        self._config = None
+        self._storage_strategy_context = None
+        if self.config_path.exists():
+            self.config_path.unlink()
+        # Also clear credentials
+        for cred_file in self.credentials_dir.glob("*.json"):
+            cred_file.unlink()
+        # Recreate default config and storage context
+        self.create_default_cloud_config()
+        context = self.get_current_context()
+        if context.type == "remote":
+            strategy = RemoteStorageStrategy()
+        else:
+            strategy = LocalStorageStrategy(db_path=context.source)
+        self._storage_strategy_context = StorageStrategyContext(strategy)
+
     def create_default_cloud_config(self) -> AppConfig:
         """Create a default configuration with local context.
-        
+
         Note: Despite the name, this now creates LOCAL context by default
         for better first-run experience. Users don't need authentication
         to get started.
@@ -112,7 +159,7 @@ class ConfigService:
             source=local_db_path,
             description="Local SQLite storage",
         )
-        
+
         # Also add cloud context for easy switching later
         cloud_context = Context(
             name="cloud",
@@ -120,10 +167,10 @@ class ConfigService:
             source="https://todopro.minhdq.dev/api",
             description="TodoPro Cloud (requires login)",
         )
-        
+
         self._config = AppConfig(
             current_context_name=local_context.name,
-            contexts=[local_context, cloud_context]
+            contexts=[local_context, cloud_context],
         )
         self.save_config()
         return self._config
@@ -134,10 +181,10 @@ class ConfigService:
 
     def get_current_context(self) -> Context:
         """Get the currently active context.
-        
+
         Returns:
             Context: The active context
-            
+
         Raises:
             ValueError: If no context is configured or current context not found
         """
@@ -184,7 +231,7 @@ class ConfigService:
 
     def load_credentials(self) -> dict | None:
         """Load credentials for the current context.
-        
+
         Returns:
             dict with 'token' and optionally 'refresh_token', or None if not found
         """
@@ -196,52 +243,54 @@ class ConfigService:
 
     def load_context_credentials(self, context_name: str) -> dict | None:
         """Load credentials for a specific context.
-        
+
         Args:
             context_name: Name of the context
-            
+
         Returns:
             dict with 'token' and optionally 'refresh_token', or None if not found
         """
-        import json
-        
+
         cred_path = self.credentials_dir / f"{context_name}.json"
         if not cred_path.exists():
             return None
-            
+
         try:
             with open(cred_path, encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
+        except JSONDecodeError:
             return None
 
-    def save_credentials(self, access_token: str, refresh_token: str | None = None, context_name: str | None = None):
+    def save_credentials(
+        self,
+        access_token: str,
+        refresh_token: str | None = None,
+        context_name: str | None = None,
+    ):
         """Save credentials for a context.
-        
+
         Args:
             access_token: The access token (JWT)
             refresh_token: Optional refresh token
             context_name: Context name (defaults to current context)
         """
-        import json
-        
+
         if context_name is None:
             current_context = self.config.get_current_context()
             context_name = current_context.name
-            
+
         cred_data = {"token": access_token}
         if refresh_token:
             cred_data["refresh_token"] = refresh_token
-            
+
         cred_path = self.credentials_dir / f"{context_name}.json"
         cred_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(cred_path, "w", encoding="utf-8") as f:
             json.dump(cred_data, f, indent=2)
-            
+
         # Set secure file permissions
         cred_path.chmod(0o600)
-
 
     def clear_credentials(self, context_name: str | None = None) -> None:
         """Clear credentials for a context.
@@ -262,3 +311,9 @@ class ConfigService:
 def get_config_service() -> ConfigService:
     """Get a cached ConfigService instance."""
     return ConfigService()
+
+
+def get_storage_strategy_context() -> StorageStrategyContext:
+    """Get a StorageStrategyContext based on the current configuration."""
+    config_service = get_config_service()
+    return config_service.storage_strategy_context

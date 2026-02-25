@@ -1,16 +1,15 @@
 """Pull command - Pull data from remote (sync)."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Pull data from remote")
-console = Console()
+console = get_console()
 
 
 @app.command()
@@ -21,7 +20,7 @@ async def pull(
     """Pull data from remote context."""
     from todopro_cli.services.sync_service import SyncService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     sync_service = SyncService(factory)
 
     await sync_service.pull(force=force)

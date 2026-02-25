@@ -26,8 +26,7 @@ class HistoryLogger:
     def _init_database(self) -> None:
         """Initialize database schema."""
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS pomodoro_sessions (
                     id TEXT PRIMARY KEY,
                     task_id TEXT,
@@ -42,30 +41,23 @@ class HistoryLogger:
                     context TEXT,
                     created_at TEXT NOT NULL
                 )
-                """
-            )
+                """)
 
             # Create indexes
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_sessions_date 
                 ON pomodoro_sessions(start_time)
-                """
-            )
+                """)
 
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_sessions_task 
                 ON pomodoro_sessions(task_id)
-                """
-            )
+                """)
 
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_sessions_status 
                 ON pomodoro_sessions(status)
-                """
-            )
+                """)
 
             conn.commit()
 

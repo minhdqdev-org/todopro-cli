@@ -1,15 +1,15 @@
 """Encryption management commands for TodoPro CLI."""
 
 import typer
-from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
 from todopro_cli.models.crypto.exceptions import TodoProCryptoError
 from todopro_cli.services.encryption_service import EncryptionService
+from todopro_cli.utils.ui.console import get_console
 
 app = typer.Typer(help="Manage end-to-end encryption")
-console = Console()
+console = get_console()
 
 
 def get_encryption_service() -> EncryptionService:

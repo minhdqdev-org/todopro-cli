@@ -57,7 +57,7 @@ async def resolve_task_id(task_service: TaskService, task_id_or_suffix: str) -> 
 
     # Search for tasks matching the suffix
     tasks_response = await task_service.list_tasks(limit=100)
-    
+
     # Handle both dict response with 'items' key and direct list
     if isinstance(tasks_response, dict):
         tasks = tasks_response.get("items", tasks_response.get("tasks", []))
@@ -66,7 +66,9 @@ async def resolve_task_id(task_service: TaskService, task_id_or_suffix: str) -> 
 
     # Handle both dict and object tasks
     if tasks and isinstance(tasks[0], dict):
-        matching_tasks = [task for task in tasks if task.get("id", "").endswith(task_id_or_suffix)]
+        matching_tasks = [
+            task for task in tasks if task.get("id", "").endswith(task_id_or_suffix)
+        ]
     else:
         matching_tasks = [task for task in tasks if task.id.endswith(task_id_or_suffix)]
 
@@ -79,11 +81,13 @@ async def resolve_task_id(task_service: TaskService, task_id_or_suffix: str) -> 
         for task in matching_tasks:
             # Handle both dict and object
             task_id = task.get("id") if isinstance(task, dict) else task.id
-            task_content = task.get("content") if isinstance(task, dict) else task.content
-            
+            task_content = (
+                task.get("content") if isinstance(task, dict) else task.content
+            )
+
             # Get all task IDs for comparison
             all_task_ids = [t.get("id") if isinstance(t, dict) else t.id for t in tasks]
-            
+
             unique_suffix = _find_shortest_unique_suffix(all_task_ids, task_id)
             content = task_content
             # Truncate long content
@@ -97,4 +101,8 @@ async def resolve_task_id(task_service: TaskService, task_id_or_suffix: str) -> 
             + "\n\nUse the suffix in brackets to select a specific task."
         )
 
-    return matching_tasks[0].get("id") if isinstance(matching_tasks[0], dict) else matching_tasks[0].id
+    return (
+        matching_tasks[0].get("id")
+        if isinstance(matching_tasks[0], dict)
+        else matching_tasks[0].id
+    )

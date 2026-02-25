@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
-from todopro_cli.services.context_manager import get_context_manager
+from todopro_cli.services.config_service import get_config_service
 
 from .analytics import FocusAnalytics
 
@@ -181,12 +181,11 @@ ACHIEVEMENTS = [
 class AchievementTracker:
     """Tracks and awards achievements based on focus session data."""
 
-    def __init__(self, profile: str = "default"):
+    def __init__(self):
         """Initialize achievement tracker."""
-        self.profile = profile
         self.analytics = FocusAnalytics()
-        self.context_manager = get_context_manager(profile)
-        self.config = self.context_manager.load_config()
+        self.config_service = get_config_service()
+        self.config = self.config_service.config
 
         # Initialize achievements storage in config
         if not hasattr(self.config, "achievements") or self.config.achievements is None:
@@ -195,7 +194,7 @@ class AchievementTracker:
                 "progress": {},
                 "last_check": None,
             }
-            self.context_manager.save_config(self.config)
+            self.config_service.save_config(self.config)
 
     def check_achievements(self) -> list[Achievement]:
         """Check for newly earned achievements."""
@@ -216,7 +215,7 @@ class AchievementTracker:
 
         # Save if any new achievements
         if newly_earned:
-            self.context_manager.save_config(self.config)
+            self.config_service.save_config(self.config)
 
         return newly_earned
 

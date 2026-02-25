@@ -9,8 +9,8 @@ Implementations (Adapters) are in:
 """
 
 from .repository import (
-    ContextRepository,
     LabelRepository,
+    LocationContextRepository,
     ProjectRepository,
     TaskRepository,
 )
@@ -19,5 +19,5 @@ __all__ = [
     "TaskRepository",
     "ProjectRepository",
     "LabelRepository",
-    "ContextRepository",
+    "LocationContextRepository",
 ]

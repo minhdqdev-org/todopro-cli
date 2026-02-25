@@ -15,8 +15,12 @@ from todopro_cli.services.config_service import ConfigService
 def mock_config_manager(tmp_path):
     """Create a mock config manager."""
     tmpdir = str(tmp_path)
-    with patch('todopro_cli.services.config_service.user_config_dir', return_value=tmpdir):
-        with patch('todopro_cli.services.config_service.user_data_dir', return_value=tmpdir):
+    with patch(
+        "todopro_cli.services.config_service.user_config_dir", return_value=tmpdir
+    ):
+        with patch(
+            "todopro_cli.services.config_service.user_data_dir", return_value=tmpdir
+        ):
             config_manager = ConfigService()
             yield config_manager
 
@@ -25,7 +29,8 @@ def mock_config_manager(tmp_path):
 async def test_client_initialization(mock_config_manager):
     """Test API client initialization."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
         assert client.base_url == "https://todopro.minhdq.dev/api"
@@ -37,7 +42,8 @@ async def test_client_initialization(mock_config_manager):
 async def test_get_headers_without_auth(mock_config_manager):
     """Test getting headers without authentication."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
         headers = client._get_headers(skip_auth=True)
@@ -47,24 +53,29 @@ async def test_get_headers_without_auth(mock_config_manager):
         assert "Authorization" not in headers
 
 
-@pytest.mark.skip(reason="Auth header test is complex due to context/config caching. Auth is tested in integration tests.")
+@pytest.mark.skip(
+    reason="Auth header test is complex due to context/config caching. Auth is tested in integration tests."
+)
 @pytest.mark.asyncio
 async def test_get_headers_with_auth(mock_config_manager):
     """Test getting headers with authentication."""
     from todopro_cli.models.config_models import Context
-    
+
     # Create a mock context
     mock_context = Context(name="test", type="remote", source="https://api.test.com")
-    
+
     # Mock get_current_context to return a test context
     mock_config_manager.get_current_context = lambda: mock_context
-    
+
     # Save credentials for the test context
-    mock_config_manager.save_credentials("test_token", "test_refresh_token", context_name="test")
+    mock_config_manager.save_credentials(
+        "test_token", "test_refresh_token", context_name="test"
+    )
 
     # Patch get_config_service since get_context_manager calls it
     with patch(
-        "todopro_cli.services.context_manager.get_config_service", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_config_service",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
         headers = client._get_headers()
@@ -76,7 +87,8 @@ async def test_get_headers_with_auth(mock_config_manager):
 async def test_get_client_creates_httpx_client(mock_config_manager):
     """Test _get_client creates httpx client."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
         httpx_client = await client._get_client()
@@ -91,7 +103,8 @@ async def test_get_client_creates_httpx_client(mock_config_manager):
 async def test_close_client(mock_config_manager):
     """Test closing the client."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
         await client._get_client()
@@ -106,7 +119,8 @@ async def test_close_client(mock_config_manager):
 async def test_request_success(mock_config_manager):
     """Test successful request."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
 
@@ -130,7 +144,8 @@ async def test_request_success(mock_config_manager):
 async def test_request_with_retry_on_server_error(mock_config_manager):
     """Test request retries on server error."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
 
@@ -159,7 +174,8 @@ async def test_request_with_retry_on_server_error(mock_config_manager):
 async def test_request_no_retry_on_client_error(mock_config_manager):
     """Test request doesn't retry on client error (4xx)."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
 
@@ -188,7 +204,8 @@ async def test_request_no_retry_on_client_error(mock_config_manager):
 async def test_get_method(mock_config_manager):
     """Test GET request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
 
@@ -211,7 +228,8 @@ async def test_get_method(mock_config_manager):
 async def test_post_method(mock_config_manager):
     """Test POST request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
 
@@ -234,7 +252,8 @@ async def test_post_method(mock_config_manager):
 async def test_put_method(mock_config_manager):
     """Test PUT request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
 
@@ -255,7 +274,8 @@ async def test_put_method(mock_config_manager):
 async def test_patch_method(mock_config_manager):
     """Test PATCH request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
 
@@ -278,7 +298,8 @@ async def test_patch_method(mock_config_manager):
 async def test_delete_method(mock_config_manager):
     """Test DELETE request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager", return_value=mock_config_manager
+        "todopro_cli.services.context_manager.get_context_manager",
+        return_value=mock_config_manager,
     ):
         client = APIClient(profile="test")
 

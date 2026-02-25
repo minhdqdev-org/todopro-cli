@@ -2,6 +2,7 @@
 
 This module tests all project management commands using mocked services.
 """
+
 # pylint: disable=redefined-outer-name
 
 import re
@@ -19,8 +20,9 @@ from todopro_cli.services.config_service import ConfigService
 
 def strip_ansi(text: str) -> str:
     """Remove ANSI escape codes from text."""
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return ansi_escape.sub('', text)
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
+
 
 runner = CliRunner()
 
@@ -65,11 +67,14 @@ def mock_project_service():
     async def _passthrough_uuid(project_id, repo, **kwargs):
         return project_id
 
-    with patch(
-        "todopro_cli.commands.projects.ProjectService", return_value=service_mock
-    ), patch(
-        "todopro_cli.commands.projects.resolve_project_uuid",
-        side_effect=_passthrough_uuid,
+    with (
+        patch(
+            "todopro_cli.commands.projects.ProjectService", return_value=service_mock
+        ),
+        patch(
+            "todopro_cli.commands.projects.resolve_project_uuid",
+            side_effect=_passthrough_uuid,
+        ),
     ):
         yield service_mock
 

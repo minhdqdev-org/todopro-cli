@@ -1,16 +1,16 @@
 """Use command - Switch/use contexts."""
 
 import typer
-from rich.console import Console
 
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Switch/use contexts")
-console = Console()
+console = get_console()
 
 
 @app.command("context")
@@ -21,7 +21,7 @@ async def use_context(
     """Switch to a different storage context."""
 
     config_service = get_config_service()
-    
+
     # Check if already using this context
     try:
         current = config_service.get_current_context()
@@ -34,6 +34,6 @@ async def use_context(
     except (ValueError, KeyError):
         # No current context, continue with switch
         pass
-    
+
     ctx = config_service.use_context(name)
     format_success(f"Switched to context: {ctx.name}")

@@ -9,18 +9,18 @@ from datetime import datetime
 from pathlib import Path
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
 from todopro_cli.services.api.analytics import AnalyticsAPI
 from todopro_cli.services.api.client import get_client
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_error, format_success
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Analytics commands")
-console = Console()
+console = get_console()
 
 
 @app.command("stats")
@@ -29,12 +29,11 @@ def analytics_stats(
     output: str = typer.Option(
         "table", "--output", "-o", help="Output format (table/json)"
     ),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show productivity score and basic statistics."""
 
     async def do_stats() -> None:
-        client = get_client(profile)
+        client = get_client()
         analytics_api = AnalyticsAPI(client)
 
         try:
@@ -49,7 +48,7 @@ def analytics_stats(
                     "productivity_score": score_data,
                     "completion_stats": stats_data,
                 }
-                print(json.dumps(combined, indent=2, default=str))
+                console.print(json.dumps(combined, indent=2, default=str))
             else:
                 # Display productivity score
                 score = score_data.get("score", 0)
@@ -142,12 +141,11 @@ def analytics_streaks(
     output: str = typer.Option(
         "table", "--output", "-o", help="Output format (table/json)"
     ),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Show current and longest task completion streak."""
 
     async def do_streaks() -> None:
-        client = get_client(profile)
+        client = get_client()
         analytics_api = AnalyticsAPI(client)
 
         try:
@@ -213,7 +211,6 @@ def analytics_streaks(
 def analytics_export(
     format: str = typer.Option("csv", "--format", help="Export format (csv/json)"),
     output: str | None = typer.Option(None, "--output", help="Output file path"),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Export analytics data to file."""
 
@@ -228,7 +225,7 @@ def analytics_export(
         output = f"todopro_analytics_{timestamp}.{format}"
 
     async def do_export() -> None:
-        client = get_client(profile)
+        client = get_client()
         analytics_api = AnalyticsAPI(client)
 
         try:

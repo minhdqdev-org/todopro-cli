@@ -1,4 +1,5 @@
 """Unit tests for the top-level `tp task <task_id>` command."""
+
 # pylint: disable=redefined-outer-name
 
 from datetime import datetime
@@ -53,9 +54,7 @@ def mock_task_service(mock_task):
             "todopro_cli.commands.decorators.get_config_service",
             return_value=MagicMock(
                 config=MagicMock(
-                    get_current_context=MagicMock(
-                        return_value=MagicMock(type="local")
-                    )
+                    get_current_context=MagicMock(return_value=MagicMock(type="local"))
                 )
             ),
         ),

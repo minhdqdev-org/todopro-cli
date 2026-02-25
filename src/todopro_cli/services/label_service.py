@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from todopro_cli.repositories import LabelRepository
 from todopro_cli.models import Label, LabelCreate
+from todopro_cli.repositories import LabelRepository
 
 
 class LabelService:
@@ -100,3 +100,13 @@ class LabelService:
 
         # Create new label if not found
         return await self.create_label(name, color=color)
+
+
+def get_label_service():
+    """Factory function to get a LabelService instance."""
+    from todopro_cli.services.config_service import (
+        get_storage_strategy_context,  # type: ignore
+    )
+
+    storage_strategy_context = get_storage_strategy_context()
+    return LabelService(storage_strategy_context.label_repository)

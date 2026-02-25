@@ -4,7 +4,6 @@ import asyncio
 import contextlib
 from datetime import datetime
 
-from rich.console import Console
 from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import (
@@ -20,10 +19,11 @@ from textual.widgets import Button, Footer, Header, Input, RichLog, Rule, Static
 
 from todopro_cli.services.api.client import get_client
 from todopro_cli.services.api.tasks import TasksAPI
+from todopro_cli.utils.ui.console import get_console
 
 DEBUG = False
 
-console = Console()
+console = get_console()
 
 
 class TaskViewModel:
@@ -673,11 +673,10 @@ def run_board_view(project_code: str):
     async def preload_data():
         """Preload task data before app starts."""
         if current_context.type == "local":
-            from todopro_cli.services.context_manager import get_strategy_context
             from todopro_cli.services.task_service import TaskService
 
-            strategy = get_strategy_context()
-            task_service = TaskService(strategy.task_repository)
+            storage_strategy_context = get_storage_strategy_context()
+            task_service = TaskService(storage_strategy_context.task_repository)
 
             if project_code.lower() == "inbox":
                 tasks = await task_service.list_tasks(status="active")
@@ -685,22 +684,21 @@ def run_board_view(project_code: str):
                 tasks = await task_service.list_tasks(project_id=project_code)
 
             return [t.model_dump() for t in tasks]
-        else:
-            client = get_client()
-            tasks_api = TasksAPI(client)
+        client = get_client()
+        tasks_api = TasksAPI(client)
 
-            try:
-                if project_code.lower() == "inbox":
-                    tasks_data = await tasks_api.list_tasks()
-                else:
-                    tasks_data = await tasks_api.list_tasks(project_id=project_code)
+        try:
+            if project_code.lower() == "inbox":
+                tasks_data = await tasks_api.list_tasks()
+            else:
+                tasks_data = await tasks_api.list_tasks(project_id=project_code)
 
-                # Handle both list and dict responses
-                if isinstance(tasks_data, dict):
-                    return tasks_data.get("tasks", [])
-                return tasks_data
-            finally:
-                await client.close()
+            # Handle both list and dict responses
+            if isinstance(tasks_data, dict):
+                return tasks_data.get("tasks", [])
+            return tasks_data
+        finally:
+            await client.close()
 
     # Load tasks before starting the app
     tasks_list = asyncio.run(preload_data())

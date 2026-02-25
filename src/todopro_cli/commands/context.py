@@ -13,7 +13,6 @@ from pathlib import Path
 
 import typer
 from platformdirs import user_data_dir
-from rich.console import Console
 from rich.table import Table
 
 from todopro_cli.adapters.sqlite.connection import get_connection
@@ -21,7 +20,7 @@ from todopro_cli.adapters.sqlite.schema import initialize_schema
 from todopro_cli.models.config_models import Context
 from todopro_cli.services.api.auth import AuthAPI
 from todopro_cli.services.api.client import get_client
-from todopro_cli.services.context_manager import get_context_manager
+from todopro_cli.utils.ui.console import get_console
 
 from .decorators import command_wrapper
 
@@ -29,12 +28,12 @@ app = typer.Typer(
     help="Manage storage contexts (local/remote)",
     no_args_is_help=False,  # Allow bare command
 )
-console = Console()
+console = get_console()
 
 
 def show_current_context_info(output: str = "text"):
     """Show current context information including user info."""
-    manager = get_context_manager()
+    manager = get_config_service()
     ctx = manager.get_current_context()
 
     if ctx is None:
@@ -140,7 +139,7 @@ def show_current_context_info(output: str = "text"):
 def _get_user_info_sync():
     """Get user info synchronously for remote contexts."""
 
-    manager = get_context_manager()
+    manager = get_config_service()
     credentials = manager.load_credentials()
 
     if not credentials:
@@ -186,7 +185,7 @@ def list_contexts(
     ),
 ):
     """List all available contexts."""
-    manager = get_context_manager()
+    manager = get_config_service()
     contexts = manager.list_contexts()
     current_name = manager.config.current_context
 
@@ -226,7 +225,7 @@ def list_contexts(
 @command_wrapper(auth_required=False)
 def use_context(name: str = typer.Argument(..., help="Context name to switch to")):
     """Switch to a different context."""
-    manager = get_context_manager()
+    manager = get_config_service()
 
     try:
         # Check if already using this context
@@ -271,7 +270,7 @@ def create_context(
     description: str = typer.Option("", "--description", help="Context description"),
 ):
     """Create a new context."""
-    manager = get_context_manager()
+    manager = get_config_service()
 
     # Validate type
     if ctx_type not in ["local", "remote"]:
@@ -345,7 +344,7 @@ def delete_context(
     ),
 ):
     """Delete a context."""
-    manager = get_context_manager()
+    manager = get_config_service()
 
     ctx = manager.get_context(name)
     if ctx is None:
@@ -377,7 +376,7 @@ def rename_context(
     new_name: str = typer.Argument(..., help="New context name"),
 ):
     """Rename a context."""
-    manager = get_context_manager()
+    manager = get_config_service()
 
     renamed = manager.rename_context(old_name, new_name)
     if renamed:

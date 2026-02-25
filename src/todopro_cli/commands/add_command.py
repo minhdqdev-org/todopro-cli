@@ -1,6 +1,7 @@
 """Command 'add' of todopro-cli"""
 
 import asyncio
+import json
 from datetime import datetime
 
 import typer
@@ -8,13 +9,13 @@ import typer
 from todopro_cli.models.core import TaskCreate
 from todopro_cli.services.api.client import get_client
 from todopro_cli.services.api.tasks import TasksAPI
-from todopro_cli.services.config_service import get_config_service
-from todopro_cli.services.context_manager import get_strategy_context
+from todopro_cli.services.config_service import (
+    get_config_service,
+    get_storage_strategy_context,
+)
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_error, format_success
 
-# Lazy import QuickAddApp to avoid Textual initialization issues
-# from todopro_cli.utils.ui.textual_prompt import QuickAddApp
 from .decorators import command_wrapper
 
 app = typer.Typer()
@@ -25,7 +26,6 @@ console = get_console()
 @command_wrapper
 def add(
     text: str | None = typer.Argument(None, help="Natural language task description"),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
     project: str | None = typer.Option(
         None, "--project", "-p", help="Project name or ID (overrides #project in text)"
     ),
@@ -54,7 +54,7 @@ def add(
     Note: Natural language parsing requires cloud context.
     For local context, creates a simple task with the text as content.
     """
-    import sys
+    import sys  # pylint: disable=import-outside-toplevel
 
     if json_opt:
         output = "json"
@@ -158,12 +158,12 @@ def add(
                 details.append(f"[yellow]🏷️  {labels_str}[/yellow]")
 
             priority_map = {
-                4: "p1 (Urgent)",
-                3: "p2 (High)",
-                2: "p3 (Medium)",
-                1: "p4 (Low)",
+                1: "p1 (Urgent)",
+                2: "p2 (High)",
+                3: "p3 (Medium)",
+                4: "p4 (Normal)",
             }
-            if parsed.get("priority") and parsed["priority"] > 1:
+            if parsed.get("priority") and parsed["priority"] < 4:
                 priority_display = priority_map.get(
                     parsed["priority"], str(parsed["priority"])
                 )
@@ -195,30 +195,30 @@ def _create_local_task(
     from todopro_cli.utils.nlp_parser import parse_natural_language
 
     async def _do_create():
-        strategy = get_strategy_context()
-        task_repo = strategy.task_repository
+        storage_strategy_context = get_storage_strategy_context()
+        task_repo = storage_strategy_context.task_repository
 
         # Parse the text for metadata
         parsed = parse_natural_language(text)
 
-        # Ensure priority is an integer, default to 1 if None
+        # Ensure priority is an integer, default to 4 if None
         priority = parsed.get("priority")
         if priority is None or not isinstance(priority, int):
-            priority = 1
+            priority = 4
 
         # Resolve project_id: --project flag has higher precedence than #project in text
         project_id: str | None = None
         effective_project_name: str | None = None
 
+        from todopro_cli.services.project_service import get_project_service
+
         if project_override is not None:
             # Resolve project by name/ID (fuzzy)
             from todopro_cli.commands.edit_command import _resolve_project_name
-            from todopro_cli.services.project_service import ProjectService
 
-            project_repo = strategy.project_repository
             try:
                 project_id = await _resolve_project_name(project_override, strategy)
-                proj = await ProjectService(project_repo).get_project(project_id)
+                proj = await get_project_service().get_project(project_id)
                 effective_project_name = proj.name
             except ValueError as e:
                 from todopro_cli.utils.ui.formatters import format_error
@@ -229,10 +229,7 @@ def _create_local_task(
             # Resolve project name from NLP
             import difflib
 
-            from todopro_cli.services.project_service import ProjectService
-
-            project_repo = strategy.project_repository
-            project_service = ProjectService(project_repo)
+            project_service = get_project_service()
             all_projects = await project_service.list_projects()
             names = [p.name for p in all_projects]
             parsed_lower = parsed["project_name"].lower()
@@ -260,9 +257,7 @@ def _create_local_task(
         task = await task_repo.add(task_create)
 
         if output == "json":
-            import json as _json
-
-            console.print(_json.dumps(task.model_dump(), indent=2, default=str))
+            console.print(json.dumps(task.model_dump(), indent=2, default=str))
             return
 
         # Show success message with parsed details
@@ -274,12 +269,12 @@ def _create_local_task(
             due = parsed["due_date"]
             details.append(f"📅 Due: {due.strftime('%b %d, %Y at %H:%M')}")
 
-        if priority > 1:
+        if priority < 4:
             priority_map = {
-                4: "P1 (Urgent)",
-                3: "P2 (High)",
-                2: "P3 (Medium)",
-                1: "P4 (Low)",
+                1: "P1 (Urgent)",
+                2: "P2 (High)",
+                3: "P3 (Medium)",
+                4: "P4 (Normal)",
             }
             details.append(
                 f"[red]⚡ {priority_map.get(priority, f'P{priority}')}[/red]"
@@ -289,7 +284,7 @@ def _create_local_task(
             details.append(f"[magenta]📁 #{effective_project_name}[/magenta]")
 
         if parsed.get("labels"):
-            labels_str = " ".join([f"@{l}" for l in parsed["labels"]])
+            labels_str = " ".join([f"@{label}" for label in parsed["labels"]])
             details.append(f"[yellow]🏷️  {labels_str}[/yellow]")
 
         if details:
@@ -304,7 +299,5 @@ def _create_local_task(
     except (typer.Exit, SystemExit):
         raise
     except Exception as e:
-        from todopro_cli.utils.ui.formatters import format_error as _fe
-
-        _fe(f"Failed to create task: {str(e)}")
+        format_error(f"Failed to create task: {str(e)}")
         raise typer.Exit(1) from e

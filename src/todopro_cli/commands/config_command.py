@@ -1,28 +1,27 @@
 """Configuration management commands."""
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
-from todopro_cli.services.context_manager import get_context_manager
+from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Configuration management commands")
-console = Console()
+console = get_console()
 
 
 @app.command("view")
 def view_config(
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """View current configuration."""
     try:
-        context_manager = get_context_manager(profile)
-        config_dict = context_manager.config.model_dump()
+        config_service = get_config_service()
+        config_dict = config_service.config.model_dump()
         format_output(config_dict, output)
     except Exception as e:
         format_error(f"Failed to view config: {str(e)}")
@@ -32,12 +31,11 @@ def view_config(
 @app.command("get")
 def get_config(
     key: str = typer.Argument(..., help="Configuration key (e.g., api.endpoint)"),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Get a configuration value."""
     try:
-        context_manager = get_context_manager(profile)
-        value = context_manager.get(key)
+        config_service = get_config_service()
+        value = config_service.get(key)
         if value is None:
             format_error(f"Configuration key '{key}' not found")
             raise typer.Exit(1)
@@ -54,7 +52,7 @@ def set_config(
 ) -> None:
     """Set a configuration value."""
 
-    context_manager = get_context_manager()
+    config_service = get_config_service()
 
     # Try to convert value to appropriate type
     parsed_value: str | int | bool = value
@@ -63,7 +61,7 @@ def set_config(
     elif value.isdigit():
         parsed_value = int(value)
 
-    context_manager.set(key, parsed_value)
+    config_service.set(key, parsed_value)
     format_success(f"Configuration '{key}' set to '{parsed_value}'")
 
 
@@ -80,8 +78,8 @@ def reset_config(
             format_error("Cancelled")
             raise typer.Exit(0)
 
-    context_manager = get_context_manager()
-    context_manager.reset(key)
+    config_service = get_config_service()
+    config_service.reset(key)
 
     if key:
         format_success(f"Configuration '{key}' reset to default")
@@ -91,12 +89,12 @@ def reset_config(
 
 # @app.command("list")
 # def list_profiles(
-#     profile: str = typer.Option("default", "--profile", help="Profile name"),
+#
 # ) -> None:
 #     """List all configuration profiles."""
 #     try:
-#         context_manager = get_context_manager(profile)
-#         profiles = context_manager.list_profiles()
+#         config_service = get_config_service(profile)
+#         profiles = config_service.list_profiles()
 
 #         if not profiles:
 #             console.print("[yellow]No profiles found[/yellow]")
@@ -114,18 +112,17 @@ def reset_config(
 @command_wrapper(auth_required=False)
 def use_context(
     context_name: str = typer.Argument(..., help="Context name (dev/staging/prod)"),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
 ) -> None:
     """Switch to a different context (environment)."""
     try:
-        context_manager = get_context_manager(profile)
+        config_service = get_config_service(profile)
 
         # Initialize contexts if they don't exist
-        if not context_manager.config.contexts:
-            context_manager.init_default_contexts()
+        if not config_service.config.contexts:
+            config_service.init_default_contexts()
 
-        context_manager.use_context(context_name)
-        context = context_manager.get_current_context()
+        config_service.use_context(context_name)
+        context = config_service.get_current_context()
 
         if context:
             format_success(
@@ -148,13 +145,13 @@ def current_context(
 ) -> None:
     """Show the current context."""
 
-    context_manager = get_context_manager()
+    config_service = get_config_service()
 
     # Initialize contexts if they don't exist
-    if not context_manager.config.contexts:
-        context_manager.init_default_contexts()
+    if not config_service.config.contexts:
+        config_service.init_default_contexts()
 
-    context = context_manager.get_current_context()
+    context = config_service.get_current_context()
 
     if not context:
         format_error("No current context set")
@@ -180,14 +177,14 @@ def get_contexts(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all available contexts."""
-    context_manager = get_context_manager()
+    config_service = get_config_service()
 
     # Initialize contexts if they don't exist
-    if not context_manager.config.contexts:
-        context_manager.init_default_contexts()
+    if not config_service.config.contexts:
+        config_service.init_default_contexts()
 
-    contexts = context_manager.list_contexts()
-    current = context_manager.config.current_context
+    contexts = config_service.list_contexts()
+    current = config_service.config.current_context
 
     if output == "table":
         table = Table(title="Available Contexts")
@@ -213,13 +210,13 @@ def set_context(
     description: str = typer.Option("", "--description", help="Context description"),
 ) -> None:
     """Add or update a context."""
-    context_manager = get_context_manager()
+    config_service = get_config_service()
 
     # Initialize contexts if they don't exist
-    if not context_manager.config.contexts:
-        context_manager.init_default_contexts()
+    if not config_service.config.contexts:
+        config_service.init_default_contexts()
 
-    context_manager.add_context(name, endpoint, description)
+    config_service.add_context(name, endpoint, description)
     format_success(f"Context '{name}' created/updated successfully")
 
 
@@ -227,7 +224,6 @@ def set_context(
 @command_wrapper(auth_required=False)
 def delete_context(
     name: str = typer.Argument(..., help="Context name to delete"),
-    profile: str = typer.Option("default", "--profile", help="Profile name"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:
     """Delete a context."""
@@ -238,8 +234,8 @@ def delete_context(
             format_error("Cancelled")
             raise typer.Exit(0)
 
-    context_manager = get_context_manager(profile)
-    context_manager.remove_context(name)
-    context_manager.clear_context_credentials(name)
+    config_service = get_config_service(profile)
+    config_service.remove_context(name)
+    config_service.clear_context_credentials(name)
 
     format_success(f"Context '{name}' deleted successfully")

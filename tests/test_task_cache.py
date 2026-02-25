@@ -16,7 +16,9 @@ def mock_cache_dir(tmp_path):
     cache_file = cache_dir / "processing_tasks.json"
 
     with patch("todopro_cli.services.cache_service.CACHE_DIR", cache_dir):
-        with patch("todopro_cli.services.cache_service.PROCESSING_CACHE_FILE", cache_file):
+        with patch(
+            "todopro_cli.services.cache_service.PROCESSING_CACHE_FILE", cache_file
+        ):
             yield cache_dir
 
 

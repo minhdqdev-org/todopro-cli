@@ -7,8 +7,8 @@ import sqlite3
 from todopro_cli.adapters.sqlite.connection import get_connection
 from todopro_cli.adapters.sqlite.user_manager import get_or_create_local_user
 from todopro_cli.adapters.sqlite.utils import generate_uuid, now_iso, row_to_dict
-from todopro_cli.repositories import LabelRepository
 from todopro_cli.models import Label, LabelCreate
+from todopro_cli.repositories import LabelRepository
 
 
 class SqliteLabelRepository(LabelRepository):
@@ -66,10 +66,10 @@ class SqliteLabelRepository(LabelRepository):
 
         return Label(**row_to_dict(row))
 
-
     async def get_by_id(self, id: str):
         """Alias for get() method for compatibility."""
         return await self.get(id)
+
     async def create(self, label_data: LabelCreate) -> Label:
         """Create a new label."""
         user_id = self._get_user_id()

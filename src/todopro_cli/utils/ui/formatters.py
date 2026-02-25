@@ -5,11 +5,12 @@ from datetime import UTC, datetime
 from typing import Any
 
 import yaml
-from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-console = Console()
+from .console import get_console
+
+console = get_console()
 
 
 def calculate_unique_suffixes(task_ids: list[str]) -> dict[str, int]:
@@ -63,7 +64,7 @@ def format_output(
     elif output_format == "yaml":
         print(yaml.dump(data, default_flow_style=False, sort_keys=False))
     elif output_format in ("table", "wide"):
-        format_table(data, wide=output_format == "wide")
+        format_table(data)
     elif output_format == "pretty":
         format_pretty(data, compact=compact, all_task_ids=all_task_ids)
     elif output_format == "quiet":
@@ -73,7 +74,7 @@ def format_output(
         format_pretty(data, compact=compact, all_task_ids=all_task_ids)
 
 
-def format_table(data: Any, wide: bool = False) -> None:
+def format_table(data: Any) -> None:
     """Format data as a table."""
     if not data:
         console.print("[yellow]No data to display[/yellow]")
@@ -87,7 +88,7 @@ def format_table(data: Any, wide: bool = False) -> None:
 
         # Create table from list of dictionaries
         if isinstance(data[0], dict):
-            format_dict_table(data, wide)
+            format_dict_table(data)
         else:
             # Simple list
             for item in data:
@@ -96,7 +97,7 @@ def format_table(data: Any, wide: bool = False) -> None:
         # Check if it's a paginated response with items
         if "items" in data or "tasks" in data or "projects" in data:
             items = data.get("items") or data.get("tasks") or data.get("projects") or []
-            format_dict_table(items, wide)
+            format_dict_table(items)
         else:
             # Single item
             format_single_item(data)
@@ -104,7 +105,7 @@ def format_table(data: Any, wide: bool = False) -> None:
         console.print(data)
 
 
-def format_dict_table(items: list[dict], wide: bool = False) -> None:
+def format_dict_table(items: list[dict]) -> None:
     """Format a list of dictionaries as a table."""
     if not items:
         console.print("[yellow]No items found[/yellow]")
@@ -188,33 +189,33 @@ def format_info(message: str) -> None:
 
 # Priority Icons & Colors
 PRIORITY_ICONS = {
-    4: "🔴",  # URGENT
-    3: "🟠",  # HIGH
-    2: "🟡",  # MEDIUM
-    1: "🟢",  # NORMAL
+    4: "\u25cf",  # URGENT
+    3: "\u25cf",  # HIGH
+    2: "\u25cf",  # MEDIUM
+    1: "\u25cf",  # NORMAL
 }
 
 PRIORITY_NAMES = {
-    4: "URGENT",
-    3: "HIGH PRIORITY",
-    2: "MEDIUM PRIORITY",
-    1: "NORMAL",
+    1: "Urgent",
+    2: "High Priority",
+    3: "Medium Priority",
+    4: "Normal",
 }
 
 PRIORITY_COLORS = {
-    4: "bold red",
-    3: "bold orange3",
-    2: "bold yellow",
-    1: "green",
+    1: "red",
+    2: "orange3",
+    3: "yellow",
+    4: "green",
 }
 
 # Status Icons
 STATUS_ICONS = {
-    "open": "⬜",
-    "completed": "☑️",
-    "recurring": "🔄",
-    "paused": "⏸️",
-    "skipped": "⏭️",
+    "open": "\u25cb",
+    "completed": "[✓]",
+    "recurring": "[\u21bb]",
+    "paused": "[\u23f8]",
+    "skipped": "[\u23ed]",
 }
 
 # Metadata Icons
@@ -228,13 +229,13 @@ METADATA_ICONS = {
     "label": "🏷️",
     "project": "📁",
     "created": "✨",
-    "updated": "🔄",
-    "overdue": "⏱️",
+    "updated": "\u21bb",
+    "overdue": "\u23f3",
 }
 
 # Project Icons
 PROJECT_ICONS = {
-    "favorite": "⭐",
+    "favorite": "\u22c6",
     "work": "💼",
     "personal": "🏠",
     "launch": "🚀",
@@ -245,7 +246,9 @@ PROJECT_ICONS = {
 }
 
 
-def format_pretty(data: Any, compact: bool = False, all_task_ids: list[str] | None = None) -> None:
+def format_pretty(
+    data: Any, compact: bool = False, all_task_ids: list[str] | None = None
+) -> None:
     """Format data in pretty format with colors and icons."""
     if not data:
         console.print("[yellow]No data to display[/yellow]")
@@ -261,7 +264,7 @@ def format_pretty(data: Any, compact: bool = False, all_task_ids: list[str] | No
         if data and isinstance(data[0], dict):
             first_item = data[0]
             if "content" in first_item or "is_completed" in first_item:
-                format_tasks_pretty(data, compact, all_task_ids=all_task_ids)
+                format_tasks_pretty(data, all_task_ids=all_task_ids)
             elif "name" in first_item and "color" in first_item:
                 format_projects_pretty(data, compact)
             else:
@@ -271,7 +274,7 @@ def format_pretty(data: Any, compact: bool = False, all_task_ids: list[str] | No
         if "items" in data:
             format_pretty(data["items"], compact, all_task_ids=all_task_ids)
         elif "tasks" in data:
-            format_tasks_pretty(data["tasks"], compact, all_task_ids=all_task_ids)
+            format_tasks_pretty(data["tasks"], all_task_ids=all_task_ids)
         elif "projects" in data:
             format_projects_pretty(data["projects"], compact)
         else:
@@ -281,23 +284,10 @@ def format_pretty(data: Any, compact: bool = False, all_task_ids: list[str] | No
         console.print(data)
 
 
-def format_tasks_pretty(tasks: list[dict], compact: bool = False, all_task_ids: list[str] | None = None) -> None:
+def format_tasks_pretty(
+    tasks: list[dict], all_task_ids: list[str] | None = None
+) -> None:
     """Format tasks in pretty format."""
-    # Count tasks by status
-    active_tasks = [t for t in tasks if not t.get("is_completed", False)]
-    completed_today = [
-        t for t in tasks if t.get("is_completed") and is_today(t.get("completed_at"))
-    ]
-
-    # Header
-    header = Text()
-    header.append("📋 Tasks ", style="bold cyan")
-    header.append(f"({len(active_tasks)} active", style="dim")
-    if completed_today:
-        header.append(f", {len(completed_today)} completed today", style="dim green")
-    header.append(")", style="dim")
-    console.print(header)
-    console.print()
 
     # Calculate unique suffix lengths against all task IDs (globally unique)
     displayed_ids = [task["id"] for task in tasks if task.get("id")]
@@ -315,44 +305,66 @@ def format_tasks_pretty(tasks: list[dict], compact: bool = False, all_task_ids: 
 
     # Group tasks by priority and status
     overdue_tasks = []
-    tasks_by_priority = {4: [], 3: [], 2: [], 1: []}
+    tasks_by_priority = {1: [], 2: [], 3: [], 4: []}
 
     for task in tasks:
         # Check if overdue
         if not task.get("is_completed") and is_overdue(task.get("due_date")):
             overdue_tasks.append(task)
         else:
-            priority = task.get("priority", 1)
+            priority = task.get("priority", 4)
             tasks_by_priority[priority].append(task)
 
-    # Display by priority (lowest first - reversed order)
-    for priority in [1, 2, 3, 4]:
+    # Display by priority
+    for priority in [4, 3, 2, 1]:
         priority_tasks = tasks_by_priority[priority]
         if not priority_tasks:
             continue
 
-        # Priority header
-        icon = PRIORITY_ICONS[priority]
-        name = PRIORITY_NAMES[priority]
-        color = PRIORITY_COLORS[priority]
-        console.print(f"{icon} {name}", style=color)
-
         # Display tasks
         for task in priority_tasks:
-            format_task_item(task, compact, indent="  ", suffix_map=suffix_map)
+            format_task_item(task, suffix_map=suffix_map)
         console.print()
 
     # Display overdue tasks separately
     if overdue_tasks:
-        console.print(f"⏱️  OVERDUE ({len(overdue_tasks)})", style="bold red")
+        console.print(f"\u23f3 Overdue ({len(overdue_tasks)})", style="bold red")
         for task in overdue_tasks:
-            format_task_item(task, compact, indent="  ", suffix_map=suffix_map)
+            format_task_item(task, suffix_map=suffix_map)
         console.print()
+
+
+def _build_status_icon(is_completed: bool, is_recurring: bool, priority: int) -> str:
+    """Build status icon with color based on task properties."""
+    if is_recurring:
+        status_icon = STATUS_ICONS["recurring"]
+    if is_completed:
+        status_icon = f"[dim]{STATUS_ICONS['completed']}[/dim]"
+    color = PRIORITY_COLORS.get(priority, "")
+    if color:
+        status_icon = f"[{color}]{STATUS_ICONS['open']}[/{color}]"
+    status_icon = STATUS_ICONS["open"]
+
+    formatted_status_icon = status_icon
+    if is_completed:
+        formatted_status_icon = f"[dim]{status_icon}[/dim]"
+    else:
+        color = PRIORITY_COLORS.get(priority, "")
+        if color:
+            formatted_status_icon = f"[{color}]{status_icon}[/{color}]"
+
+    return formatted_status_icon
+
+
+def _build_content(content: str, is_completed: bool) -> str:
+    """Build content string with styling based on completion."""
+    if is_completed:
+        return f"[dim]{content}[/dim]"
+    return content
 
 
 def format_task_item(
     task: dict,
-    compact: bool = False,
     indent: str = "",
     suffix_map: dict[str, int] | None = None,
 ) -> None:
@@ -360,118 +372,76 @@ def format_task_item(
     # Status icon
     is_completed = task.get("is_completed", False)
     is_recurring = task.get("is_recurring", False)
+    priority = task.get("priority", 4)
 
-    if is_recurring:
-        status_icon = STATUS_ICONS["recurring"]
-    elif is_completed:
-        status_icon = STATUS_ICONS["completed"]
-    else:
-        status_icon = STATUS_ICONS["open"]
+    status_icon = _build_status_icon(is_completed, is_recurring, priority)
 
-    content = task.get("content", "Untitled")
+    content = task.get("content", "<Untitled>")
 
     # Render Markdown links - convert to Rich markup
     content = render_markdown_links(content)
 
-    if compact:
-        # Compact one-line format
-        # Build as markup string then convert to Text
-        line_str = f"{indent}{status_icon} "
+    line_str = f"{indent}{status_icon} {_build_content(content, is_completed)}"
 
-        # Content (dimmed if completed)
-        if is_completed:
-            line_str += f"[dim]{content}[/dim]"
+    # Full format with metadata
+
+    # Labels on same line
+    labels = task.get("labels", [])
+    if labels:
+        line_str += "  "
+        for label in labels:
+            # Handle both string labels and dict labels
+            label_name = label.get("name", "") if isinstance(label, dict) else label
+            line_str += f"[blue]#{label_name}[/blue] "
+
+    console.print(Text.from_markup(line_str))
+
+    # Metadata line
+    meta = []
+
+    if task.get("due_date"):
+        due_str = format_due_date(task["due_date"])
+        if is_overdue(task.get("due_date")) and not is_completed:
+            meta.append((due_str, "bold red"))
         else:
-            line_str += content
+            meta.append((due_str, "dim"))
+    elif is_completed:
+        completed_str = format_relative_time(task.get("completed_at"))
+        meta.append((f"Completed {completed_str}", "dim green"))
 
-        # Due date
-        if task.get("due_date"):
-            due_str = format_due_date(task["due_date"])
-            if is_overdue(task.get("due_date")) and not is_completed:
-                line_str += f" [bold red]• {due_str}[/bold red]"
-            else:
-                line_str += f" [cyan]• {due_str}[/cyan]"
+    if task.get("assigned_to"):
+        meta.append((f"Assigned to: @{task['assigned_to']}", "yellow"))
 
-        # Labels
-        labels = task.get("labels", [])
-        if labels:
-            for label in labels[:3]:  # Show max 3 labels in compact
-                # Handle both string labels and dict labels
-                label_name = label.get("name", "") if isinstance(label, dict) else label
-                line_str += f" [blue]#{label_name}[/blue]"
+    if task.get("comments_count", 0) > 0:
+        meta.append((f"{task['comments_count']} comments", "magenta"))
 
-        console.print(Text.from_markup(line_str))
-    else:
-        # Full format with metadata
-        # Build as markup string then convert to Text
-        line_str = f"{indent}{status_icon} "
+    if task.get("project_name"):
+        meta.append((f"Project: {task['project_name']}", "blue"))
 
-        # Content
-        style = (
-            "dim" if is_completed else ("bold" if task.get("priority", 1) >= 3 else "")
-        )
-        if style:
-            line_str += f"[{style}]{content}[/{style}]"
+    # Add task ID suffix with dynamic length
+    if task.get("id"):
+        task_id = task["id"]
+        if suffix_map and task_id in suffix_map:
+            # Use calculated unique suffix length
+            suffix_length = suffix_map[task_id]
+            task_id_suffix = task_id[-suffix_length:]
         else:
-            line_str += content
+            # Fallback to last 6 characters if suffix_map not provided
+            task_id_suffix = task_id[-6:]
+        meta.append((f"#{task_id_suffix}", "dim"))
 
-        # Labels on same line
-        labels = task.get("labels", [])
-        if labels:
-            line_str += "  "
-            for label in labels:
-                # Handle both string labels and dict labels
-                label_name = label.get("name", "") if isinstance(label, dict) else label
-                line_str += f"[blue]#{label_name}[/blue] "
+    if is_recurring and task.get("next_occurrence"):
+        next_str = format_due_date(task["next_occurrence"])
+        meta.append((f"Next: {next_str}", "cyan"))
 
-        console.print(Text.from_markup(line_str))
-
-        # Metadata line
-        meta = []
-
-        if task.get("due_date"):
-            due_str = format_due_date(task["due_date"])
-            if is_overdue(task.get("due_date")) and not is_completed:
-                meta.append((due_str, "bold red"))
-            else:
-                meta.append((due_str, "cyan"))
-        elif is_completed:
-            completed_str = format_relative_time(task.get("completed_at"))
-            meta.append((f"Completed {completed_str}", "dim green"))
-
-        if task.get("assigned_to"):
-            meta.append((f"Assigned to: @{task['assigned_to']}", "yellow"))
-
-        if task.get("comments_count", 0) > 0:
-            meta.append((f"{task['comments_count']} comments", "magenta"))
-
-        if task.get("project_name"):
-            meta.append((f"Project: {task['project_name']}", "blue"))
-
-        # Add task ID suffix with dynamic length
-        if task.get("id"):
-            task_id = task["id"]
-            if suffix_map and task_id in suffix_map:
-                # Use calculated unique suffix length
-                suffix_length = suffix_map[task_id]
-                task_id_suffix = task_id[-suffix_length:]
-            else:
-                # Fallback to last 6 characters if suffix_map not provided
-                task_id_suffix = task_id[-6:]
-            meta.append((f"#{task_id_suffix}", "dim"))
-
-        if is_recurring and task.get("next_occurrence"):
-            next_str = format_due_date(task["next_occurrence"])
-            meta.append((f"Next: {next_str}", "cyan"))
-
-        if meta:
-            meta_line = Text()
-            meta_line.append(f"{indent}   └─ ", style="dim")
-            for i, (text, style) in enumerate(meta):
-                if i > 0:
-                    meta_line.append(" • ", style="dim")
-                meta_line.append(text, style=style)
-            console.print(meta_line)
+    if meta:
+        meta_line = Text()
+        meta_line.append(f"{indent}   └─ ", style="dim")
+        for i, (text, style) in enumerate(meta):
+            if i > 0:
+                meta_line.append(" \u00b7 ", style="dim")
+            meta_line.append(text, style=style)
+        console.print(meta_line)
 
 
 def format_projects_pretty(projects: list[dict], compact: bool = False) -> None:
@@ -599,10 +569,10 @@ def format_single_item_pretty(item: dict) -> None:
     # Try to detect item type
     if "content" in item:
         # Task
-        format_task_item(item, compact=False)
+        format_task_item(item)
     elif "name" in item and "color" in item:
         # Project
-        format_project_item(item, compact=False)
+        format_project_item(item)
     else:
         # Generic item
         for key, value in item.items():
@@ -668,7 +638,9 @@ def format_due_date(date_str: str | datetime) -> str:
         else:
             date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
     except (ValueError, AttributeError):
-        return str(date_str) if date_str else ""  # Return original string for invalid dates
+        return (
+            str(date_str) if date_str else ""
+        )  # Return original string for invalid dates
 
     # Make naive datetime timezone-aware if needed
     if date.tzinfo is None:
@@ -701,12 +673,11 @@ def format_relative_time(date_str: str | datetime | None) -> str:
             date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
     except (ValueError, AttributeError):
         return ""  # Return empty string for invalid dates
-        
+
     now = datetime.now()
     # Use timezone-aware now if date is timezone-aware
     if date.tzinfo is not None:
-        from datetime import timezone
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
     diff = now - date
 
     seconds = diff.total_seconds()

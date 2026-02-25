@@ -134,13 +134,11 @@ class MigrationRunner:
         Returns:
             List of migration records with version, description, and applied_at
         """
-        cursor = self.connection.execute(
-            """
+        cursor = self.connection.execute("""
             SELECT version, description, applied_at
             FROM schema_version
             ORDER BY version
-            """
-        )
+            """)
 
         return [
             {"version": row[0], "description": row[1], "applied_at": row[2]}

@@ -61,6 +61,10 @@ class TasksAPI:
         due_date: str | None = None,
         priority: int | None = None,
         labels: list[str] | None = None,
+        is_recurring: bool = False,
+        recurrence_rule: str | None = None,
+        recurrence_end: str | None = None,
+        parent_id: str | None = None,
         **kwargs: Any,
     ) -> dict:
         """Create a new task."""
@@ -76,11 +80,74 @@ class TasksAPI:
             data["priority"] = priority
         if labels:
             data["labels"] = labels
+        if is_recurring:
+            data["is_recurring"] = True
+        if recurrence_rule:
+            data["recurrence_rule"] = recurrence_rule
+        if recurrence_end:
+            data["recurrence_end"] = recurrence_end
+        if parent_id:
+            data["parent_id"] = parent_id
 
         # Add any additional fields
         data.update(kwargs)
 
         response = await self.client.post("/v1/tasks", json=data)
+        return response.json()
+
+    async def list_subtasks(self, parent_id: str) -> dict:
+        """List subtasks of a task."""
+        response = await self.client.get("/v1/tasks", params={"parent_id": parent_id})
+        return response.json()
+
+    async def list_dependencies(self, task_id: str) -> list[dict]:
+        """List dependencies of a task."""
+        response = await self.client.get(f"/v1/tasks/{task_id}/dependencies")
+        return response.json()
+
+    async def add_dependency(
+        self, task_id: str, depends_on_id: str, dependency_type: str = "blocks"
+    ) -> dict:
+        """Add a dependency: task_id [dependency_type] depends_on_id."""
+        response = await self.client.post(
+            f"/v1/tasks/{task_id}/dependencies",
+            json={"depends_on_id": depends_on_id, "dependency_type": dependency_type},
+        )
+        return response.json()
+
+    async def remove_dependency(self, task_id: str, dep_id: str) -> None:
+        """Remove a dependency."""
+        await self.client.delete(f"/v1/tasks/{task_id}/dependencies/{dep_id}")
+
+    async def skip_task(self, task_id: str) -> dict:
+        """Skip the current occurrence of a recurring task."""
+        response = await self.client.post(f"/v1/tasks/{task_id}/skip")
+        return response.json()
+
+    async def get_reminders(self, task_id: str) -> dict:
+        """Get all reminders for a task."""
+        response = await self.client.get(f"/v1/tasks/{task_id}/reminders")
+        return response.json()
+
+    async def set_reminder(self, task_id: str, reminder_date: str) -> dict:
+        """Set a reminder for a task."""
+        response = await self.client.post(
+            f"/v1/tasks/{task_id}/reminders", json={"reminder_date": reminder_date}
+        )
+        return response.json()
+
+    async def delete_reminder(self, task_id: str, reminder_id: str) -> None:
+        """Delete a reminder from a task."""
+        await self.client.delete(f"/v1/tasks/{task_id}/reminders/{reminder_id}")
+
+    async def snooze_reminder(
+        self, task_id: str, reminder_id: str, duration_minutes: int
+    ) -> dict:
+        """Snooze a reminder for a specified duration."""
+        response = await self.client.post(
+            f"/v1/tasks/{task_id}/reminders/{reminder_id}/snooze",
+            json={"duration_minutes": duration_minutes},
+        )
         return response.json()
 
     async def update_task(self, task_id: str, **updates: Any) -> dict:

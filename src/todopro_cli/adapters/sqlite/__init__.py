@@ -1,6 +1,8 @@
 """SQLite adapter module - Local database storage implementation."""
 
-from todopro_cli.adapters.sqlite.context_repository import SqliteContextRepository
+from todopro_cli.adapters.sqlite.context_repository import (
+    SqliteLocationContextRepository,
+)
 from todopro_cli.adapters.sqlite.e2ee import E2EEHandler, get_e2ee_handler
 from todopro_cli.adapters.sqlite.label_repository import SqliteLabelRepository
 from todopro_cli.adapters.sqlite.project_repository import SqliteProjectRepository
@@ -14,7 +16,7 @@ __all__ = [
     "SqliteTaskRepository",
     "SqliteProjectRepository",
     "SqliteLabelRepository",
-    "SqliteContextRepository",
+    "SqliteLocationContextRepository",
     "E2EEHandler",
     "get_e2ee_handler",
     "get_or_create_local_user",

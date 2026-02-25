@@ -1,12 +1,12 @@
 """Achievements and gamification commands."""
 
 import typer
-from rich.console import Console
 from rich.panel import Panel
 
 from todopro_cli.focus.achievements import ACHIEVEMENTS, AchievementTracker
+from todopro_cli.utils.ui.console import get_console
 
-console = Console()
+console = get_console()
 app = typer.Typer(help="Focus achievements and gamification")
 
 

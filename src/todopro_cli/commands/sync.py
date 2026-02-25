@@ -8,15 +8,14 @@ from datetime import UTC, datetime
 from typing import Literal
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
-from todopro_cli.services.context_manager import get_context_manager, get_strategy_context
 from todopro_cli.services.sync_service import SyncPullService, SyncPushService
 from todopro_cli.services.sync_state import SyncState
+from todopro_cli.utils.ui.console import get_console
 
 app = typer.Typer(help="Sync data between local and remote storage")
-console = Console()
+console = get_console()
 
 
 @app.command("pull")
@@ -64,7 +63,7 @@ async def _pull(
 ):
     """Internal async pull implementation."""
     try:
-        ctx_manager = get_context_manager()
+        ctx_manager = get_config_service()
         current_ctx = ctx_manager.get_current_context()
 
         if current_ctx is None:
@@ -98,24 +97,24 @@ async def _pull(
 
         # Create repository strategies for source and target contexts
         # Note: We need to get fresh strategy contexts after each context switch
-        
+
         # Get source repositories
         original_context = ctx_manager.get_current_context().name
         ctx_manager.use_context(source_context_name)
-        source_strategy = get_strategy_context()
-        
-        source_task_repo = source_strategy.task_repository
-        source_project_repo = source_strategy.project_repository
-        source_label_repo = source_strategy.label_repository
+        source_storage_strategy_context = get_storage_strategy_context()
+
+        source_task_repo = source_storage_strategy_context.task_repository
+        source_project_repo = source_storage_strategy_context.project_repository
+        source_label_repo = source_storage_strategy_context.label_repository
         source_context_repo = source_strategy.context_repository
 
         # Switch back to target context and get target repositories
         ctx_manager.use_context(target_context_name)
-        target_strategy = get_strategy_context()
-        
-        target_task_repo = target_strategy.task_repository
-        target_project_repo = target_strategy.project_repository
-        target_label_repo = target_strategy.label_repository
+        target_storage_strategy_context = get_storage_strategy_context()
+
+        target_task_repo = target_storage_strategy_context.task_repository
+        target_project_repo = target_storage_strategy_context.project_repository
+        target_label_repo = target_storage_strategy_context.label_repository
         target_context_repo = target_strategy.context_repository
 
         # Create pull service
@@ -208,7 +207,7 @@ async def _push(
 ):
     """Internal async push implementation."""
     try:
-        ctx_manager = get_context_manager()
+        ctx_manager = get_config_service()
         current_ctx = ctx_manager.get_current_context()
 
         if current_ctx is None:
@@ -243,21 +242,21 @@ async def _push(
 
         # Create repository strategies for source and target contexts
         # Get source repositories (current context)
-        source_strategy = get_strategy_context()
-        
-        source_task_repo = source_strategy.task_repository
-        source_project_repo = source_strategy.project_repository
-        source_label_repo = source_strategy.label_repository
+        source_storage_strategy_context = get_storage_strategy_context()
+
+        source_task_repo = source_storage_strategy_context.task_repository
+        source_project_repo = source_storage_strategy_context.project_repository
+        source_label_repo = source_storage_strategy_context.label_repository
         source_context_repo = source_strategy.context_repository
 
         # Switch to target context for target repos
         original_context = ctx_manager.get_current_context().name
         ctx_manager.use_context(target_context_name)
 
-        target_strategy = get_strategy_context()
-        target_task_repo = target_strategy.task_repository
-        target_project_repo = target_strategy.project_repository
-        target_label_repo = target_strategy.label_repository
+        target_storage_strategy_context = get_storage_strategy_context()
+        target_task_repo = target_storage_strategy_context.task_repository
+        target_project_repo = target_storage_strategy_context.project_repository
+        target_label_repo = target_storage_strategy_context.label_repository
         target_context_repo = target_strategy.context_repository
 
         # Restore source context
@@ -313,7 +312,7 @@ def status_command():
     Displays last sync times and pending changes.
     """
     try:
-        ctx_manager = get_context_manager()
+        ctx_manager = get_config_service()
         current_ctx = ctx_manager.get_current_context()
 
         if current_ctx is None:

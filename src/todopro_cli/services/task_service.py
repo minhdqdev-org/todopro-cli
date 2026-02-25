@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from todopro_cli.repositories import TaskRepository
 from todopro_cli.models import Task, TaskCreate, TaskFilters, TaskUpdate
+from todopro_cli.repositories import TaskRepository
 
 
 class TaskService:
@@ -87,9 +87,13 @@ class TaskService:
         description: str | None = None,
         project_id: str | None = None,
         due_date: str | None = None,
-        priority: int = 1,
+        priority: int = 4,
         labels: list[str] | None = None,
         contexts: list[str] | None = None,
+        is_recurring: bool = False,
+        recurrence_rule: str | None = None,
+        recurrence_end: str | None = None,
+        parent_id: str | None = None,
     ) -> Task:
         """Create a new task.
 
@@ -101,6 +105,10 @@ class TaskService:
             priority: Priority level (1-4)
             labels: List of label IDs
             contexts: List of context IDs
+            is_recurring: Whether the task recurs
+            recurrence_rule: iCalendar RRULE string (e.g., FREQ=DAILY)
+            recurrence_end: End date for recurrence (ISO format)
+            parent_id: Parent task ID for subtask creation
 
         Returns:
             Created Task object
@@ -123,6 +131,10 @@ class TaskService:
             priority=priority,
             labels=labels or [],
             contexts=contexts or [],
+            is_recurring=is_recurring,
+            recurrence_rule=recurrence_rule,
+            recurrence_end=recurrence_end,
+            parent_id=parent_id,
         )
         return await self.repository.add(task_data)
 
@@ -235,3 +247,13 @@ class TaskService:
         """
         task_updates = TaskUpdate(**updates)
         return await self.repository.bulk_update(task_ids, task_updates)
+
+
+def get_task_service():
+    """Factory function to get a TaskService instance."""
+    from todopro_cli.services.config_service import (
+        get_storage_strategy_context,  # type: ignore
+    )
+
+    storage_strategy_context = get_storage_strategy_context()
+    return TaskService(storage_strategy_context.task_repository)

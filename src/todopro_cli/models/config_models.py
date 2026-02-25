@@ -62,7 +62,7 @@ class E2EEConfig(BaseModel):
     """End-to-end encryption configuration."""
 
     model_config = {"extra": "allow"}  # Allow future fields like key_backup_url, etc.
-    
+
     enabled: bool = Field(default=False, description="Whether E2EE is enabled")
 
 
@@ -94,7 +94,9 @@ class Context(BaseModel):
 class AppConfig(BaseModel):
     """Main TodoPro configuration"""
 
-    current_context_name: str = Field(default="default", description="Active context name")
+    current_context_name: str = Field(
+        default="default", description="Active context name"
+    )
     contexts: list[Context] = Field(
         default_factory=list, description="Available contexts"
     )
@@ -126,14 +128,17 @@ class AppConfig(BaseModel):
 
     def add_context(self, context: Context):
         """Add a new context.
-        
+
         Raises:
             ValueError: If context with the same name already exists
         """
         # Check for existing context with same name
         existing = [ctx for ctx in self.contexts if ctx.name == context.name]
         if existing:
-            raise ValueError(f"Context '{context.name}' already exists. Use a different name or remove the existing context first.")
+            raise ValueError(
+                f"Context '{context.name}' already exists."
+                " Use a different name or remove the existing context first."
+            )
         self.contexts.append(context)
 
     def remove_context(self, name: str):

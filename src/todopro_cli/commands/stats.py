@@ -7,12 +7,12 @@ from datetime import datetime
 from pathlib import Path
 
 import typer
-from rich.console import Console
 
 from todopro_cli.focus.analytics import FocusAnalytics
 from todopro_cli.focus.history import HistoryLogger
+from todopro_cli.utils.ui.console import get_console
 
-console = Console()
+console = get_console()
 app = typer.Typer(help="Focus mode statistics and analytics")
 
 
@@ -597,9 +597,9 @@ def show_quality(
         "avg_focus_minutes": round(avg_focus, 1) if avg_focus else 0,
         "focus_efficiency_pct": round(efficiency, 1) if efficiency else 0,
         "completion_rate_pct": round(completed / total * 100, 1) if total > 0 else 0,
-        "interruption_rate_pct": round(interrupted / total * 100, 1)
-        if total > 0
-        else 0,
+        "interruption_rate_pct": (
+            round(interrupted / total * 100, 1) if total > 0 else 0
+        ),
     }
 
     if output == "json":

@@ -174,11 +174,9 @@ class QuickAddApp(App):
 
     def __init__(
         self,
-        profile: str = "default",
         default_project: str = "Inbox",
     ):
         super().__init__()
-        self.profile = profile
         self.default_project = default_project
         self.result: str | None = None
 
@@ -212,7 +210,7 @@ class QuickAddApp(App):
         # Load projects and labels for suggestions
         task_input = self.query_one("#task-input", HighlightedInput)
         suggester = task_input.suggester
-        
+
         try:
             projects, labels = load_cache()
             task_input.projects = projects
@@ -223,7 +221,7 @@ class QuickAddApp(App):
         except Exception:
             # Silently fail if cache loading fails - suggestions just won't work
             pass
-        
+
         task_input.focus()
 
     @on(Input.Changed)
@@ -265,7 +263,6 @@ class QuickAddApp(App):
 def load_cache() -> tuple[list[str], list[str]]:
     """Load projects and labels from current context and cache them."""
     import asyncio
-    from todopro_cli.services.context_manager import get_strategy_context
 
     config_service = get_config_service()
 
@@ -284,13 +281,13 @@ def load_cache() -> tuple[list[str], list[str]]:
 
     # Fetch from current context using strategy pattern
     async def _fetch_data():
-        strategy = get_strategy_context()
-        projects_data = await strategy.project_repository.list_all()
-        labels_data = await strategy.label_repository.list_all()
-        
+        storage_strategy_context = get_storage_strategy_context()
+        projects_data = await storage_strategy_context.project_repository.list_all()
+        labels_data = await storage_strategy_context.label_repository.list_all()
+
         projects = [p.name for p in projects_data] if projects_data else []
         labels = [l.name for l in labels_data] if labels_data else []
-        
+
         return projects, labels
 
     try:

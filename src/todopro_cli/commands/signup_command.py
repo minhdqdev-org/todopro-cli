@@ -1,15 +1,15 @@
 """Signup command - Register new user."""
 
 import typer
-from rich.console import Console
 
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Register new user")
-console = Console()
+console = get_console()
 
 
 @app.command()

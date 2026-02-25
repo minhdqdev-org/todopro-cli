@@ -1,9 +1,10 @@
 """Tests for EncryptionService."""
 
-import pytest
-from pathlib import Path
-import tempfile
 import shutil
+import tempfile
+from pathlib import Path
+
+import pytest
 
 from todopro_cli.models.crypto.exceptions import InvalidRecoveryPhraseError
 from todopro_cli.services.encryption_service import EncryptionService, EncryptionStatus
@@ -120,7 +121,9 @@ class TestRecoveryPhrase:
         manager, _ = encryption_service.setup()
         encryption_service.save_manager(manager)
 
-        wrong_phrase = "wrong wrong wrong wrong wrong wrong wrong wrong wrong wrong wrong wrong"
+        wrong_phrase = (
+            "wrong wrong wrong wrong wrong wrong wrong wrong wrong wrong wrong wrong"
+        )
         assert encryption_service.verify_recovery_phrase(wrong_phrase) is False
 
     def test_recover_from_phrase(self, encryption_service):

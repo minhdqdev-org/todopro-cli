@@ -1,16 +1,15 @@
 """Check command - Check achievements and location."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_output
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Check achievements and location")
-console = Console()
+console = get_console()
 
 
 @app.command("achievements")
@@ -21,7 +20,7 @@ async def check_achievements(
     """Check for new achievements."""
     from todopro_cli.services.achievement_service import AchievementService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     repo = factory.get_achievement_repository()
     service = AchievementService(repo)
 
@@ -38,7 +37,7 @@ async def check_location(
     """Check current location context."""
     from todopro_cli.services.location_context_service import LocationContextService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     repo = factory.get_location_context_repository()
     service = LocationContextService(repo)
 

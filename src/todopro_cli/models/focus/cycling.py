@@ -8,6 +8,7 @@ from typing import Literal
 @dataclass
 class PomodoroConfig:
     """Configuration for Pomodoro cycling."""
+
     focus_duration: int = 25  # minutes
     short_break: int = 5  # minutes
     long_break: int = 15  # minutes
@@ -17,13 +18,16 @@ class PomodoroConfig:
 @dataclass
 class CycleState:
     """Current state of the Pomodoro cycle."""
+
     cycle_number: int = 1
     session_in_cycle: int = 1
     total_sessions_completed: int = 0
     current_phase: Literal["focus", "short_break", "long_break"] = "focus"
     started_at: str | None = None
-    
-    def next_phase(self, config: PomodoroConfig) -> Literal["focus", "short_break", "long_break"]:
+
+    def next_phase(
+        self, config: PomodoroConfig
+    ) -> Literal["focus", "short_break", "long_break"]:
         """Determine the next phase in the cycle."""
         if self.current_phase == "focus":
             # After focus, check if it's time for long break
@@ -31,24 +35,24 @@ class CycleState:
                 return "long_break"
             else:
                 return "short_break"
-        
+
         elif self.current_phase == "short_break":
             # After short break, always go to focus
             return "focus"
-        
+
         elif self.current_phase == "long_break":
             # After long break, start new cycle
             return "focus"
-        
+
         return "focus"
-    
+
     def advance(self, config: PomodoroConfig) -> None:
         """Advance to next phase in the cycle."""
         next_phase = self.next_phase(config)
-        
+
         if self.current_phase == "focus":
             self.total_sessions_completed += 1
-        
+
         if self.current_phase == "long_break":
             # Starting new cycle
             self.cycle_number += 1
@@ -56,10 +60,10 @@ class CycleState:
         elif next_phase == "focus" and self.current_phase == "short_break":
             # Completed a session, increment
             self.session_in_cycle += 1
-        
+
         self.current_phase = next_phase
         self.started_at = datetime.now().isoformat()
-    
+
     def get_duration(self, config: PomodoroConfig) -> int:
         """Get duration in minutes for current phase."""
         if self.current_phase == "focus":
@@ -68,7 +72,7 @@ class CycleState:
             return config.short_break
         else:  # long_break
             return config.long_break
-    
+
     def get_emoji(self) -> str:
         """Get emoji for current phase."""
         if self.current_phase == "focus":
@@ -77,7 +81,7 @@ class CycleState:
             return "☕"
         else:
             return "🌴"
-    
+
     def get_progress_dots(self, config: PomodoroConfig) -> str:
         """Get progress dots showing cycle position."""
         dots = []
@@ -88,9 +92,9 @@ class CycleState:
                 dots.append("◉")  # Current
             else:
                 dots.append("○")  # Upcoming
-        
+
         return " ".join(dots)
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for persistence."""
         return {
@@ -100,7 +104,7 @@ class CycleState:
             "current_phase": self.current_phase,
             "started_at": self.started_at,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "CycleState":
         """Create from dictionary."""

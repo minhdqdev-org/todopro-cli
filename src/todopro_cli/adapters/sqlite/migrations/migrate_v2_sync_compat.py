@@ -275,56 +275,57 @@ CREATE_TASKS_INDEXES_V2 = [
 # MIGRATION EXECUTION STEPS
 # ============================================
 
+
 def run_migration(connection):
     """
     Execute migration from schema v1 to v2.
-    
+
     Args:
         connection: sqlite3.Connection object
-        
+
     Returns:
         bool: True if migration successful
     """
     cursor = connection.cursor()
-    
+
     try:
         # Start transaction
         cursor.execute("BEGIN TRANSACTION")
-        
+
         print("Creating new table schemas (v2)...")
-        
+
         # Create new tables
         cursor.execute(CREATE_LABELS_TABLE_V2)
         cursor.execute(CREATE_CONTEXTS_TABLE_V2)
         cursor.execute(CREATE_TASKS_TABLE_V2)
         cursor.execute(CREATE_REMINDERS_TABLE_V2)
         cursor.execute(CREATE_FILTERS_TABLE_V2)
-        
+
         print("Migrating data from v1 to v2...")
-        
+
         # Migrate data
         cursor.execute(MIGRATE_LABELS)
         labels_migrated = cursor.rowcount
         print(f"  ✓ Migrated {labels_migrated} labels")
-        
+
         cursor.execute(MIGRATE_CONTEXTS)
         contexts_migrated = cursor.rowcount
         print(f"  ✓ Migrated {contexts_migrated} contexts")
-        
+
         cursor.execute(MIGRATE_TASKS)
         tasks_migrated = cursor.rowcount
         print(f"  ✓ Migrated {tasks_migrated} tasks")
-        
+
         cursor.execute(MIGRATE_REMINDERS)
         reminders_migrated = cursor.rowcount
         print(f"  ✓ Migrated {reminders_migrated} reminders")
-        
+
         cursor.execute(MIGRATE_FILTERS)
         filters_migrated = cursor.rowcount
         print(f"  ✓ Migrated {filters_migrated} filters")
-        
+
         print("Creating indexes...")
-        
+
         # Create indexes
         for idx in CREATE_LABELS_INDEXES_V2:
             cursor.execute(idx)
@@ -332,9 +333,9 @@ def run_migration(connection):
             cursor.execute(idx)
         for idx in CREATE_TASKS_INDEXES_V2:
             cursor.execute(idx)
-        
+
         print("Dropping old tables...")
-        
+
         # Drop old tables (FK constraints handled by CASCADE)
         cursor.execute("DROP TABLE IF EXISTS task_labels")
         cursor.execute("DROP TABLE IF EXISTS task_contexts")
@@ -343,18 +344,18 @@ def run_migration(connection):
         cursor.execute("DROP TABLE IF EXISTS filters")
         cursor.execute("DROP TABLE IF EXISTS labels")
         cursor.execute("DROP TABLE IF EXISTS contexts")
-        
+
         print("Renaming new tables...")
-        
+
         # Rename new tables to original names
         cursor.execute("ALTER TABLE labels_v2 RENAME TO labels")
         cursor.execute("ALTER TABLE contexts_v2 RENAME TO contexts")
         cursor.execute("ALTER TABLE tasks_v2 RENAME TO tasks")
         cursor.execute("ALTER TABLE reminders_v2 RENAME TO reminders")
         cursor.execute("ALTER TABLE filters_v2 RENAME TO filters")
-        
+
         print("Recreating junction tables...")
-        
+
         # Recreate junction tables with correct FKs
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS task_labels (
@@ -365,7 +366,7 @@ def run_migration(connection):
                 FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE CASCADE
             )
         """)
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS task_contexts (
                 task_id TEXT NOT NULL,
@@ -375,24 +376,26 @@ def run_migration(connection):
                 FOREIGN KEY (context_id) REFERENCES contexts(id) ON DELETE CASCADE
             )
         """)
-        
+
         print("Updating schema version...")
-        
+
         # Update schema version
         cursor.execute(
             "INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, datetime('now'))",
-            (MIGRATION_VERSION,)
+            (MIGRATION_VERSION,),
         )
-        
+
         # Commit transaction
         connection.commit()
-        
+
         print(f"\n✅ Migration to schema v{MIGRATION_VERSION} completed successfully!")
-        print(f"   Labels: {labels_migrated}, Contexts: {contexts_migrated}, Tasks: {tasks_migrated}")
+        print(
+            f"   Labels: {labels_migrated}, Contexts: {contexts_migrated}, Tasks: {tasks_migrated}"
+        )
         print(f"   Reminders: {reminders_migrated}, Filters: {filters_migrated}")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"\n❌ Migration failed: {e}")
         connection.rollback()
@@ -402,45 +405,50 @@ def run_migration(connection):
 def verify_migration(connection):
     """
     Verify migration completed successfully.
-    
+
     Args:
         connection: sqlite3.Connection object
-        
+
     Returns:
         bool: True if verification passed
     """
     cursor = connection.cursor()
-    
+
     try:
         # Check schema version
         cursor.execute("SELECT MAX(version) FROM schema_version")
         version = cursor.fetchone()[0]
-        
+
         if version != MIGRATION_VERSION:
-            print(f"❌ Schema version mismatch: expected {MIGRATION_VERSION}, got {version}")
+            print(
+                f"❌ Schema version mismatch: expected {MIGRATION_VERSION}, got {version}"
+            )
             return False
-        
+
         # Check new columns exist
         checks = [
             ("labels", ["updated_at", "deleted_at", "version", "color"]),
             ("contexts", ["updated_at", "deleted_at", "version", "color", "icon"]),
-            ("tasks", ["assigned_by_id", "assigned_at", "is_recurring", "estimated_time"]),
+            (
+                "tasks",
+                ["assigned_by_id", "assigned_at", "is_recurring", "estimated_time"],
+            ),
             ("reminders", ["is_snoozed", "snoozed_until"]),
             ("filters", ["updated_at"]),
         ]
-        
+
         for table, columns in checks:
             cursor.execute(f"PRAGMA table_info({table})")
             table_columns = {row[1] for row in cursor.fetchall()}
-            
+
             for col in columns:
                 if col not in table_columns:
                     print(f"❌ Column {table}.{col} not found")
                     return False
-        
+
         print("✅ Migration verification passed")
         return True
-        
+
     except Exception as e:
         print(f"❌ Verification failed: {e}")
         return False
@@ -450,54 +458,55 @@ def verify_migration(connection):
 # ROLLBACK (if needed)
 # ============================================
 
+
 def rollback_migration(connection):
     """
     Rollback migration from v2 to v1.
-    
+
     NOTE: This will lose data added to new fields!
-    
+
     Args:
         connection: sqlite3.Connection object
-        
+
     Returns:
         bool: True if rollback successful
     """
     # Import v1 schema
     from todopro_cli.adapters.sqlite.schema import (
-        CREATE_LABELS_TABLE,
+        ALL_INDEXES,
         CREATE_CONTEXTS_TABLE,
-        CREATE_TASKS_TABLE,
-        CREATE_REMINDERS_TABLE,
         CREATE_FILTERS_TABLE,
-        CREATE_TASK_LABELS_TABLE,
+        CREATE_LABELS_TABLE,
+        CREATE_REMINDERS_TABLE,
         CREATE_TASK_CONTEXTS_TABLE,
-        ALL_INDEXES
+        CREATE_TASK_LABELS_TABLE,
+        CREATE_TASKS_TABLE,
     )
-    
+
     cursor = connection.cursor()
-    
+
     try:
         cursor.execute("BEGIN TRANSACTION")
-        
+
         print("WARNING: Rolling back to schema v1. New field data will be lost!")
-        
+
         # Create v1 tables with temp names
         cursor.execute(CREATE_LABELS_TABLE.replace("labels", "labels_v1"))
         cursor.execute(CREATE_CONTEXTS_TABLE.replace("contexts", "contexts_v1"))
         cursor.execute(CREATE_TASKS_TABLE.replace("tasks", "tasks_v1"))
         cursor.execute(CREATE_REMINDERS_TABLE.replace("reminders", "reminders_v1"))
         cursor.execute(CREATE_FILTERS_TABLE.replace("filters", "filters_v1"))
-        
+
         # Migrate back (drop new fields)
         cursor.execute("""
             INSERT INTO labels_v1 SELECT id, name, color, user_id, created_at FROM labels
         """)
-        
+
         cursor.execute("""
             INSERT INTO contexts_v1 
             SELECT id, name, latitude, longitude, radius, user_id, created_at FROM contexts
         """)
-        
+
         cursor.execute("""
             INSERT INTO tasks_v1 
             SELECT 
@@ -507,17 +516,17 @@ def rollback_migration(connection):
                 is_urgent, is_important, recurrence_rule, parent_task_id
             FROM tasks
         """)
-        
+
         cursor.execute("""
             INSERT INTO reminders_v1 
             SELECT id, task_id, reminder_date, is_sent, created_at FROM reminders
         """)
-        
+
         cursor.execute("""
             INSERT INTO filters_v1 
             SELECT id, name, query, user_id, created_at FROM filters
         """)
-        
+
         # Drop v2 tables
         cursor.execute("DROP TABLE task_labels")
         cursor.execute("DROP TABLE task_contexts")
@@ -526,33 +535,33 @@ def rollback_migration(connection):
         cursor.execute("DROP TABLE filters")
         cursor.execute("DROP TABLE labels")
         cursor.execute("DROP TABLE contexts")
-        
+
         # Rename v1 tables back
         cursor.execute("ALTER TABLE labels_v1 RENAME TO labels")
         cursor.execute("ALTER TABLE contexts_v1 RENAME TO contexts")
         cursor.execute("ALTER TABLE tasks_v1 RENAME TO tasks")
         cursor.execute("ALTER TABLE reminders_v1 RENAME TO reminders")
         cursor.execute("ALTER TABLE filters_v1 RENAME TO filters")
-        
+
         # Recreate junction tables
         cursor.execute(CREATE_TASK_LABELS_TABLE)
         cursor.execute(CREATE_TASK_CONTEXTS_TABLE)
-        
+
         # Recreate indexes
         for idx in ALL_INDEXES:
             cursor.execute(idx)
-        
+
         # Update schema version
         cursor.execute(
             "UPDATE schema_version SET version = 1, applied_at = datetime('now') WHERE version = ?",
-            (MIGRATION_VERSION,)
+            (MIGRATION_VERSION,),
         )
-        
+
         connection.commit()
-        
+
         print("✅ Rollback to schema v1 completed")
         return True
-        
+
     except Exception as e:
         print(f"❌ Rollback failed: {e}")
         connection.rollback()

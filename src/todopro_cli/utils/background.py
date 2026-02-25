@@ -25,10 +25,9 @@ async def complete_task(context: Dict[str, Any]):
     from todopro_cli.services.api.tasks import TasksAPI
     from .commands.tasks import resolve_task_id
 
-    profile = context.get("profile", "default")
     task_id = context["task_id"]
 
-    client = get_client(profile)
+    client = get_client()
     tasks_api = TasksAPI(client)
     try:
         resolved_id = await resolve_task_id(tasks_api, task_id)
@@ -41,10 +40,9 @@ async def batch_complete_tasks(context: Dict[str, Any]):
     from todopro_cli.services.api.tasks import TasksAPI
     from .commands.tasks import resolve_task_id
 
-    profile = context.get("profile", "default")
     task_ids = context["task_ids"]
 
-    client = get_client(profile)
+    client = get_client()
     tasks_api = TasksAPI(client)
     try:
         # Resolve all IDs
@@ -148,7 +146,7 @@ def run_in_background(
     Args:
         func: DEPRECATED - use task_type instead
         command: Command name for logging
-        context: Context information (must include task_id, profile)
+        context: Context information (must include task_id)
         max_retries: Maximum number of retry attempts (default: 3)
         task_type: Type of task to run ("complete", etc.)
     """

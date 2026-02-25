@@ -1,16 +1,15 @@
 """Purge command - Delete all data."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_info, format_success
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Delete all data")
-console = Console()
+console = get_console()
 
 
 @app.command("data")
@@ -32,7 +31,7 @@ async def purge_data() -> None:
         format_info("Cancelled")
         raise typer.Exit(0)
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     data_service = DataService(factory)
 
     await data_service.purge_all()

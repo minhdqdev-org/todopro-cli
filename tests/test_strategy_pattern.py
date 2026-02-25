@@ -4,30 +4,30 @@ This module tests the new Strategy Pattern architecture for repository selection
 """
 
 import tempfile
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
-from todopro_cli.core.repository import (
+from todopro_cli.models.storage_strategy import (
+    LocalStorageStrategy,
+    RemoteStorageStrategy,
+    StorageStrategyContext,
+)
+from todopro_cli.repositories import (
     LabelRepository,
     ProjectRepository,
     TaskRepository,
 )
-from todopro_cli.models.strategy import (
-    LocalStrategy,
-    RemoteStrategy,
-    StrategyContext,
-)
 from todopro_cli.services.config_service import ConfigService
 
 
-class TestLocalStrategy:
-    """Tests for LocalStrategy"""
+class TestLocalStorageStrategy:
+    """Tests for LocalStorageStrategy"""
 
     def test_initialization(self, tmp_path):
-        """Test LocalStrategy initializes with correct db_path"""
+        """Test LocalStorageStrategy initializes with correct db_path"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
+        strategy = LocalStorageStrategy(db_path=db_path)
 
         assert strategy.storage_type == "local"
         assert strategy.db_path == db_path
@@ -35,7 +35,7 @@ class TestLocalStrategy:
     def test_get_task_repository(self, tmp_path):
         """Test getting task repository from local strategy"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
+        strategy = LocalStorageStrategy(db_path=db_path)
 
         repo = strategy.get_task_repository()
 
@@ -45,7 +45,7 @@ class TestLocalStrategy:
     def test_get_project_repository(self, tmp_path):
         """Test getting project repository from local strategy"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
+        strategy = LocalStorageStrategy(db_path=db_path)
 
         repo = strategy.get_project_repository()
 
@@ -55,7 +55,7 @@ class TestLocalStrategy:
     def test_get_label_repository(self, tmp_path):
         """Test getting label repository from local strategy"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
+        strategy = LocalStorageStrategy(db_path=db_path)
 
         repo = strategy.get_label_repository()
 
@@ -65,7 +65,7 @@ class TestLocalStrategy:
     def test_repositories_created_once(self, tmp_path):
         """Test that repositories are created once at initialization"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
+        strategy = LocalStorageStrategy(db_path=db_path)
 
         # Get repository multiple times
         repo1 = strategy.get_task_repository()
@@ -76,8 +76,8 @@ class TestLocalStrategy:
         assert repo1 is repo2 is repo3
 
 
-class TestRemoteStrategy:
-    """Tests for RemoteStrategy"""
+class TestRemoteStorageStrategy:
+    """Tests for RemoteStorageStrategy"""
 
     @pytest.fixture
     def config_service(self):
@@ -87,25 +87,24 @@ class TestRemoteStrategy:
                 with patch("platformdirs.user_data_dir", return_value=tmpdir):
                     yield ConfigService()
 
-    def test_initialization(self, config_service):
-        """Test RemoteStrategy initializes with config service"""
-        strategy = RemoteStrategy(config_service=config_service)
+    def test_initialization(self):
+        """Test RemoteStorageStrategy initializes with config service"""
+        strategy = RemoteStorageStrategy()
 
         assert strategy.storage_type == "remote"
-        assert strategy.config_service is config_service
 
-    def test_get_task_repository(self, config_service):
+    def test_get_task_repository(self):
         """Test getting task repository from remote strategy"""
-        strategy = RemoteStrategy(config_service=config_service)
+        strategy = RemoteStorageStrategy()
 
         repo = strategy.get_task_repository()
 
         assert isinstance(repo, TaskRepository)
         assert repo is strategy._task_repo
 
-    def test_repositories_created_once(self, config_service):
+    def test_repositories_created_once(self):
         """Test that repositories are created once at initialization"""
-        strategy = RemoteStrategy(config_service=config_service)
+        strategy = RemoteStorageStrategy()
 
         # Get repository multiple times
         repo1 = strategy.get_task_repository()
@@ -116,26 +115,26 @@ class TestRemoteStrategy:
         assert repo1 is repo2 is repo3
 
 
-class TestStrategyContext:
-    """Tests for StrategyContext"""
+class TestStorageStrategyContext:
+    """Tests for StorageStrategyContext"""
 
     def test_initialization_with_local_strategy(self, tmp_path):
-        """Test StrategyContext wraps LocalStrategy"""
+        """Test StorageStrategyContext wraps LocalStorageStrategy"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
-        context = StrategyContext(strategy)
+        strategy = LocalStorageStrategy(db_path=db_path)
+        context = StorageStrategyContext(strategy)
 
         assert context.storage_type == "local"
         assert context.strategy is strategy
 
     def test_initialization_with_remote_strategy(self):
-        """Test StrategyContext wraps RemoteStrategy"""
+        """Test StorageStrategyContext wraps RemoteStorageStrategy"""
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("platformdirs.user_config_dir", return_value=tmpdir):
                 with patch("platformdirs.user_data_dir", return_value=tmpdir):
                     config_service = ConfigService()
-                    strategy = RemoteStrategy(config_service=config_service)
-                    context = StrategyContext(strategy)
+                    strategy = RemoteStorageStrategy()
+                    context = StorageStrategyContext(strategy)
 
                     assert context.storage_type == "remote"
                     assert context.strategy is strategy
@@ -143,8 +142,8 @@ class TestStrategyContext:
     def test_task_repository_property(self, tmp_path):
         """Test task_repository property"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
-        context = StrategyContext(strategy)
+        strategy = LocalStorageStrategy(db_path=db_path)
+        context = StorageStrategyContext(strategy)
 
         repo = context.task_repository
 
@@ -154,8 +153,8 @@ class TestStrategyContext:
     def test_project_repository_property(self, tmp_path):
         """Test project_repository property"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
-        context = StrategyContext(strategy)
+        strategy = LocalStorageStrategy(db_path=db_path)
+        context = StorageStrategyContext(strategy)
 
         repo = context.project_repository
 
@@ -165,8 +164,8 @@ class TestStrategyContext:
     def test_label_repository_property(self, tmp_path):
         """Test label_repository property"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
-        context = StrategyContext(strategy)
+        strategy = LocalStorageStrategy(db_path=db_path)
+        context = StorageStrategyContext(strategy)
 
         repo = context.label_repository
 
@@ -176,8 +175,8 @@ class TestStrategyContext:
     def test_property_access_no_runtime_branching(self, tmp_path):
         """Test that property access doesn't do runtime type checking"""
         db_path = str(tmp_path / "test.db")
-        strategy = LocalStrategy(db_path=db_path)
-        context = StrategyContext(strategy)
+        strategy = LocalStorageStrategy(db_path=db_path)
+        context = StorageStrategyContext(strategy)
 
         # Access multiple times - should be fast property lookup, no if/else
         repo1 = context.task_repository
@@ -190,14 +189,16 @@ class TestStrategyContext:
 # NOTE: These tests are for deprecated ContextManager.bootstrap() pattern
 # The new pattern uses get_strategy_context() directly from context_manager module
 # These tests are kept for historical reference but skipped for MVP1
-@pytest.mark.skip(reason="ContextManager.bootstrap() is deprecated, use get_strategy_context() instead")
+@pytest.mark.skip(
+    reason="ContextManager.bootstrap() is deprecated, use get_strategy_context() instead"
+)
 class TestContextManagerBootstrap:
     """Tests for ContextManager.bootstrap() method"""
 
     @patch("todopro_cli.context_manager.ContextManager.get_active_context")
     @patch("todopro_cli.context_manager.ContextManager.get_context")
     def test_bootstrap_local_context(self, mock_get_context, mock_get_active, tmp_path):
-        """Test bootstrap creates LocalStrategy for local context"""
+        """Test bootstrap creates LocalStorageStrategy for local context"""
         from todopro_cli.models.config_models import Context
 
         # Setup mocks
@@ -212,13 +213,13 @@ class TestContextManagerBootstrap:
         strategy_ctx = ctx_mgr.bootstrap()
 
         # Assertions
-        assert isinstance(strategy_ctx, StrategyContext)
+        assert isinstance(strategy_ctx, StorageStrategyContext)
         assert strategy_ctx.storage_type == "local"
 
     @patch("todopro_cli.context_manager.ContextManager.get_active_context")
     @patch("todopro_cli.context_manager.ContextManager.get_context")
     def test_bootstrap_remote_context(self, mock_get_context, mock_get_active):
-        """Test bootstrap creates RemoteStrategy for remote context"""
+        """Test bootstrap creates RemoteStorageStrategy for remote context"""
         from todopro_cli.models.config_models import Context
 
         # Setup mocks
@@ -233,7 +234,7 @@ class TestContextManagerBootstrap:
         strategy_ctx = ctx_mgr.bootstrap()
 
         # Assertions
-        assert isinstance(strategy_ctx, StrategyContext)
+        assert isinstance(strategy_ctx, StorageStrategyContext)
         assert strategy_ctx.storage_type == "remote"
 
     @patch("todopro_cli.context_manager.ContextManager.get_active_context")
@@ -252,7 +253,7 @@ class TestContextManagerBootstrap:
         strategy_ctx = ctx_mgr.bootstrap()
 
         # Assertions
-        assert isinstance(strategy_ctx, StrategyContext)
+        assert isinstance(strategy_ctx, StorageStrategyContext)
         assert strategy_ctx.storage_type == "local"
 
     @patch("todopro_cli.context_manager.ContextManager.get_active_context")
@@ -287,10 +288,8 @@ class TestStrategyPatternIntegration:
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("platformdirs.user_config_dir", return_value=tmpdir):
                 with patch("platformdirs.user_data_dir", return_value=tmpdir):
-                    config_service = ConfigService()
-
-                    local_strategy = LocalStrategy(db_path=":memory:")
-                    remote_strategy = RemoteStrategy(config_service=config_service)
+                    local_strategy = LocalStorageStrategy(db_path=":memory:")
+                    remote_strategy = RemoteStorageStrategy()
 
                     local_repo = local_strategy.get_task_repository()
                     remote_repo = remote_strategy.get_task_repository()
@@ -306,8 +305,8 @@ class TestStrategyPatternIntegration:
         """Test that service layer doesn't know which strategy it's using"""
         from todopro_cli.services.task_service import TaskService
 
-        strategy = LocalStrategy(db_path=str(tmp_path / "test.db"))
-        context = StrategyContext(strategy)
+        strategy = LocalStorageStrategy(db_path=str(tmp_path / "test.db"))
+        context = StorageStrategyContext(strategy)
 
         # Service receives repository, doesn't know it's SQLite
         service = TaskService(task_repository=context.task_repository)
@@ -320,7 +319,6 @@ class TestStrategyPatternIntegration:
 
     def test_caching_same_profile_returns_same_strategy(self):
         """Test that get_strategy_context caches results"""
-        from todopro_cli.services.context_manager import get_strategy_context
 
         # Clear cache first
         get_strategy_context.cache_clear()
@@ -340,7 +338,6 @@ class TestStrategyPatternPerformance:
 
     def test_bootstrap_performance(self, tmp_path, benchmark):
         """Benchmark bootstrap time"""
-        from todopro_cli.services.context_manager import get_strategy_context
 
         # Clear cache
         get_strategy_context.cache_clear()
@@ -350,11 +347,10 @@ class TestStrategyPatternPerformance:
             return get_strategy_context()
 
         result = benchmark(bootstrap)
-        assert isinstance(result, StrategyContext)
+        assert isinstance(result, StorageStrategyContext)
 
     def test_cached_access_performance(self, tmp_path, benchmark):
         """Benchmark cached strategy access"""
-        from todopro_cli.services.context_manager import get_strategy_context
 
         # Warm up cache
         get_strategy_context()
@@ -364,4 +360,4 @@ class TestStrategyPatternPerformance:
             return get_strategy_context()
 
         result = benchmark(get_cached)
-        assert isinstance(result, StrategyContext)
+        assert isinstance(result, StorageStrategyContext)

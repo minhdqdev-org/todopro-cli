@@ -7,9 +7,8 @@ import typer
 from rich.panel import Panel
 
 from todopro_cli.services.cache_service import get_background_cache
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.log_service import LogService
-from todopro_cli.services.task_service import TaskService
+from todopro_cli.services.task_service import get_task_service
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import (
     format_output,
@@ -31,7 +30,6 @@ async def today_command(
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
     """Show tasks for today (overdue + today's tasks)."""
-    # Handle --json flag as alias for --output json
     if json_opt:
         output = "json"
 
@@ -61,9 +59,7 @@ async def today_command(
         # Mark errors as read
         LogService.mark_errors_as_read()
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
-    task_service = TaskService(task_repo)
+    task_service = get_task_service()
 
     # For now, use list_tasks to get active tasks (simplified version)
     # TODO: Implement dedicated today_tasks method in service layer

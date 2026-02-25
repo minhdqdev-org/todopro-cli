@@ -1,4 +1,5 @@
 """Unit tests for new get_command (verb-first pattern)."""
+
 # pylint: disable=redefined-outer-name
 
 from datetime import datetime
@@ -8,7 +9,7 @@ import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.get_command import app
-from todopro_cli.models import Task, Project, Label
+from todopro_cli.models import Label, Project, Task
 
 runner = CliRunner()
 
@@ -44,7 +45,9 @@ def mock_project():
     )
 
 
-@pytest.mark.skip(reason="Tests for old architecture, needs rewrite for new Strategy pattern")
+@pytest.mark.skip(
+    reason="Tests for old architecture, needs rewrite for new Strategy pattern"
+)
 class TestGetTask:
     """Tests for 'todopro get task' command."""
 
@@ -54,21 +57,25 @@ class TestGetTask:
     def test_get_task_success(self, mock_auth, mock_factory, mock_resolve, mock_task):
         """Test getting a task successfully with new verb-first pattern."""
         mock_resolve.return_value = AsyncMock(return_value="task-123")()
-        
+
         mock_repo = MagicMock()
         mock_factory.return_value.get_task_repository.return_value = mock_repo
-        
+
         service_mock = MagicMock()
         service_mock.get_task = AsyncMock(return_value=mock_task)
-        
-        with patch("todopro_cli.commands.get_command.TaskService", return_value=service_mock):
+
+        with patch(
+            "todopro_cli.commands.get_command.TaskService", return_value=service_mock
+        ):
             result = runner.invoke(app, ["task", "123"])
-            
+
             # Verify command structure
             assert result.exit_code in [0, 1]
 
 
-@pytest.mark.skip(reason="Tests for old architecture, needs rewrite for new Strategy pattern")
+@pytest.mark.skip(
+    reason="Tests for old architecture, needs rewrite for new Strategy pattern"
+)
 class TestGetProject:
     """Tests for 'todopro get project' command."""
 
@@ -78,13 +85,15 @@ class TestGetProject:
         """Test getting a project successfully."""
         mock_repo = MagicMock()
         mock_factory.return_value.get_project_repository.return_value = mock_repo
-        
+
         service_mock = MagicMock()
         service_mock.get_project = AsyncMock(return_value=mock_project)
-        
-        with patch("todopro_cli.commands.get_command.ProjectService", return_value=service_mock):
+
+        with patch(
+            "todopro_cli.commands.get_command.ProjectService", return_value=service_mock
+        ):
             result = runner.invoke(app, ["project", "Test"])
-            
+
             # Verify command structure
             assert result.exit_code in [0, 1]
 
@@ -95,7 +104,7 @@ class TestGetCommandStructure:
     def test_get_help(self):
         """Test that get command shows help correctly."""
         result = runner.invoke(app, ["--help"])
-        
+
         assert result.exit_code == 0
         assert "Get resource details" in result.stdout
         assert "task" in result.stdout
@@ -105,13 +114,13 @@ class TestGetCommandStructure:
     def test_get_task_help(self):
         """Test that get task subcommand has help."""
         result = runner.invoke(app, ["task", "--help"])
-        
+
         assert result.exit_code == 0
         assert "Get task details" in result.stdout
 
     def test_get_project_help(self):
         """Test that get project subcommand has help."""
         result = runner.invoke(app, ["project", "--help"])
-        
+
         assert result.exit_code == 0
         assert "Get project details" in result.stdout

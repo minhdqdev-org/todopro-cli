@@ -7,21 +7,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from todopro_cli.services.api.client import APIClient
-from todopro_cli.services.api.labels import LabelsAPI
-from todopro_cli.services.api.projects import ProjectsAPI
-from todopro_cli.services.api.tasks import TasksAPI
-from todopro_cli.repositories.repository import (
-    ContextRepository,
-    LabelRepository,
-    ProjectRepository,
-    TaskRepository,
-)
 from todopro_cli.models import (
-    Context,
-    ContextCreate,
     Label,
     LabelCreate,
+    LocationContext,
+    LocationContextCreate,
     Project,
     ProjectCreate,
     ProjectFilters,
@@ -31,19 +21,27 @@ from todopro_cli.models import (
     TaskFilters,
     TaskUpdate,
 )
-from todopro_cli.services.config_service import ConfigService
+from todopro_cli.repositories.repository import (
+    LabelRepository,
+    LocationContextRepository,
+    ProjectRepository,
+    TaskRepository,
+)
+from todopro_cli.services.api.client import APIClient
+from todopro_cli.services.api.labels import LabelsAPI
+from todopro_cli.services.api.projects import ProjectsAPI
+from todopro_cli.services.api.tasks import TasksAPI
 
 
 class RestApiTaskRepository(TaskRepository):
     """Task repository implementation using REST API with E2EE support."""
 
-    def __init__(self, config_service: ConfigService):
+    def __init__(self):
         """Initialize REST API task repository.
 
         Args:
             config_service: ConfigService instance for API configuration
         """
-        self.config_service = config_service
         self._client: APIClient | None = None
         self._tasks_api: TasksAPI | None = None
         self._e2ee_handler = None
@@ -53,6 +51,7 @@ class RestApiTaskRepository(TaskRepository):
         """Get E2EE handler instance (lazy initialization)."""
         if self._e2ee_handler is None:
             from todopro_cli.adapters.sqlite.e2ee import get_e2ee_handler
+
             self._e2ee_handler = get_e2ee_handler()
         return self._e2ee_handler
 
@@ -67,16 +66,16 @@ class RestApiTaskRepository(TaskRepository):
 
     def _encrypt_task_fields(self, task_data: dict) -> dict:
         """Encrypt sensitive task fields before sending to server.
-        
+
         Args:
             task_data: Task data dictionary
-            
+
         Returns:
             Modified task data with encrypted fields
         """
         if not self.e2ee.enabled:
             return task_data
-            
+
         # Encrypt content and description
         if "content" in task_data and task_data["content"]:
             (
@@ -92,21 +91,21 @@ class RestApiTaskRepository(TaskRepository):
             if "description" in task_data:
                 task_data["description"] = plain_desc  # Empty in E2EE mode
                 task_data["description_encrypted"] = encrypted_desc
-                
+
         return task_data
 
     def _decrypt_task_fields(self, task_data: dict) -> dict:
         """Decrypt sensitive task fields after receiving from server.
-        
+
         Args:
             task_data: Task data dictionary from server
-            
+
         Returns:
             Modified task data with decrypted fields
         """
         if not self.e2ee.enabled:
             return task_data
-            
+
         # Decrypt content and description if encrypted fields exist
         if "content_encrypted" in task_data and task_data.get("content_encrypted"):
             content, description = self.e2ee.extract_task_content(
@@ -117,7 +116,7 @@ class RestApiTaskRepository(TaskRepository):
             )
             task_data["content"] = content
             task_data["description"] = description
-            
+
         return task_data
 
     async def list_all(self, filters: TaskFilters) -> list[Task]:
@@ -143,21 +142,23 @@ class RestApiTaskRepository(TaskRepository):
 
         # Parse response - API returns {"tasks": [...]}
         tasks_data = result.get("tasks", []) if isinstance(result, dict) else result
-        
+
         # Decrypt task fields if E2EE is enabled
         if self.e2ee.enabled:
-            tasks_data = [self._decrypt_task_fields(task_dict) for task_dict in tasks_data]
-        
+            tasks_data = [
+                self._decrypt_task_fields(task_dict) for task_dict in tasks_data
+            ]
+
         return [Task(**task_dict) for task_dict in tasks_data]
 
     async def get(self, task_id: str) -> Task:
         """Get a specific task by ID."""
         result = await self.tasks_api.get_task(task_id)
-        
+
         # Decrypt task fields if E2EE is enabled
         if self.e2ee.enabled:
             result = self._decrypt_task_fields(result)
-        
+
         return Task(**result)
 
     async def add(self, task_data: TaskCreate) -> Task:
@@ -173,11 +174,11 @@ class RestApiTaskRepository(TaskRepository):
             data = self._encrypt_task_fields(data)
 
         result = await self.tasks_api.create_task(**data)
-        
+
         # Decrypt the returned task
         if self.e2ee.enabled:
             result = self._decrypt_task_fields(result)
-        
+
         return Task(**result)
 
     async def update(self, task_id: str, updates: TaskUpdate) -> Task:
@@ -193,11 +194,11 @@ class RestApiTaskRepository(TaskRepository):
             update_data = self._encrypt_task_fields(update_data)
 
         result = await self.tasks_api.update_task(task_id, **update_data)
-        
+
         # Decrypt the returned task
         if self.e2ee.enabled:
             result = self._decrypt_task_fields(result)
-        
+
         return Task(**result)
 
     async def delete(self, task_id: str) -> bool:
@@ -208,11 +209,11 @@ class RestApiTaskRepository(TaskRepository):
     async def complete(self, task_id: str) -> Task:
         """Mark a task as completed."""
         result = await self.tasks_api.complete_task(task_id)
-        
+
         # Decrypt the returned task
         if self.e2ee.enabled:
             result = self._decrypt_task_fields(result)
-        
+
         return Task(**result)
 
     async def bulk_update(self, task_ids: list[str], updates: TaskUpdate) -> list[Task]:
@@ -224,11 +225,13 @@ class RestApiTaskRepository(TaskRepository):
         ):
             result = await self.tasks_api.batch_complete_tasks(task_ids)
             tasks_data = result.get("tasks", []) if isinstance(result, dict) else []
-            
+
             # Decrypt task fields if E2EE is enabled
             if self.e2ee.enabled:
-                tasks_data = [self._decrypt_task_fields(task_dict) for task_dict in tasks_data]
-            
+                tasks_data = [
+                    self._decrypt_task_fields(task_dict) for task_dict in tasks_data
+                ]
+
             return [Task(**task_dict) for task_dict in tasks_data]
 
         # Otherwise, update tasks one by one (already calls self.update which handles encryption)
@@ -242,13 +245,8 @@ class RestApiTaskRepository(TaskRepository):
 class RestApiProjectRepository(ProjectRepository):
     """Project repository implementation using REST API."""
 
-    def __init__(self, config_service: ConfigService):
-        """Initialize REST API project repository.
-
-        Args:
-            config_service: ConfigService instance for API configuration
-        """
-        self.config_service = config_service
+    def __init__(self):
+        """Initialize REST API project repository."""
         self._client: APIClient | None = None
         self._projects_api: ProjectsAPI | None = None
 
@@ -324,13 +322,9 @@ class RestApiProjectRepository(ProjectRepository):
 class RestApiLabelRepository(LabelRepository):
     """Label repository implementation using REST API."""
 
-    def __init__(self, config_service: ConfigService):
-        """Initialize REST API label repository.
+    def __init__(self):
+        """Initialize REST API label repository."""
 
-        Args:
-            config_service: ConfigService instance for API configuration
-        """
-        self.config_service = config_service
         self._client: APIClient | None = None
         self._labels_api: LabelsAPI | None = None
 
@@ -375,28 +369,28 @@ class RestApiLabelRepository(LabelRepository):
         ]
 
 
-class RestApiContextRepository(ContextRepository):
+class RestApiLocationContextRepository(LocationContextRepository):
     """Context repository implementation using REST API.
-    
+
     Implements location-based context management with geofencing support.
     All 5 methods fully implemented (Spec 13, 2025-02-18).
-    
+
     Capabilities:
     - List all contexts for authenticated user
     - Get context details by ID
     - Create new contexts with geofencing
     - Delete contexts
     - Check available contexts based on current location
-    
+
     Geofencing:
     - Server-side Haversine distance calculation
     - Contexts have latitude, longitude, and radius
     - get_available() filters contexts within range
-    
+
     Error Handling:
     - Queries (list_all, get_available): Return empty on error (graceful)
     - Actions (get, create, delete): Raise ValueError (explicit feedback)
-    
+
     Backend API Endpoints:
     - GET /v1/contexts - list all
     - GET /v1/contexts/{id} - get by ID
@@ -405,13 +399,9 @@ class RestApiContextRepository(ContextRepository):
     - POST /v1/contexts/check-available - geofencing query
     """
 
-    def __init__(self, config_service: ConfigService):
-        """Initialize REST API context repository.
+    def __init__(self):
+        """Initialize REST API context repository."""
 
-        Args:
-            config_service: ConfigService instance for API configuration
-        """
-        self.config_service = config_service
         self._client: APIClient | None = None
 
     @property
@@ -421,16 +411,16 @@ class RestApiContextRepository(ContextRepository):
             self._client = APIClient()
         return self._client
 
-    async def list_all(self) -> list[Context]:
+    async def list_all(self) -> list[LocationContext]:
         """List all contexts for the authenticated user."""
         try:
             response = await self.client.get("/v1/contexts")
-            
+
             # Response is a list of context objects
             contexts = []
             for ctx_data in response:
                 # Map backend fields to our model
-                context = Context(
+                context = LocationContext(
                     id=ctx_data["id"],
                     name=ctx_data["name"],
                     latitude=ctx_data["latitude"],
@@ -438,18 +428,18 @@ class RestApiContextRepository(ContextRepository):
                     radius=ctx_data["radius"],
                 )
                 contexts.append(context)
-            
+
             return contexts
-        except Exception as e:
+        except Exception:
             # Return empty list on error (user may not have permission or contexts)
             return []
 
-    async def get(self, context_id: str) -> Context:
+    async def get(self, context_id: str) -> LocationContext:
         """Get a specific context by ID."""
         try:
             response = await self.client.get(f"/v1/contexts/{context_id}")
-            
-            return Context(
+
+            return LocationContext(
                 id=response["id"],
                 name=response["name"],
                 latitude=response["latitude"],
@@ -459,7 +449,7 @@ class RestApiContextRepository(ContextRepository):
         except Exception as e:
             raise ValueError(f"Context {context_id} not found") from e
 
-    async def create(self, context_data: ContextCreate) -> Context:
+    async def create(self, context_data: LocationContextCreate) -> LocationContext:
         """Create a new context."""
         payload = {
             "name": context_data.name,
@@ -467,11 +457,11 @@ class RestApiContextRepository(ContextRepository):
             "longitude": context_data.longitude,
             "radius": context_data.radius,
         }
-        
+
         try:
             response = await self.client.post("/v1/contexts", json=payload)
-            
-            return Context(
+
+            return LocationContext(
                 id=response["id"],
                 name=response["name"],
                 latitude=response["latitude"],
@@ -489,22 +479,24 @@ class RestApiContextRepository(ContextRepository):
         except Exception:
             return False
 
-    async def get_available(self, latitude: float, longitude: float) -> list[Context]:
+    async def get_available(
+        self, latitude: float, longitude: float
+    ) -> list[LocationContext]:
         """Get contexts available at a specific location.
-        
+
         Uses the backend's geofencing check to determine which contexts
         are within range of the given coordinates.
         """
         try:
             response = await self.client.post(
                 "/v1/contexts/check-available",
-                json={"latitude": latitude, "longitude": longitude}
+                json={"latitude": latitude, "longitude": longitude},
             )
-            
+
             # Backend returns {"available": [...], "unavailable": [...], "user_location": {...}}
             available_contexts = []
             for ctx_data in response.get("available", []):
-                context = Context(
+                context = LocationContext(
                     id=ctx_data["id"],
                     name=ctx_data["name"],
                     latitude=ctx_data["latitude"],
@@ -512,9 +504,8 @@ class RestApiContextRepository(ContextRepository):
                     radius=ctx_data["radius"],
                 )
                 available_contexts.append(context)
-            
+
             return available_contexts
         except Exception:
             # Return empty list on error
             return []
-

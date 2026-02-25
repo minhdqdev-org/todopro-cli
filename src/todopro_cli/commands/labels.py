@@ -1,17 +1,15 @@
 """Label management commands."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.label_service import LabelService
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
 
 from .decorators import command_wrapper
-
+from todopro_cli.utils.ui.console import get_console
 app = typer.Typer(cls=SuggestingGroup, help="Label management commands")
-console = Console()
+console = get_console()
 
 
 @app.command("list")
@@ -20,8 +18,8 @@ async def list_labels(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all labels."""
-    strategy = get_strategy_context()
-    label_repo = strategy.label_repository
+    storage_strategy_context = get_storage_strategy_context()
+    label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
     labels = await label_service.list_labels()
@@ -36,8 +34,8 @@ async def get_label(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get label details."""
-    strategy = get_strategy_context()
-    label_repo = strategy.label_repository
+    storage_strategy_context = get_storage_strategy_context()
+    label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
     label = await label_service.get_label(label_id)
@@ -52,8 +50,8 @@ async def create_label(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Create a new label."""
-    strategy = get_strategy_context()
-    label_repo = strategy.label_repository
+    storage_strategy_context = get_storage_strategy_context()
+    label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
     label = await label_service.create_label(name=name, color=color)
@@ -74,8 +72,8 @@ async def update_label(
         format_error("No updates specified")
         raise typer.Exit(1)
 
-    strategy = get_strategy_context()
-    label_repo = strategy.label_repository
+    storage_strategy_context = get_storage_strategy_context()
+    label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
     label = await label_service.update_label(label_id, name=name, color=color)
@@ -96,8 +94,8 @@ async def delete_label(
             format_error("Cancelled")
             raise typer.Exit(0)
 
-    strategy = get_strategy_context()
-    label_repo = strategy.label_repository
+    storage_strategy_context = get_storage_strategy_context()
+    label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
     await label_service.delete_label(label_id)

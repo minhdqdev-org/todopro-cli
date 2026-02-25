@@ -10,22 +10,23 @@ from todopro_cli.adapters.sqlite.connection import get_connection
 from todopro_cli.adapters.sqlite.e2ee import E2EEHandler
 from todopro_cli.adapters.sqlite.user_manager import get_or_create_local_user
 from todopro_cli.adapters.sqlite.utils import generate_uuid, now_iso, row_to_dict
-from todopro_cli.repositories import TaskRepository
 from todopro_cli.models import Task, TaskCreate, TaskFilters, TaskUpdate
+from todopro_cli.models.config_models import AppConfig
+from todopro_cli.repositories import TaskRepository
 
 
 class SqliteTaskRepository(TaskRepository):
     """SQLite implementation of task repository."""
 
-    def __init__(self, db_path: str | None = None, config_manager=None):
+    def __init__(self, db_path: str | None = None, config_service=None):
         """Initialize SQLite task repository.
 
         Args:
             db_path: Optional database file path. If None, uses default location.
-            config_manager: Optional config manager for user ID and E2EE settings.
+            config_service: Optional config manager for user ID and E2EE settings.
         """
         self.db_path = db_path
-        self.config_manager = config_manager
+        self.config_service = config_service
         self._connection: sqlite3.Connection | None = None
         self._user_id: str | None = None
         self._e2ee_handler: E2EEHandler | None = None
@@ -52,9 +53,9 @@ class SqliteTaskRepository(TaskRepository):
             return self._user_id
 
         # Try to get from context config first
-        if self.config_manager:
+        if self.config_service:
             try:
-                current_context = self.config_manager.get_current_context()
+                current_context = self.config_service.get_current_context()
                 if current_context and current_context.local_user_id:
                     self._user_id = current_context.local_user_id
                     return self._user_id
@@ -66,22 +67,22 @@ class SqliteTaskRepository(TaskRepository):
         self._user_id = user_id
 
         # Save to context config if possible
-        if self.config_manager:
+        if self.config_service:
             try:
-                current_context = self.config_manager.get_current_context()
+                current_context = self.config_service.get_current_context()
                 if current_context and not current_context.local_user_id:
-                    self.config_manager.add_context(
+                    self.config_service.add_context(
                         current_context.name,
                         current_context.endpoint,
                         current_context.description,
                     )
                     # Update local_user_id in context
-                    config_dict = self.config_manager.config.model_dump()
+                    config_dict = self.config_service.config.model_dump()
                     config_dict["contexts"][current_context.name]["local_user_id"] = (
                         user_id
                     )
-                    self.config_manager._config = Config(**config_dict)
-                    self.config_manager.save_config()
+                    self.config_service._config = AppConfig(**config_dict)
+                    self.config_service.save_config()
             except Exception:
                 pass
 
@@ -213,10 +214,10 @@ class SqliteTaskRepository(TaskRepository):
 
         return Task(**task_dict)
 
-
     async def get_by_id(self, id: str):
         """Alias for get() method for compatibility."""
         return await self.get(id)
+
     async def add(self, task_data: TaskCreate) -> Task:
         """Create a new task."""
         user_id = self._get_user_id()

@@ -5,6 +5,8 @@ of the TodoPro application. These models are used throughout the application
 for data validation, serialization, and type safety.
 """
 
+from .config_models import AppConfig
+from .config_models import Context as ConfigContext
 from .core import (
     Label,
     LabelCreate,
@@ -20,11 +22,6 @@ from .core import (
     TaskUpdate,
     User,
 )
-from .config_models import AppConfig, Context as ConfigContext
-
-# Alias for backward compatibility with repository.py
-Context = LocationContext
-ContextCreate = LocationContextCreate
 
 __all__ = [
     # Task models
@@ -43,8 +40,6 @@ __all__ = [
     # Context/Location models
     "LocationContext",
     "LocationContextCreate",
-    "Context",  # Alias
-    "ContextCreate",  # Alias
     # User model
     "User",
     # Config models

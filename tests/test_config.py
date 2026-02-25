@@ -1,288 +1,20 @@
 """Tests for configuration management."""
 
-import tempfile
-from pathlib import Path
-
-import pytest
-
-from todopro_cli.models.config_models import AppConfig as Config
-from todopro_cli.services.context_manager import ContextManager
+from todopro_cli.models.config_models import AppConfig
 
 
 def test_default_config():
     """Test default configuration."""
-    config = Config()
+    config = AppConfig()
     assert config.api.endpoint == "https://todopro.minhdq.dev/api"
     assert config.api.timeout == 30
     assert config.output.format == "pretty"
     assert config.cache.enabled is True
 
 
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_config_manager_creation():
-    """Test config manager creation."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        # Override directories for testing
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.data_dir = Path(tmpdir) / "data"
-        config_manager.config_file = config_manager.config_dir / "test.yaml"
-        config_manager.credentials_file = (
-            config_manager.data_dir / "test.credentials.json"
-        )
-
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-        config_manager.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Test default config
-        config = config_manager.config
-        assert config.api.endpoint == "https://todopro.minhdq.dev/api"
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_config_save_load():
-    """Test saving and loading configuration."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.data_dir = Path(tmpdir) / "data"
-        config_manager.config_file = (
-            config_manager.config_dir / "test.yaml"
-        )  # v2 uses YAML
-        config_manager.credentials_file = (
-            config_manager.data_dir / "test.credentials.json"
-        )
-
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-        config_manager.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Set a value
-        config_manager.set("api.endpoint", "https://test.example.com/api")
-        assert config_manager.get("api.endpoint") == "https://test.example.com/api"
-
-        # Create a new manager with the same profile
-        config_manager2 = ContextManager(profile="test")
-        config_manager2.config_dir = Path(tmpdir) / "config"
-        config_manager2.config_file = (
-            config_manager2.config_dir / "test.yaml"
-        )  # v2 uses YAML
-
-        # Load should return the saved value
-        assert config_manager2.get("api.endpoint") == "https://test.example.com/api"
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_credentials_save_load():
-    """Test saving and loading credentials."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.data_dir = Path(tmpdir) / "data"
-        config_manager.config_file = config_manager.config_dir / "test.yaml"
-        config_manager.credentials_file = (
-            config_manager.data_dir / "test.credentials.json"
-        )
-
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-        config_manager.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Save credentials
-        config_manager.save_credentials("test_token", "test_refresh_token")
-
-        # Load credentials
-        credentials = config_manager.load_credentials()
-        assert credentials is not None
-        assert credentials["token"] == "test_token"
-        assert credentials["refresh_token"] == "test_refresh_token"
-
-        # Clear credentials
-        config_manager.clear_credentials()
-        credentials = config_manager.load_credentials()
-        assert credentials is None
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_config_reset():
-    """Test resetting configuration."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.data_dir = Path(tmpdir) / "data"
-        config_manager.config_file = config_manager.config_dir / "test.yaml"
-        config_manager.credentials_file = (
-            config_manager.data_dir / "test.credentials.json"
-        )
-
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-        config_manager.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Set a value
-        config_manager.set("api.endpoint", "https://custom.example.com/api")
-        assert config_manager.get("api.endpoint") == "https://custom.example.com/api"
-
-        # Reset all config
-        config_manager.reset()
-        assert config_manager.get("api.endpoint") == "https://todopro.minhdq.dev/api"
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_config_reset_specific_key():
-    """Test resetting a specific config key."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.data_dir = Path(tmpdir) / "data"
-        config_manager.config_file = config_manager.config_dir / "test.yaml"
-        config_manager.credentials_file = (
-            config_manager.data_dir / "test.credentials.json"
-        )
-
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-        config_manager.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Set values
-        config_manager.set("api.endpoint", "https://custom.example.com/api")
-        config_manager.set("api.timeout", 60)
-
-        # Reset specific key
-        config_manager.reset("api.endpoint")
-        assert config_manager.get("api.endpoint") == "https://todopro.minhdq.dev/api"
-        assert config_manager.get("api.timeout") == 60
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_list_profiles():
-    """Test listing profiles."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test1")
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.config_file = config_manager.config_dir / "test1.yaml"
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-        config_manager.save_config()
-
-        config_manager2 = ContextManager(profile="test2")
-        config_manager2.config_dir = Path(tmpdir) / "config"
-        config_manager2.config_file = config_manager2.config_dir / "test2.yaml"
-        config_manager2.save_config()
-
-        profiles = config_manager.list_profiles()
-        assert "test1" in profiles
-        assert "test2" in profiles
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_load_corrupted_config():
-    """Test loading corrupted config file."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.config_file = config_manager.config_dir / "test.yaml"
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-
-        # Write corrupted JSON
-        with open(config_manager.config_file, "w") as f:
-            f.write("{invalid json")
-
-        # Should return default config
-        config = config_manager.load_config()
-        assert config.api.endpoint == "https://todopro.minhdq.dev/api"
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_load_credentials_corrupted():
-    """Test loading corrupted credentials file."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.data_dir = Path(tmpdir) / "data"
-        config_manager.credentials_file = (
-            config_manager.data_dir / "test.credentials.json"
-        )
-        config_manager.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Write corrupted JSON
-        with open(config_manager.credentials_file, "w") as f:
-            f.write("{invalid json")
-
-        # Should return None
-        credentials = config_manager.load_credentials()
-        assert credentials is None
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_save_credentials_without_refresh_token():
-    """Test saving credentials without refresh token."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.data_dir = Path(tmpdir) / "data"
-        config_manager.credentials_file = (
-            config_manager.data_dir / "test.credentials.json"
-        )
-        config_manager.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Save credentials without refresh token
-        config_manager.save_credentials("test_token")
-
-        # Load credentials
-        credentials = config_manager.load_credentials()
-        assert credentials is not None
-        assert credentials["token"] == "test_token"
-        assert "refresh_token" not in credentials
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_get_context_manager():
-    """Test get_context_manager factory function."""
-    from .config import get_context_manager
-
-    manager1 = get_context_manager("default")
-    assert manager1.profile == "default"
-
-    # Should return the same instance for same profile
-    manager2 = get_context_manager("default")
-    assert manager1 is manager2
-
-    # Should create new instance for different profile
-    manager3 = get_context_manager("test")
-    assert manager3.profile == "test"
-    assert manager1 is not manager3
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_get_from_config():
-    """Test get_from_config helper method."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.config_file = config_manager.config_dir / "test.yaml"
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-
-        config = Config()
-        value = config_manager.get_from_config(config, "api.endpoint")
-        assert value == "https://todopro.minhdq.dev/api"
-
-
-@pytest.mark.skip(reason="Legacy ContextManager deprecated, replaced by ConfigService")
-def test_config_property():
-    """Test config property lazy loading."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_manager = ContextManager(profile="test")
-        config_manager.config_dir = Path(tmpdir) / "config"
-        config_manager.config_file = config_manager.config_dir / "test.yaml"
-        config_manager.config_dir.mkdir(parents=True, exist_ok=True)
-
-        # First access should load config
-        config = config_manager.config
-        assert isinstance(config, Config)
-
-        # Second access should return cached config
-        config2 = config_manager.config
-        assert config is config2
-
-
 def test_api_config():
     """Test API configuration."""
-    config = Config()
+    config = AppConfig()
     assert config.api.endpoint == "https://todopro.minhdq.dev/api"
     assert config.api.timeout == 30
     assert config.api.retry == 3
@@ -290,13 +22,13 @@ def test_api_config():
 
 def test_auth_config():
     """Test auth configuration."""
-    config = Config()
+    config = AppConfig()
     assert config.auth.auto_refresh is True
 
 
 def test_output_config():
     """Test output configuration."""
-    config = Config()
+    config = AppConfig()
     assert config.output.format == "pretty"
     assert config.output.color is True
     assert config.output.icons is True
@@ -305,7 +37,7 @@ def test_output_config():
 
 def test_ui_config():
     """Test UI configuration."""
-    config = Config()
+    config = AppConfig()
     assert config.ui.interactive is False
     assert config.ui.page_size == 30
     assert config.ui.language == "en"
@@ -313,13 +45,13 @@ def test_ui_config():
 
 def test_cache_config():
     """Test cache configuration."""
-    config = Config()
+    config = AppConfig()
     assert config.cache.enabled is True
     assert config.cache.ttl == 300
 
 
 def test_sync_config():
     """Test sync configuration."""
-    config = Config()
+    config = AppConfig()
     assert config.sync.auto is False
     assert config.sync.interval == 300

@@ -1,12 +1,11 @@
 """Goals and targets commands."""
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
 from todopro_cli.focus.goals import GoalsManager
-
-console = Console()
+from todopro_cli.utils.ui.console import get_console
+console = get_console()
 app = typer.Typer(help="Focus goals and targets")
 
 
@@ -200,7 +199,7 @@ def reset_goals():
     }
 
     manager.config.focus_goals = defaults
-    manager.config_manager.save_config(manager.config)
+    manager.context_manager.save_config()
 
     console.print("\n[green]✓ Goals reset to defaults[/green]")
     console.print("\n[dim]Run 'todopro goals list' to see default values[/dim]\n")

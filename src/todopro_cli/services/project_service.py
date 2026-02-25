@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from todopro_cli.repositories import ProjectRepository
 from todopro_cli.models import Project, ProjectCreate, ProjectFilters, ProjectUpdate
+from todopro_cli.repositories import ProjectRepository
 
 
 class ProjectService:
@@ -195,3 +195,13 @@ class ProjectService:
             Dictionary containing statistics (total_tasks, completed_tasks, etc.)
         """
         return await self.repository.get_stats(project_id)
+
+
+def get_project_service():
+    """Factory function to get a ProjectService instance."""
+    from todopro_cli.services.config_service import (
+        get_storage_strategy_context,  # type: ignore
+    )
+
+    storage_strategy_context = get_storage_strategy_context()
+    return ProjectService(storage_strategy_context.project_repository)

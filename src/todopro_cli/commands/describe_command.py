@@ -4,7 +4,6 @@ import asyncio
 
 import typer
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_output
@@ -31,8 +30,8 @@ def describe(
     """Describe a resource in detail."""
     if resource_type.lower() == "project":
         project_id = resource_id
-        strategy = get_strategy_context()
-        project_repo = strategy.project_repository
+        storage_strategy_context = get_storage_strategy_context()
+        project_repo = storage_strategy_context.project_repository
         project_service = ProjectService(project_repo)
 
         # Resolve partial UUID prefix to full UUID

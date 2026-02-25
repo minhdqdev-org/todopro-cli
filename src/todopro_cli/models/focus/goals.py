@@ -3,16 +3,16 @@
 from typing import Any
 
 from todopro_cli.focus.analytics import FocusAnalytics
-from todopro_cli.services.context_manager import get_context_manager
+from todopro_cli.services.config_service import get_config_service
 
 
 class GoalsManager:
     """Manage focus goals and track progress."""
 
-    def __init__(self, profile: str = "default"):
+    def __init__(self):
         """Initialize goals manager."""
-        self.context_manager = get_context_manager(profile)
-        self.config = self.context_manager.load_config()
+        self.config_service = get_config_service()
+        self.config = self.config_service.load_config()
         self.analytics = FocusAnalytics()
 
     def get_goals(self) -> dict[str, Any]:

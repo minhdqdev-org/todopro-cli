@@ -1,4 +1,4 @@
-"""SQLite implementation of ContextRepository."""
+"""SQLite implementation of LocationContextRepository."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ from todopro_cli.adapters.sqlite.utils import (
     now_iso,
     row_to_dict,
 )
-from todopro_cli.repositories import ContextRepository
-from todopro_cli.models import Context, ContextCreate
+from todopro_cli.models import LocationContext, LocationContextCreate
+from todopro_cli.repositories import LocationContextRepository
 
 
-class SqliteContextRepository(ContextRepository):
+class SqliteLocationContextRepository(LocationContextRepository):
     """SQLite implementation of context repository."""
 
     def __init__(self, db_path: str | None = None, config_manager=None):
@@ -48,7 +48,7 @@ class SqliteContextRepository(ContextRepository):
 
         return self._user_id
 
-    async def list_all(self) -> list[Context]:
+    async def list_all(self) -> list[LocationContext]:
         """List all contexts."""
         user_id = self._get_user_id()
 
@@ -57,9 +57,9 @@ class SqliteContextRepository(ContextRepository):
         )
         rows = cursor.fetchall()
 
-        return [Context(**row_to_dict(row)) for row in rows]
+        return [LocationContext(**row_to_dict(row)) for row in rows]
 
-    async def get(self, context_id: str) -> Context:
+    async def get(self, context_id: str) -> LocationContext:
         """Get a specific context by ID."""
         user_id = self._get_user_id()
 
@@ -71,9 +71,9 @@ class SqliteContextRepository(ContextRepository):
         if not row:
             raise ValueError(f"Context not found: {context_id}")
 
-        return Context(**row_to_dict(row))
+        return LocationContext(**row_to_dict(row))
 
-    async def create(self, context_data: ContextCreate) -> Context:
+    async def create(self, context_data: LocationContextCreate) -> LocationContext:
         """Create a new context."""
         user_id = self._get_user_id()
         context_id = generate_uuid()
@@ -134,6 +134,6 @@ class SqliteContextRepository(ContextRepository):
 
             # Check if within radius
             if distance <= context_dict["radius"]:
-                available_contexts.append(Context(**context_dict))
+                available_contexts.append(LocationContext(**context_dict))
 
         return available_contexts

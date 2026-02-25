@@ -7,15 +7,16 @@ from datetime import datetime
 from pathlib import Path
 
 import typer
-from rich.console import Console
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 from todopro_cli.models import ProjectFilters, TaskFilters
 from todopro_cli.services.api.client import get_client
-from todopro_cli.services.config_service import get_config_service
-from todopro_cli.services.context_manager import get_strategy_context
+from todopro_cli.services.config_service import (
+    get_config_service,
+)
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import (
     format_error,
     format_info,
@@ -23,11 +24,10 @@ from todopro_cli.utils.ui.formatters import (
     format_warning,
 )
 
-from .config_command import get_context_manager
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Data management commands")
-console = Console()
+console = get_console()
 
 
 @app.command("export")
@@ -70,12 +70,16 @@ def export_data(
         # Export from local SQLite or remote API
         if is_local:
             # Local export - read from SQLite repositories
-            strategy = get_strategy_context()
+            storage_strategy_context = get_storage_strategy_context()
 
             # Fetch all data
-            tasks = await strategy.task_repository.list_all(TaskFilters())
-            projects = await strategy.project_repository.list_all(ProjectFilters())
-            labels = await strategy.label_repository.list_all()
+            tasks = await storage_strategy_context.task_repository.list_all(
+                TaskFilters()
+            )
+            projects = await storage_strategy_context.project_repository.list_all(
+                ProjectFilters()
+            )
+            labels = await storage_strategy_context.label_repository.list_all()
 
             # Get contexts from config (not in database)
             contexts = config_svc.config.contexts
@@ -256,7 +260,7 @@ def import_data(
         # Import to local SQLite or remote API
         if is_local:
             # Local import - write to SQLite repositories
-            strategy = get_strategy_context()
+            storage_strategy_context = get_storage_strategy_context()
 
             # Track import results
             summary = {
@@ -279,8 +283,10 @@ def import_data(
             for project_data in import_data_payload.get("projects", []):
                 try:
                     # Check if project already exists by name
-                    existing = await strategy.project_repository.list_all(
-                        ProjectFilters(name=project_data.get("name"))
+                    existing = (
+                        await storage_strategy_context.project_repository.list_all(
+                            ProjectFilters(name=project_data.get("name"))
+                        )
                     )
                     if existing:
                         projects_skipped += 1
@@ -295,7 +301,9 @@ def import_data(
                         color=project_data.get("color"),
                         archived=project_data.get("archived", False),
                     )
-                    await strategy.project_repository.create(project_create)
+                    await storage_strategy_context.project_repository.create(
+                        project_create
+                    )
                     projects_created += 1
                 except Exception as e:
                     details["projects"]["errors"].append(
@@ -312,7 +320,9 @@ def import_data(
             for label_data in import_data_payload.get("labels", []):
                 try:
                     # Check if label already exists by name
-                    existing = await strategy.label_repository.list_all()
+                    existing = (
+                        await storage_strategy_context.label_repository.list_all()
+                    )
                     if any(l.name == label_data.get("name") for l in existing):
                         labels_skipped += 1
                         continue
@@ -324,7 +334,7 @@ def import_data(
                         name=label_data["name"],
                         color=label_data.get("color"),
                     )
-                    await strategy.label_repository.create(label_create)
+                    await storage_strategy_context.label_repository.create(label_create)
                     labels_created += 1
                 except Exception as e:
                     details["labels"]["errors"].append(
@@ -339,7 +349,7 @@ def import_data(
             for task_data in import_data_payload.get("tasks", []):
                 try:
                     # Check if task already exists by content
-                    existing = await strategy.task_repository.list_all(
+                    existing = await storage_strategy_context.task_repository.list_all(
                         TaskFilters(search=task_data.get("content"))
                     )
                     # Skip if exact content match found
@@ -352,8 +362,10 @@ def import_data(
 
                     project_id = None
                     if task_data.get("project_name"):
-                        projects = await strategy.project_repository.list_all(
-                            ProjectFilters(name=task_data["project_name"])
+                        projects = (
+                            await storage_strategy_context.project_repository.list_all(
+                                ProjectFilters(name=task_data["project_name"])
+                            )
                         )
                         if projects:
                             project_id = projects[0].id
@@ -361,11 +373,11 @@ def import_data(
                     task_create = TaskCreate(
                         content=task_data["content"],
                         description=task_data.get("description"),
-                        priority=task_data.get("priority", 1),
+                        priority=task_data.get("priority", 4),
                         project_id=project_id,
                         label_ids=task_data.get("label_ids", []),
                     )
-                    await strategy.task_repository.add(task_create)
+                    await storage_strategy_context.task_repository.add(task_create)
                     tasks_created += 1
                 except Exception as e:
                     details["tasks"]["errors"].append(
@@ -446,7 +458,7 @@ def purge_data(
     """
 
     # Get user info
-    config_manager = get_context_manager()
+    config_manager = get_config_service()
     credentials = config_manager.load_credentials()
     user_email = credentials.get("email", "your email")
 

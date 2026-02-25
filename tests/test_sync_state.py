@@ -1,4 +1,5 @@
 """Tests for sync state manager."""
+
 # pylint: disable=redefined-outer-name
 
 from datetime import UTC, datetime, timedelta

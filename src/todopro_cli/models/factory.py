@@ -9,8 +9,8 @@
 
    New way (recommended):
        from todopro_cli.context_manager import get_strategy_context
-       strategy = get_strategy_context()
-       task_repo = strategy.task_repository
+       storage_strategy_context = get_storage_strategy_context()
+       task_repo = strategy_context.task_repository
 
 This module is kept for backward compatibility but will be removed in v3.0.
 The old factory uses runtime if/else to select implementations, violating
@@ -23,24 +23,24 @@ import functools
 from typing import Literal
 
 from todopro_cli.adapters.rest_api import (
-    RestApiContextRepository,
     RestApiLabelRepository,
+    RestApiLocationContextRepository,
     RestApiProjectRepository,
     RestApiTaskRepository,
 )
 from todopro_cli.adapters.sqlite import (
-    SqliteContextRepository,
     SqliteLabelRepository,
+    SqliteLocationContextRepository,
     SqliteProjectRepository,
     SqliteTaskRepository,
 )
 from todopro_cli.repositories.repository import (
-    ContextRepository,
     LabelRepository,
+    LocationContextRepository,
     ProjectRepository,
     TaskRepository,
 )
-from todopro_cli.services.context_manager import ContextManager, get_context_manager
+from todopro_cli.services.context_manager import ContextManager
 
 
 class RepositoryFactoryError(Exception):
@@ -68,7 +68,7 @@ class RepositoryFactory:
         Args:
             context_manager: Optional ContextManager instance. If None, uses singleton.
         """
-        self._context_manager = context_manager or get_context_manager()
+        self._context_manager = context_manager or get_config_service()
         self._storage_type: Literal["local", "remote"] | None = None
         self._db_path: str | None = None  # For local storage
 
@@ -76,7 +76,7 @@ class RepositoryFactory:
         self._task_repo: TaskRepository | None = None
         self._project_repo: ProjectRepository | None = None
         self._label_repo: LabelRepository | None = None
-        self._context_repo: ContextRepository | None = None
+        self._context_repo: LocationContextRepository | None = None
 
     @property
     def storage_type(self) -> Literal["local", "remote"]:
@@ -157,11 +157,11 @@ class RepositoryFactory:
             self._label_repo = self._create_label_repository()
         return self._label_repo
 
-    def get_context_repository(self) -> ContextRepository:
+    def get_context_repository(self) -> LocationContextRepository:
         """Get context repository instance.
 
         Returns:
-            ContextRepository implementation (SQLite or REST API based)
+            LocationContextRepository implementation (SQLite or REST API based)
 
         Raises:
             RepositoryFactoryError: If repository cannot be instantiated
@@ -221,11 +221,11 @@ class RepositoryFactory:
         # local
         return SqliteLabelRepository(db_path=self._db_path)
 
-    def _create_context_repository(self) -> ContextRepository:
+    def _create_context_repository(self) -> LocationContextRepository:
         """Create context repository based on storage type.
 
         Returns:
-            Concrete ContextRepository implementation
+            Concrete LocationContextRepository implementation
 
         Raises:
             RepositoryFactoryError: If adapter cannot be created
@@ -234,10 +234,10 @@ class RepositoryFactory:
 
         if storage == "remote":
             config_mgr = ContextManager()
-            return RestApiContextRepository(config_mgr)
+            return RestApiLocationContextRepository(config_mgr)
         # local
 
-        return SqliteContextRepository(db_path=self._db_path)
+        return SqliteLocationContextRepository(db_path=self._db_path)
 
 
 @functools.lru_cache(maxsize=1)

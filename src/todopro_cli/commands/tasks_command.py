@@ -1,24 +1,23 @@
 """Task management commands."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.cache_service import get_background_cache
-from todopro_cli.services.task_service import TaskService
+from todopro_cli.services.task_service import TaskService, get_task_service
+from todopro_cli.utils.task_helpers import resolve_task_id
+from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import (
     format_error,
     format_info,
     format_output,
     format_success,
 )
-from todopro_cli.utils.task_helpers import resolve_task_id
-from todopro_cli.utils.typer_helpers import SuggestingGroup
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Task management commands")
-console = Console()
+console = get_console()
 
 
 @app.command("list")
@@ -31,7 +30,9 @@ async def list_tasks(
     limit: int = typer.Option(30, "--limit", help="Limit results"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
-    json_opt: bool = typer.Option(False, "--json", help="Output as JSON (alias for --output json)"),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
     """List tasks."""
@@ -39,8 +40,8 @@ async def list_tasks(
         output = "json"
     # TODO: consider deprecated --status in favor of dedicated commands to view project tasks, etc.
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     tasks = await task_service.list_tasks(
@@ -75,9 +76,7 @@ async def get_task(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get task details."""
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
-    task_service = TaskService(task_repo)
+    task_service = get_task_service()
 
     resolved_id = await resolve_task_id(task_service, task_id)
     task = await task_service.get_task(resolved_id)
@@ -96,8 +95,8 @@ async def create_task(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Create a new task."""
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     # Parse labels
@@ -110,7 +109,7 @@ async def create_task(
         description=description,
         project_id=project,
         due_date=due,
-        priority=priority or 1,
+        priority=priority or 4,
         labels=label_list,
     )
     format_success(f"Task created: {task.id}")
@@ -129,8 +128,8 @@ async def update_task(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a task."""
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     if not any([content, description, project, due, priority is not None]):
@@ -150,26 +149,27 @@ async def update_task(
     format_output(task.model_dump(), output)
 
 
-@app.command("delete")
-@command_wrapper
-async def delete_task(
-    task_id: str = typer.Argument(..., help="Task ID or suffix"),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
-) -> None:
-    """Delete a task."""
-    if not yes:
-        confirm = typer.confirm(f"Are you sure you want to delete task {task_id}?")
-        if not confirm:
-            format_error("Cancelled")
-            raise typer.Exit(0)
+# Replaced by the command 'delete task'
+# @app.command("delete")
+# @command_wrapper
+# async def delete_task(
+#     task_id: str = typer.Argument(..., help="Task ID or suffix"),
+#     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+# ) -> None:
+#     """Delete a task."""
+#     if not yes:
+#         confirm = typer.confirm(f"Are you sure you want to delete task {task_id}?")
+#         if not confirm:
+#             format_error("Cancelled")
+#             raise typer.Exit(0)
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
-    task_service = TaskService(task_repo)
+#     storage_strategy_context = get_storage_strategy_context()
+#     task_repo = strategy_context.task_repository
+#     task_service = TaskService(task_repo)
 
-    resolved_id = await resolve_task_id(task_service, task_id)
-    await task_service.delete_task(resolved_id)
-    format_success(f"Task deleted: {resolved_id}")
+#     resolved_id = await resolve_task_id(task_service, task_id)
+#     await task_service.delete_task(resolved_id)
+#     format_success(f"Task deleted: {resolved_id}")
 
 
 @app.command("reopen")
@@ -179,8 +179,8 @@ async def reopen_task(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Reopen a completed task."""
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     resolved_id = await resolve_task_id(task_service, task_id)
@@ -201,8 +201,8 @@ async def reschedule(
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:
     """Reschedule a task or all overdue tasks."""
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     # Check if target is None or "overdue" for bulk reschedule

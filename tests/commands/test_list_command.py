@@ -1,4 +1,5 @@
 """Unit tests for new list_command (verb-first pattern)."""
+
 # pylint: disable=redefined-outer-name
 
 from datetime import datetime
@@ -8,7 +9,7 @@ import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.list_command import app
-from todopro_cli.models import Task, Project, Label
+from todopro_cli.models import Label, Project, Task
 
 runner = CliRunner()
 
@@ -56,7 +57,9 @@ def mock_label():
     )
 
 
-@pytest.mark.skip(reason="Tests for old architecture, needs rewrite for new Strategy pattern")
+@pytest.mark.skip(
+    reason="Tests for old architecture, needs rewrite for new Strategy pattern"
+)
 class TestListTasks:
     """Tests for 'todopro list tasks' command."""
 
@@ -68,43 +71,52 @@ class TestListTasks:
         # Setup mocks
         mock_repo = MagicMock()
         mock_factory.return_value.get_task_repository.return_value = mock_repo
-        
+
         service_mock = MagicMock()
         service_mock.list_tasks = AsyncMock(return_value=[mock_task])
-        
+
         mock_cache.return_value.get_completing_tasks.return_value = []
-        
-        with patch("todopro_cli.commands.list_command.TaskService", return_value=service_mock):
+
+        with patch(
+            "todopro_cli.commands.list_command.TaskService", return_value=service_mock
+        ):
             result = runner.invoke(app, ["tasks"])
-            
+
             # Command should execute (may fail due to auth, but structure is correct)
             assert result.exit_code in [0, 1]  # Accept both success and auth failure
-            
+
             # Verify service was attempted to be called (structure is correct)
             assert "tasks" in result.stdout.lower() or "error" in result.stdout.lower()
-
 
     @patch("todopro_cli.commands.list_command.get_repository_factory")
     @patch("todopro_cli.commands.utils.require_auth")
     @patch("todopro_cli.commands.list_command.get_background_cache")
-    def test_list_tasks_with_filters(self, mock_cache, mock_auth, mock_factory, mock_task):
+    def test_list_tasks_with_filters(
+        self, mock_cache, mock_auth, mock_factory, mock_task
+    ):
         """Test listing tasks with filters."""
         mock_repo = MagicMock()
         mock_factory.return_value.get_task_repository.return_value = mock_repo
-        
+
         service_mock = MagicMock()
         service_mock.list_tasks = AsyncMock(return_value=[mock_task])
-        
+
         mock_cache.return_value.get_completing_tasks.return_value = []
-        
-        with patch("todopro_cli.commands.list_command.TaskService", return_value=service_mock):
-            result = runner.invoke(app, ["tasks", "--status", "active", "--priority", "1"])
-            
+
+        with patch(
+            "todopro_cli.commands.list_command.TaskService", return_value=service_mock
+        ):
+            result = runner.invoke(
+                app, ["tasks", "--status", "active", "--priority", "1"]
+            )
+
             # Verify command structure is valid
             assert result.exit_code in [0, 1]
 
 
-@pytest.mark.skip(reason="Tests for old architecture, needs rewrite for new Strategy pattern")
+@pytest.mark.skip(
+    reason="Tests for old architecture, needs rewrite for new Strategy pattern"
+)
 class TestListProjects:
     """Tests for 'todopro list projects' command."""
 
@@ -114,18 +126,23 @@ class TestListProjects:
         """Test listing projects successfully."""
         mock_repo = MagicMock()
         mock_factory.return_value.get_project_repository.return_value = mock_repo
-        
+
         service_mock = MagicMock()
         service_mock.list_projects = AsyncMock(return_value=[mock_project])
-        
-        with patch("todopro_cli.commands.list_command.ProjectService", return_value=service_mock):
+
+        with patch(
+            "todopro_cli.commands.list_command.ProjectService",
+            return_value=service_mock,
+        ):
             result = runner.invoke(app, ["projects"])
-            
+
             # Verify command structure
             assert result.exit_code in [0, 1]
 
 
-@pytest.mark.skip(reason="Tests for old architecture, needs rewrite for new Strategy pattern")
+@pytest.mark.skip(
+    reason="Tests for old architecture, needs rewrite for new Strategy pattern"
+)
 class TestListLabels:
     """Tests for 'todopro list labels' command."""
 
@@ -135,13 +152,15 @@ class TestListLabels:
         """Test listing labels successfully."""
         mock_repo = MagicMock()
         mock_factory.return_value.get_label_repository.return_value = mock_repo
-        
+
         service_mock = MagicMock()
         service_mock.list_labels = AsyncMock(return_value=[mock_label])
-        
-        with patch("todopro_cli.commands.list_command.LabelService", return_value=service_mock):
+
+        with patch(
+            "todopro_cli.commands.list_command.LabelService", return_value=service_mock
+        ):
             result = runner.invoke(app, ["labels"])
-            
+
             # Verify command structure
             assert result.exit_code in [0, 1]
 
@@ -152,7 +171,7 @@ class TestListCommandStructure:
     def test_list_help(self):
         """Test that list command shows help correctly."""
         result = runner.invoke(app, ["--help"])
-        
+
         assert result.exit_code == 0
         assert "List resources" in result.stdout
         assert "tasks" in result.stdout
@@ -162,20 +181,20 @@ class TestListCommandStructure:
     def test_list_tasks_help(self):
         """Test that list tasks subcommand has help."""
         result = runner.invoke(app, ["tasks", "--help"])
-        
+
         assert result.exit_code == 0
         assert "List tasks" in result.stdout
 
     def test_list_projects_help(self):
         """Test that list projects subcommand has help."""
         result = runner.invoke(app, ["projects", "--help"])
-        
+
         assert result.exit_code == 0
         assert "List all projects" in result.stdout
 
     def test_list_labels_help(self):
         """Test that list labels subcommand has help."""
         result = runner.invoke(app, ["labels", "--help"])
-        
+
         assert result.exit_code == 0
         assert "List all labels" in result.stdout

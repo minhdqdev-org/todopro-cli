@@ -26,12 +26,12 @@ class KeyboardHandler:
     def get_key(self) -> Optional[str]:
         """
         Get a single keypress without blocking.
-        
+
         Returns the key character or None if no key pressed.
         """
         try:
             import select
-            
+
             # Check if input is available (non-blocking)
             if select.select([sys.stdin], [], [], 0)[0]:
                 key = sys.stdin.read(1)
@@ -57,6 +57,7 @@ class WindowsKeyboardHandler:
     def __init__(self):
         try:
             import msvcrt
+
             self.msvcrt = msvcrt
         except ImportError:
             self.msvcrt = None
@@ -65,11 +66,11 @@ class WindowsKeyboardHandler:
         """Get key on Windows."""
         if not self.msvcrt:
             return None
-        
+
         if self.msvcrt.kbhit():
             key = self.msvcrt.getch()
             if isinstance(key, bytes):
-                key = key.decode('utf-8', errors='ignore')
+                key = key.decode("utf-8", errors="ignore")
             return key.lower()
         return None
 

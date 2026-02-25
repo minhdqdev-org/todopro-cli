@@ -1,7 +1,7 @@
 """Services module for TodoPro CLI - Business logic layer."""
 
-from .context_service import ContextService
 from .label_service import LabelService
+from .location_context_service import LocationContextService
 from .project_service import ProjectService
 from .sync_conflicts import SyncConflict, SyncConflictTracker
 from .sync_service import (
@@ -16,7 +16,7 @@ __all__ = [
     "TaskService",
     "ProjectService",
     "LabelService",
-    "ContextService",
+    "LocationContextService",
     "SyncPullService",
     "SyncPushService",
     "SyncResult",

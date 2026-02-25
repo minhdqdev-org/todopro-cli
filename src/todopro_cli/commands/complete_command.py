@@ -5,8 +5,7 @@ from typing import Annotated
 import typer
 
 from todopro_cli.services.cache_service import get_background_cache
-from todopro_cli.services.context_manager import get_strategy_context
-from todopro_cli.services.task_service import TaskService
+from todopro_cli.services.task_service import get_task_service
 from todopro_cli.utils.background import run_in_background
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.ui.console import get_console
@@ -41,9 +40,7 @@ async def complete_command(
     if json_opt:
         output = "json"
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
-    task_service = TaskService(task_repo)
+    task_service = get_task_service()
 
     # For local context, background mode uses the remote API which doesn't apply.
     # Always use sync mode so the local SQLite DB is updated directly.

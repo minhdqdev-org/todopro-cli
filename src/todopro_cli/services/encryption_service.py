@@ -6,13 +6,10 @@ Provides E2EE setup, key management, and encryption/decryption operations.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from todopro_cli.models.crypto.cipher import EncryptedData
 from todopro_cli.models.crypto.exceptions import (
-    DecryptionError,
     InvalidRecoveryPhraseError,
-    TodoProCryptoError,
 )
 from todopro_cli.models.crypto.manager import EncryptionManager
 from todopro_cli.models.crypto.storage import KeyStorage
@@ -24,9 +21,9 @@ class EncryptionStatus:
 
     enabled: bool
     key_file_exists: bool
-    key_file_path: Optional[str]
+    key_file_path: str | None
     key_valid: bool
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class EncryptionService:
@@ -45,7 +42,7 @@ class EncryptionService:
     - EncryptionManager for crypto operations
     """
 
-    def __init__(self, config_dir: Optional[Path] = None):
+    def __init__(self, config_dir: Path | None = None):
         """
         Initialize encryption service.
 
@@ -59,7 +56,7 @@ class EncryptionService:
 
         self.config_dir = config_dir
         self.storage = KeyStorage(config_dir)
-        self._manager: Optional[EncryptionManager] = None
+        self._manager: EncryptionManager | None = None
 
     def _get_manager(self) -> EncryptionManager:
         """
@@ -266,7 +263,9 @@ class EncryptionService:
         manager = self._get_manager()
         return manager.decrypt_dict(encrypted_data)
 
-    def rotate_key(self, old_password: Optional[str] = None) -> tuple[EncryptionManager, str]:
+    def rotate_key(
+        self, old_password: str | None = None
+    ) -> tuple[EncryptionManager, str]:
         """
         Rotate encryption key (generate new key).
 
@@ -317,3 +316,8 @@ class EncryptionService:
         - Return restored EncryptionManager
         """
         raise NotImplementedError("Server restore not yet implemented")
+
+
+def get_encryption_service() -> EncryptionService:
+    """Factory function to get EncryptionService instance."""
+    return EncryptionService()

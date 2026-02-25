@@ -12,8 +12,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from todopro_cli.models import (
-    Context,
-    ContextCreate,
     Label,
     LabelCreate,
     Project,
@@ -404,7 +402,7 @@ class LabelRepository(ABC):
         )
 
 
-class ContextRepository(ABC):
+class LocationContextRepository(ABC):
     """Abstract base class for context (location) persistence operations.
 
     This interface defines CRUD operations plus geofencing functionality.
@@ -421,7 +419,7 @@ class ContextRepository(ABC):
             NotImplementedError: Must be implemented by concrete adapter
         """
         raise NotImplementedError(
-            "ContextRepository.list_all() must be implemented by adapter"
+            "LocationContextRepository.list_all() must be implemented by adapter"
         )
 
     @abstractmethod
@@ -439,7 +437,7 @@ class ContextRepository(ABC):
             NotFoundError: If context does not exist
         """
         raise NotImplementedError(
-            "ContextRepository.get() must be implemented by adapter"
+            "LocationContextRepository.get() must be implemented by adapter"
         )
 
     @abstractmethod
@@ -457,7 +455,7 @@ class ContextRepository(ABC):
             ValidationError: If context data is invalid
         """
         raise NotImplementedError(
-            "ContextRepository.create() must be implemented by adapter"
+            "LocationContextRepository.create() must be implemented by adapter"
         )
 
     @abstractmethod
@@ -475,7 +473,7 @@ class ContextRepository(ABC):
             NotFoundError: If context does not exist
         """
         raise NotImplementedError(
-            "ContextRepository.delete() must be implemented by adapter"
+            "LocationContextRepository.delete() must be implemented by adapter"
         )
 
     @abstractmethod
@@ -496,5 +494,5 @@ class ContextRepository(ABC):
             NotImplementedError: Must be implemented by concrete adapter
         """
         raise NotImplementedError(
-            "ContextRepository.get_available() must be implemented by adapter"
+            "LocationContextRepository.get_available() must be implemented by adapter"
         )

@@ -16,6 +16,7 @@ This migration creates all initial tables for the TodoPro local vault:
 import sqlite3
 
 from todopro_cli.adapters.sqlite import schema
+
 from .runner import Migration
 
 

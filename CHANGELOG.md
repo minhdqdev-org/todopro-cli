@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.0.0] - 2026-02-24 (MVP4 Release — Ramble)
+
+**Ramble: voice-to-tasks is here.** 🎙️
+
+### 🆕 Added
+
+**Ramble (Voice-to-Tasks):**
+- ✅ `todopro ramble` — new top-level command for voice-driven task capture
+- ✅ `--text TEXT` flag — text mode (bypass microphone for testing or SSH use)
+- ✅ `--duration N` flag — batch record for N seconds
+- ✅ `--project NAME` flag — default project for created tasks
+- ✅ `--dry-run` flag — preview parsed tasks without creating them
+- ✅ `--stt PROVIDER` flag — choose STT provider (whisper/gemini/deepgram)
+- ✅ `--llm PROVIDER` flag — choose LLM provider (gemini/openai)
+- ✅ `--language CODE` flag — language hint for STT
+- ✅ `todopro ramble history` — view past Ramble session history
+- ✅ `todopro ramble usage` — view daily usage stats and limits
+- ✅ `todopro ramble config` — view and update Ramble configuration
+
+**Audio Services:**
+- ✅ `services/audio/recorder.py` — microphone capture (requires `sounddevice`/`numpy`)
+- ✅ `services/audio/local_stt.py` — local Whisper STT (requires `faster-whisper`)
+- ✅ Graceful degradation when audio packages not installed
+
+**GitHub + Google Calendar Integrations (MVP3):**
+- ✅ `todopro calendar connect/disconnect/status` — OAuth connect to Google Calendar
+- ✅ `todopro calendar list/set/push/pull/sync` — bidirectional calendar sync
+- ✅ `todopro calendar configure/describe` — integration configuration
+
+---
+
 ## [1.0.0] - 2026-02-18 (MVP1 Release)
 
 **TodoPro MVP1 is production-ready!** 🎉

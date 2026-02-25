@@ -6,14 +6,14 @@ This package contains concrete implementations (adapters) for the repository int
 """
 
 from .rest_api import (
-    RestApiContextRepository,
     RestApiLabelRepository,
+    RestApiLocationContextRepository,
     RestApiProjectRepository,
     RestApiTaskRepository,
 )
 from .sqlite import (
-    SqliteContextRepository,
     SqliteLabelRepository,
+    SqliteLocationContextRepository,
     SqliteProjectRepository,
     SqliteTaskRepository,
 )
@@ -23,11 +23,10 @@ __all__ = [
     "SqliteTaskRepository",
     "SqliteProjectRepository",
     "SqliteLabelRepository",
-    "SqliteContextRepository",
+    "SqliteLocationContextRepository",
     # REST API adapters
     "RestApiTaskRepository",
     "RestApiProjectRepository",
     "RestApiLabelRepository",
-    "RestApiContextRepository",
+    "RestApiLocationContextRepository",
 ]
-

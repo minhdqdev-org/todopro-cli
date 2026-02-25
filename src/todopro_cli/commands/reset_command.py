@@ -1,16 +1,17 @@
 """Reset command - Reset configuration and goals."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
+from todopro_cli.services.config_service import get_config_service
+from todopro_cli.services.goal_service import get_goal_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Reset configuration and goals")
-console = Console()
+console = get_console()
 
 
 @app.command("config")
@@ -19,15 +20,13 @@ async def reset_config(
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ) -> None:
     """Reset configuration to defaults."""
-    from todopro_cli.services.config_service import ConfigService
 
     if not force:
         confirm = typer.confirm("Reset all configuration to defaults?")
         if not confirm:
             raise typer.Exit(0)
 
-    config_service = ConfigService()
-    config_service.reset()
+    get_config_service().reset_config()
     format_success("Configuration reset to defaults")
 
 
@@ -36,17 +35,12 @@ async def reset_config(
 async def reset_goals(
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ) -> None:
-    """Reset all focus goals."""
-    from todopro_cli.services.focus_service import FocusService
+    """Reset all focus goals to defaults."""
 
     if not force:
         confirm = typer.confirm("Reset all goals?")
         if not confirm:
             raise typer.Exit(0)
 
-    strategy = get_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
-    service = FocusService(focus_repo)
-
-    await service.reset_goals()
+    get_goal_service().reset_goals()
     format_success("All goals reset")

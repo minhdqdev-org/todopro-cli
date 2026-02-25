@@ -7,7 +7,6 @@ import difflib
 import typer
 from rich.table import Table
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.task_helpers import resolve_task_id
@@ -19,14 +18,14 @@ from .decorators import command_wrapper
 app = typer.Typer()
 console = get_console()
 
-_PRIORITY_NAMES = {1: "Low", 2: "Medium", 3: "High", 4: "Urgent"}
+_PRIORITY_NAMES = {1: "Urgent", 2: "High", 3: "Medium", 4: "Normal"}
 
 
 async def _resolve_project_name(project_input: str, strategy) -> str:
     """Resolve a project name or ID to a project ID using fuzzy matching."""
     from todopro_cli.utils.uuid_utils import is_full_uuid, resolve_project_uuid
 
-    project_repo = strategy.project_repository
+    project_repo = storage_strategy_context.project_repository
     # If it looks like a UUID prefix, resolve directly
     if is_full_uuid(project_input) or len(project_input) >= 8 and "-" in project_input:
         return await resolve_project_uuid(project_input, project_repo)
@@ -141,8 +140,8 @@ async def edit_command(
     if json_opt:
         output = "json"
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     resolved_id = await resolve_task_id(task_service, task_id)
@@ -164,7 +163,7 @@ async def edit_command(
             new_project = await _resolve_project_name(project, strategy)
     else:
         # Look up current project name for display
-        project_repo = strategy.project_repository
+        project_repo = storage_strategy_context.project_repository
         project_service = ProjectService(project_repo)
         current_project_display = task.project_id or "(none)"
         if task.project_id:

@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from todopro_cli.services.api.client import APIClient
-from todopro_cli.services.context_manager import get_context_manager
 
 from .analytics import FocusAnalytics
 from .history import HistoryLogger
@@ -18,7 +17,7 @@ class TaskSuggestionEngine:
         """Initialize suggestion engine."""
         self.api = APIClient()
         self.analytics = FocusAnalytics()
-        self.context_manager = get_context_manager(profile)
+        self.context_manager = get_config_service()
         self.config = self.context_manager.load_config()
 
     def _get_priority_score(self, task: dict[str, Any]) -> int:
@@ -35,7 +34,10 @@ class TaskSuggestionEngine:
 
         try:
             due_date = datetime.fromisoformat(due_date_str.replace("Z", "+00:00"))
-            now = datetime.now().astimezone()
+            now = datetime.now()
+            # Handle timezone-aware due dates
+            if due_date.tzinfo is not None:
+                now = now.astimezone()
             days_until_due = (due_date - now).days
 
             if days_until_due < 0:

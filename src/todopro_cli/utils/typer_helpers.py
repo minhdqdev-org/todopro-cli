@@ -3,7 +3,6 @@
 from difflib import get_close_matches
 
 import typer
-from rich.console import Console
 from typer.core import TyperGroup
 
 
@@ -30,7 +29,7 @@ class SuggestingGroup(TyperGroup):
                 )
 
                 if suggestions:
-                    console = Console()
+                    console = get_console()
                     console.print(
                         f'[red]Error:[/red] unknown command "{attempted}" for "{ctx.info_name}"'
                     )

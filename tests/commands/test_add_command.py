@@ -3,11 +3,10 @@
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.add_command import app
-from todopro_cli.models import Task, Project
+from todopro_cli.models import Project, Task
 
 runner = CliRunner()
 
@@ -60,8 +59,8 @@ def _make_strategy(task_add_result=None, projects=None):
     proj_repo = MagicMock()
     proj_repo.list_all = AsyncMock(return_value=projects or [INBOX_PROJECT])
     strategy = MagicMock()
-    strategy.task_repository = task_repo
-    strategy.project_repository = proj_repo
+    storage_strategy_context.task_repository = task_repo
+    storage_strategy_context.project_repository = proj_repo
     return strategy
 
 
@@ -73,8 +72,16 @@ class TestAddOutputFlags:
             strategy = _make_strategy()
         if config is None:
             config = _make_config_with_local_context()
-        with patch("todopro_cli.commands.add_command.get_config_service", return_value=config), \
-             patch("todopro_cli.commands.add_command.get_strategy_context", return_value=strategy):
+        with (
+            patch(
+                "todopro_cli.commands.add_command.get_config_service",
+                return_value=config,
+            ),
+            patch(
+                "todopro_cli.commands.add_command.get_strategy_context",
+                return_value=strategy,
+            ),
+        ):
             return runner.invoke(app, args)
 
     def test_add_json_flag(self):
@@ -113,12 +120,19 @@ class TestAddProjectFlag:
         proj_repo.list_all = AsyncMock(return_value=[INBOX_PROJECT, ROUTINES_PROJECT])
         proj_repo.get = AsyncMock(return_value=ROUTINES_PROJECT)
         strategy = MagicMock()
-        strategy.task_repository = task_repo
-        strategy.project_repository = proj_repo
+        storage_strategy_context.task_repository = task_repo
+        storage_strategy_context.project_repository = proj_repo
 
-        with patch("todopro_cli.commands.add_command.get_config_service",
-                   return_value=_make_config_with_local_context()), \
-             patch("todopro_cli.commands.add_command.get_strategy_context", return_value=strategy):
+        with (
+            patch(
+                "todopro_cli.commands.add_command.get_config_service",
+                return_value=_make_config_with_local_context(),
+            ),
+            patch(
+                "todopro_cli.commands.add_command.get_strategy_context",
+                return_value=strategy,
+            ),
+        ):
             result = runner.invoke(app, ["Meet Hung #Inbox", "--project", "Routines"])
 
         assert result.exit_code == 0, result.output
@@ -137,12 +151,19 @@ class TestAddProjectFlag:
         proj_repo = MagicMock()
         proj_repo.list_all = AsyncMock(return_value=[INBOX_PROJECT])
         strategy = MagicMock()
-        strategy.task_repository = task_repo
-        strategy.project_repository = proj_repo
+        storage_strategy_context.task_repository = task_repo
+        storage_strategy_context.project_repository = proj_repo
 
-        with patch("todopro_cli.commands.add_command.get_config_service",
-                   return_value=_make_config_with_local_context()), \
-             patch("todopro_cli.commands.add_command.get_strategy_context", return_value=strategy):
+        with (
+            patch(
+                "todopro_cli.commands.add_command.get_config_service",
+                return_value=_make_config_with_local_context(),
+            ),
+            patch(
+                "todopro_cli.commands.add_command.get_strategy_context",
+                return_value=strategy,
+            ),
+        ):
             result = runner.invoke(app, ["Meet Hung #Inbox"])
 
         assert result.exit_code == 0, result.output
@@ -155,7 +176,6 @@ class TestListContextJson:
     def test_list_contexts_json(self):
         """--json flag outputs JSON with contexts array."""
         from todopro_cli.commands.list_command import app as list_app
-        from todopro_cli.services.config_service import get_config_service
 
         mock_ctx = MagicMock()
         mock_ctx.name = "local"
@@ -167,13 +187,26 @@ class TestListContextJson:
         mock_config.list_contexts.return_value = [mock_ctx]
         mock_config.get_current_context.return_value = mock_ctx
 
-        with patch("todopro_cli.services.config_service.get_config_service", return_value=mock_config), \
-             patch("todopro_cli.commands.list_command.get_config_service", return_value=mock_config, create=True):
+        with (
+            patch(
+                "todopro_cli.services.config_service.get_config_service",
+                return_value=mock_config,
+            ),
+            patch(
+                "todopro_cli.commands.list_command.get_config_service",
+                return_value=mock_config,
+                create=True,
+            ),
+        ):
             # Patch the import inside the function
-            with patch("todopro_cli.commands.list_command.list_contexts.__wrapped__", create=True):
+            with patch(
+                "todopro_cli.commands.list_command.list_contexts.__wrapped__",
+                create=True,
+            ):
                 pass
-            result = runner.invoke(list_app, ["contexts", "--json"],
-                                   catch_exceptions=False)
+            result = runner.invoke(
+                list_app, ["contexts", "--json"], catch_exceptions=False
+            )
 
         # Just verify JSON structure is present in output
         assert result.exit_code == 0 or '"contexts"' in result.output
@@ -181,6 +214,7 @@ class TestListContextJson:
     def test_list_contexts_limit_flag_exists(self):
         """--limit N flag is accepted by contexts command."""
         from todopro_cli.commands.list_command import app as list_app
+
         result = runner.invoke(list_app, ["contexts", "--help"])
         assert "--limit" in result.output or "-n" in result.output
 
@@ -192,14 +226,19 @@ class TestCreateProjectSimpleOutput:
         """create project shows name in success message, not full table."""
         mock_project = ROUTINES_PROJECT.model_copy()
 
-        with patch("todopro_cli.commands.create_command.get_strategy_context") as mock_ctx, \
-             patch("todopro_cli.commands.create_command.ProjectService") as mock_svc_cls:
+        with (
+            patch(
+                "todopro_cli.commands.create_command.get_strategy_context"
+            ) as mock_ctx,
+            patch("todopro_cli.commands.create_command.ProjectService") as mock_svc_cls,
+        ):
             mock_svc = MagicMock()
             mock_svc.create_project = AsyncMock(return_value=mock_project)
             mock_svc_cls.return_value = mock_svc
             mock_ctx.return_value.project_repository = MagicMock()
 
             from todopro_cli.commands.create_command import app as create_app
+
             result = runner.invoke(create_app, ["project", "Routines"])
 
         assert result.exit_code == 0, result.output
@@ -211,16 +250,20 @@ class TestCreateProjectSimpleOutput:
         """--json flag outputs JSON project."""
         mock_project = ROUTINES_PROJECT.model_copy()
 
-        with patch("todopro_cli.commands.create_command.get_strategy_context") as mock_ctx, \
-             patch("todopro_cli.commands.create_command.ProjectService") as mock_svc_cls:
+        with (
+            patch(
+                "todopro_cli.commands.create_command.get_strategy_context"
+            ) as mock_ctx,
+            patch("todopro_cli.commands.create_command.ProjectService") as mock_svc_cls,
+        ):
             mock_svc = MagicMock()
             mock_svc.create_project = AsyncMock(return_value=mock_project)
             mock_svc_cls.return_value = mock_svc
             mock_ctx.return_value.project_repository = MagicMock()
 
             from todopro_cli.commands.create_command import app as create_app
+
             result = runner.invoke(create_app, ["project", "Routines", "--json"])
 
         assert result.exit_code == 0, result.output
         assert '"project"' in result.output
-

@@ -22,7 +22,9 @@ class E2EEHandler:
             encryption_service: Optional encryption service. If None, E2EE is disabled.
         """
         self.encryption_service = encryption_service
-        self.enabled = encryption_service is not None and encryption_service.is_enabled()
+        self.enabled = (
+            encryption_service is not None and encryption_service.is_enabled()
+        )
 
     def encrypt_content(self, plaintext: str) -> str:
         """Encrypt plaintext content.

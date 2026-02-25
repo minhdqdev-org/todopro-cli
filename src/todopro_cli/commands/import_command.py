@@ -1,16 +1,14 @@
 """Import command - Import data."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
-
+from todopro_cli.utils.ui.console import get_console
 app = typer.Typer(cls=SuggestingGroup, help="Import data")
-console = Console()
+console = get_console()
 
 
 @app.command("data")
@@ -22,7 +20,7 @@ async def import_data(
     """Import data from JSON file."""
     from todopro_cli.services.data_service import DataService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     data_service = DataService(factory)
 
     await data_service.import_data(input_file, merge=merge)

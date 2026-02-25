@@ -86,12 +86,12 @@ class FocusAnalytics:
             "total_focus_minutes": total_focus_minutes,
             "break_minutes": break_minutes,
             "tasks_completed": tasks_completed,
-            "most_focused_context": most_focused_context[0]
-            if most_focused_context
-            else None,
-            "most_focused_sessions": most_focused_context[1]
-            if most_focused_context
-            else 0,
+            "most_focused_context": (
+                most_focused_context[0] if most_focused_context else None
+            ),
+            "most_focused_sessions": (
+                most_focused_context[1] if most_focused_context else 0
+            ),
             "sessions": sessions,
         }
 
@@ -264,15 +264,15 @@ class FocusAnalytics:
 
             comparison = {
                 "sessions_change_pct": (
-                    (total_sessions - prev_total) / prev_total * 100
-                )
-                if prev_total > 0
-                else 0,
+                    ((total_sessions - prev_total) / prev_total * 100)
+                    if prev_total > 0
+                    else 0
+                ),
                 "minutes_change_pct": (
-                    (total_focus_minutes - prev_minutes) / prev_minutes * 100
-                )
-                if prev_minutes > 0
-                else 0,
+                    ((total_focus_minutes - prev_minutes) / prev_minutes * 100)
+                    if prev_minutes > 0
+                    else 0
+                ),
                 "completion_rate_change_pct": completion_rate - prev_completion_rate,
             }
 
@@ -298,14 +298,12 @@ class FocusAnalytics:
             Dict with current_streak, longest_streak, and metadata
         """
         # Get all sessions ordered by date
-        sessions = self._query(
-            """
+        sessions = self._query("""
             SELECT DISTINCT DATE(start_time) as session_date
             FROM pomodoro_sessions
             WHERE status = 'completed'
             ORDER BY session_date DESC
-            """
-        )
+            """)
 
         if not sessions:
             return {
@@ -361,9 +359,9 @@ class FocusAnalytics:
         return {
             "current_streak": current_streak,
             "longest_streak": longest_streak,
-            "longest_streak_start": longest_start.isoformat()
-            if longest_start
-            else None,
+            "longest_streak_start": (
+                longest_start.isoformat() if longest_start else None
+            ),
             "longest_streak_end": longest_end.isoformat() if longest_end else None,
         }
 

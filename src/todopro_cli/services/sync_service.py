@@ -11,12 +11,6 @@ from typing import Any, Literal
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from todopro_cli.repositories import (
-    ContextRepository,
-    LabelRepository,
-    ProjectRepository,
-    TaskRepository,
-)
 from todopro_cli.models import (
     Label,
     LabelCreate,
@@ -26,6 +20,12 @@ from todopro_cli.models import (
     ProjectUpdate,
     Task,
     TaskFilters,
+)
+from todopro_cli.repositories import (
+    LabelRepository,
+    LocationContextRepository,
+    ProjectRepository,
+    TaskRepository,
 )
 from todopro_cli.services.sync_conflicts import SyncConflict, SyncConflictTracker
 from todopro_cli.services.sync_state import SyncState
@@ -70,11 +70,11 @@ class SyncService:
         source_task_repo: TaskRepository,
         source_project_repo: ProjectRepository,
         source_label_repo: LabelRepository,
-        source_context_repo: ContextRepository,
+        source_context_repo: LocationContextRepository,
         target_task_repo: TaskRepository,
         target_project_repo: ProjectRepository,
         target_label_repo: LabelRepository,
-        target_context_repo: ContextRepository,
+        target_context_repo: LocationContextRepository,
         console: Console | None = None,
     ):
         """Initialize sync service.
@@ -259,6 +259,7 @@ class SyncPullService(SyncService):
 
         except Exception as e:
             import traceback
+
             result.success = False
             result.error = f"{type(e).__name__}: {str(e)}\n\nTraceback:\n{''.join(traceback.format_tb(e.__traceback__))}"
             result.duration = (datetime.now() - start_time).total_seconds()
@@ -340,7 +341,6 @@ class SyncPullService(SyncService):
             existing = await self.target_task_repo.get_by_id(task.id)
 
             if existing is None:
-
                 await self.target_task_repo.create(
                     TaskCreate(
                         id=task.id,
@@ -360,7 +360,6 @@ class SyncPullService(SyncService):
                 )
 
                 if should_update:
-
                     await self.target_task_repo.update(
                         task.id,
                         TaskUpdate(
@@ -475,6 +474,7 @@ class SyncPushService(SyncService):
 
         except Exception as e:
             import traceback
+
             result.success = False
             result.error = f"{type(e).__name__}: {str(e)}\n\nTraceback:\n{''.join(traceback.format_tb(e.__traceback__))}"
             result.duration = (datetime.now() - start_time).total_seconds()
@@ -489,7 +489,6 @@ class SyncPushService(SyncService):
             existing = await self.target_project_repo.get_by_id(project.id)
 
             if existing is None:
-
                 await self.target_project_repo.create(
                     ProjectCreate(
                         id=project.id,
@@ -505,7 +504,6 @@ class SyncPushService(SyncService):
                 )
 
                 if should_update:
-
                     await self.target_project_repo.update(
                         project.id,
                         ProjectUpdate(
@@ -529,7 +527,6 @@ class SyncPushService(SyncService):
             existing = await self.target_label_repo.get_by_id(label.id)
 
             if existing is None:
-
                 await self.target_label_repo.create(
                     LabelCreate(id=label.id, name=label.name, color=label.color)
                 )
@@ -546,7 +543,6 @@ class SyncPushService(SyncService):
             existing = await self.target_task_repo.get_by_id(task.id)
 
             if existing is None:
-
                 await self.target_task_repo.create(
                     TaskCreate(
                         id=task.id,
@@ -566,7 +562,6 @@ class SyncPushService(SyncService):
                 )
 
                 if should_update:
-
                     await self.target_task_repo.update(
                         task.id,
                         TaskUpdate(

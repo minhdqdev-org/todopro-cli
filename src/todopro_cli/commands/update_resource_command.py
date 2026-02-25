@@ -1,20 +1,19 @@
 """Update resources command - Update existing resources."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.services.label_service import LabelService
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Update resources")
-console = Console()
+console = get_console()
 
 
 @app.command("task")
@@ -29,8 +28,8 @@ async def update_task(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a task."""
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     if not any([content, description, project, due, priority is not None]):
@@ -63,8 +62,8 @@ async def update_project(
         format_error("No updates specified")
         raise typer.Exit(1)
 
-    strategy = get_strategy_context()
-    project_repo = strategy.project_repository
+    storage_strategy_context = get_storage_strategy_context()
+    project_repo = storage_strategy_context.project_repository
     project_service = ProjectService(project_repo)
 
     project = await project_service.update_project(project_id, name=name, color=color)
@@ -85,8 +84,8 @@ async def update_label(
         format_error("No updates specified")
         raise typer.Exit(1)
 
-    strategy = get_strategy_context()
-    label_repo = strategy.label_repository
+    storage_strategy_context = get_storage_strategy_context()
+    label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
     label = await label_service.update_label(label_id, name=name, color=color)

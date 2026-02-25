@@ -1,16 +1,14 @@
 """Show command - Show information (stats, goals, analytics, etc.)."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.formatters import format_output
 
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Show information")
-console = Console()
+console = get_console()
 
 
 @app.command("stats-today")
@@ -21,7 +19,7 @@ async def show_stats_today(
     """Show today's focus statistics."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -37,7 +35,7 @@ async def show_stats_week(
     """Show this week's focus statistics."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -53,7 +51,7 @@ async def show_stats_month(
     """Show this month's focus statistics."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -69,7 +67,7 @@ async def show_streak(
     """Show current focus streak."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -85,8 +83,8 @@ async def show_score(
     """Show productivity score."""
     from todopro_cli.services.analytics_service import AnalyticsService
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     service = AnalyticsService(task_repo)
 
     score = await service.get_score()
@@ -101,7 +99,7 @@ async def show_goals(
     """Show focus goals."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -117,8 +115,8 @@ async def show_analytics(
     """Show productivity analytics."""
     from todopro_cli.services.analytics_service import AnalyticsService
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     service = AnalyticsService(task_repo)
 
     analytics = await service.get_analytics()
@@ -133,8 +131,8 @@ async def show_streaks(
     """Show productivity streaks."""
     from todopro_cli.services.analytics_service import AnalyticsService
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     service = AnalyticsService(task_repo)
 
     streaks = await service.get_streaks()
@@ -149,7 +147,7 @@ async def show_heatmap(
     """Show activity heatmap."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -165,7 +163,7 @@ async def show_quality(
     """Show focus session quality metrics."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -208,7 +206,7 @@ async def show_timer_history(
     """Show timer session history."""
     from todopro_cli.services.timer_service import TimerService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     timer_repo = factory.get_timer_repository()
     service = TimerService(timer_repo)
 
@@ -224,7 +222,7 @@ async def show_timer_stats(
     """Show timer statistics."""
     from todopro_cli.services.timer_service import TimerService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     timer_repo = factory.get_timer_repository()
     service = TimerService(timer_repo)
 
@@ -241,7 +239,7 @@ async def show_project_stats(
     """Show statistics for a specific project."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -257,7 +255,7 @@ async def show_achievement_stats(
     """Show achievement statistics."""
     from todopro_cli.services.achievement_service import AchievementService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     repo = factory.get_achievement_repository()
     service = AchievementService(repo)
 

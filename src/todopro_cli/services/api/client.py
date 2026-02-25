@@ -4,7 +4,6 @@ import asyncio
 from typing import Any
 
 import httpx
-from rich.console import Console
 
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.ui.console import get_console
@@ -16,7 +15,7 @@ console = get_console()
 class APIClient:
     """HTTP client for TodoPro API."""
 
-    def __init__(self, profile: str = "default"):
+    def __init__(self):
         self.config_manager = get_config_service()
         self.config = self.config_manager.config
         # Use dynamic backend URL with fallback to config
@@ -168,7 +167,7 @@ class APIClient:
                         if not credentials or "refresh_token" not in credentials:
                             # No refresh token available
 
-                            rich_console = Console()
+                            rich_console = get_console()
                             rich_console.print(
                                 "\n[yellow]⚠ Your session has expired and no refresh token is available.[/yellow]"
                             )
@@ -223,6 +222,6 @@ class APIClient:
         return await self.request("DELETE", path)
 
 
-def get_client(profile: str = "default") -> APIClient:
+def get_client() -> APIClient:
     """Get an API client instance."""
-    return APIClient(profile)
+    return APIClient()

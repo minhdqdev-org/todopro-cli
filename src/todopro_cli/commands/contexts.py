@@ -1,14 +1,14 @@
 """Context management commands for TodoPro CLI."""
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
 from todopro_cli.services.api.client import APIClient
+from todopro_cli.utils.ui.console import get_console
 
 from .utils import handle_api_error
 
-console = Console()
+console = get_console()
 app = typer.Typer(help="Manage task contexts (@home, @office, @errands)")
 
 

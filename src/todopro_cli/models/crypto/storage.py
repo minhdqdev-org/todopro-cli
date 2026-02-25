@@ -41,7 +41,9 @@ class KeyStorage:
             FileNotFoundError: If key file doesn't exist
         """
         if not self.key_file.exists():
-            raise FileNotFoundError("No encryption key found. Run 'todopro encryption setup' first.")
+            raise FileNotFoundError(
+                "No encryption key found. Run 'todopro encryption setup' first."
+            )
         return self.key_file.read_text().strip()
 
     def has_key(self) -> bool:

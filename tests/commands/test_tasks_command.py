@@ -1,4 +1,5 @@
 """Unit tests for tasks command."""
+
 # pylint: disable=redefined-outer-name
 
 import tempfile

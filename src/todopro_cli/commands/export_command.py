@@ -1,16 +1,14 @@
 """Export command - Export data and analytics."""
 
 import typer
-from rich.console import Console
 
-from todopro_cli.services.context_manager import get_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
-
+from todopro_cli.utils.ui.console import get_console
 app = typer.Typer(cls=SuggestingGroup, help="Export data")
-console = Console()
+console = get_console()
 
 
 @app.command("data")
@@ -22,7 +20,7 @@ async def export_data(
     """Export all data to JSON file."""
     from todopro_cli.services.data_service import DataService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     data_service = DataService(factory)
 
     await data_service.export_data(output_file, compress=compress)
@@ -37,7 +35,7 @@ async def export_stats(
     """Export focus statistics to file."""
     from todopro_cli.services.focus_service import FocusService
 
-    strategy = get_strategy_context()
+    storage_strategy_context = get_storage_strategy_context()
     focus_repo = factory.get_focus_session_repository()
     service = FocusService(focus_repo)
 
@@ -53,8 +51,8 @@ async def export_analytics(
     """Export productivity analytics to file."""
     from todopro_cli.services.analytics_service import AnalyticsService
 
-    strategy = get_strategy_context()
-    task_repo = strategy.task_repository
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = strategy_context.task_repository
     service = AnalyticsService(task_repo)
 
     await service.export_analytics(output_file)

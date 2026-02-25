@@ -8,8 +8,8 @@ from typing import Any
 from todopro_cli.adapters.sqlite.connection import get_connection
 from todopro_cli.adapters.sqlite.user_manager import get_or_create_local_user
 from todopro_cli.adapters.sqlite.utils import generate_uuid, now_iso, row_to_dict
-from todopro_cli.repositories import ProjectRepository
 from todopro_cli.models import Project, ProjectCreate, ProjectFilters, ProjectUpdate
+from todopro_cli.repositories import ProjectRepository
 
 INBOX_PROJECT_ID = "00000000-0000-0000-0000-000000000000"
 
@@ -122,10 +122,10 @@ class SqliteProjectRepository(ProjectRepository):
 
         return Project(**row_to_dict(row))
 
-
     async def get_by_id(self, id: str):
         """Alias for get() method for compatibility."""
         return await self.get(id)
+
     async def create(self, project_data: ProjectCreate) -> Project:
         """Create a new project."""
         user_id = self._get_user_id()
@@ -190,7 +190,9 @@ class SqliteProjectRepository(ProjectRepository):
             if existing:
                 existing_name = existing[0]
                 if existing_name == update_dict["name"]:
-                    raise ValueError(f"A project named '{update_dict['name']}' already exists")
+                    raise ValueError(
+                        f"A project named '{update_dict['name']}' already exists"
+                    )
                 raise ValueError(
                     f"A project named '{existing_name}' already exists (project names are case-insensitive)"
                 )

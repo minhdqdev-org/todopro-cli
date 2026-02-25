@@ -4,17 +4,17 @@ import asyncio
 import json
 
 import typer
-from rich.console import Console
 from rich.prompt import Prompt
 
 from todopro_cli.services.api.auth import AuthAPI
 from todopro_cli.services.api.client import get_client
-from todopro_cli.services.context_manager import get_context_manager
+from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_error, format_success
 
 app = typer.Typer(cls=SuggestingGroup, help="Authentication commands")
-console = Console()
+console = get_console()
 
 
 @app.command()
@@ -28,11 +28,11 @@ def login(
 ) -> None:
     """Login to TodoPro."""
     try:
-        # Get config manager
-        config_manager = get_context_manager()
+        # Get config service
+        config_service = get_config_service()
 
         # Require remote context
-        current_context = config_manager.get_current_context()
+        current_context = config_service.get_current_context()
         if current_context and current_context.type != "remote":
             format_error(
                 f"Login is only available for remote contexts. "
@@ -45,7 +45,7 @@ def login(
 
         # Update endpoint if provided
         if endpoint:
-            config_manager.set("api.endpoint", endpoint)
+            config_service.set("api.endpoint", endpoint)
 
         # Prompt for credentials if not provided
         if not email:
@@ -74,7 +74,7 @@ def login(
                     raise typer.Exit(1)
 
                 # Save credentials for current context
-                config_manager.save_credentials(token, refresh_token, context_name)
+                config_service.save_credentials(token, refresh_token, context_name)
 
                 # Get user profile
                 user = await auth_api.get_profile()
@@ -110,11 +110,11 @@ def signup(
 ) -> None:
     """Create a new TodoPro account."""
     try:
-        # Get config manager
-        config_manager = get_context_manager()
+        # Get config service
+        config_service = get_config_service()
 
         # Require remote context
-        current_context = config_manager.get_current_context()
+        current_context = config_service.get_current_context()
         if current_context and current_context.type != "remote":
             format_error(
                 f"Signup is only available for remote contexts. "
@@ -127,7 +127,7 @@ def signup(
 
         # Update endpoint if provided
         if endpoint:
-            config_manager.set("api.endpoint", endpoint)
+            config_service.set("api.endpoint", endpoint)
 
         # Prompt for credentials if not provided
         if not email:
@@ -188,7 +188,7 @@ def signup(
                     refresh_token = login_result.get("refresh_token")
 
                     if token:
-                        config_manager.save_credentials(
+                        config_service.save_credentials(
                             token, refresh_token, context_name
                         )
                         format_success(f"Logged in as {user_email}")
@@ -221,10 +221,10 @@ def logout(
 ) -> None:
     """Logout from TodoPro."""
     try:
-        config_manager = get_context_manager()
+        config_service = get_config_service()
 
         # Require remote context
-        current_context = config_manager.get_current_context()
+        current_context = config_service.get_current_context()
         if current_context and current_context.type != "remote":
             format_error(
                 f"Logout is only available for remote contexts. "
@@ -234,9 +234,9 @@ def logout(
             raise typer.Exit(1)
 
         if all_profiles:
-            contexts = config_manager.list_contexts()
+            contexts = config_service.list_contexts()
             for ctx in contexts:
-                config_manager.clear_credentials(ctx.name)
+                config_service.clear_credentials(ctx.name)
             format_success("Logged out from all contexts")
         else:
             # Try to logout from server
@@ -255,7 +255,7 @@ def logout(
 
             # Clear local credentials
             context_name = current_context.name if current_context else "default"
-            config_manager.clear_credentials()
+            config_service.clear_credentials()
             format_success(f"Logged out from context '{context_name}'")
 
     except typer.Exit:
@@ -273,10 +273,10 @@ def timezone(
 ) -> None:
     """Get or set user timezone."""
     try:
-        config_manager = get_context_manager()
+        config_service = get_config_service()
 
         # Check if logged in
-        credentials = config_manager.load_credentials()
+        credentials = config_service.load_credentials()
         if not credentials:
             format_error("Not logged in. Use 'todopro login' to authenticate.")
             raise typer.Exit(1)

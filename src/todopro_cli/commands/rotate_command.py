@@ -1,7 +1,6 @@
 """Rotate command - Rotate encryption key."""
 
 import typer
-from rich.console import Console
 
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.formatters import format_success
@@ -9,7 +8,7 @@ from todopro_cli.utils.ui.formatters import format_success
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Rotate encryption key")
-console = Console()
+console = get_console()
 
 
 @app.command("encryption-key")
