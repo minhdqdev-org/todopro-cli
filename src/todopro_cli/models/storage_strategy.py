@@ -45,6 +45,10 @@ class StorageStrategy(ABC):
     def get_location_context_repository(self) -> LocationContextRepository:
         """Get location context repository implementation for this strategy."""
 
+    @abstractmethod
+    def get_achievement_repository(self) -> AchievementRepository:
+        """Get achievement repository imp
+
     @property
     @abstractmethod
     def storage_type(self) -> str:
@@ -196,6 +200,11 @@ class StorageStrategyContext:
     def location_context_repository(self) -> LocationContextRepository:
         """Get context repository from current strategy."""
         return self._strategy.get_location_context_repository()
+
+    @property
+    def achievement_repository(self) -> LocationContextRepository:
+        """Get achievement repository (same as context repository for now)."""
+        return self._strategy.get_achievement_repository()
 
     @property
     def storage_type(self) -> str:

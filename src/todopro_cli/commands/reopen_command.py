@@ -2,7 +2,7 @@
 
 import typer
 
-from todopro_cli.services.task_service import TaskService
+from todopro_cli.services.task_service import get_task_service
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
@@ -20,9 +20,7 @@ async def reopen_task(
     task_id: str = typer.Argument(..., help="Task ID or suffix"),
 ) -> None:
     """Reopen a completed task."""
-    storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
-    task_service = TaskService(task_repo)
+    task_service = get_task_service()
 
     resolved_id = await resolve_task_id(task_service, task_id)
     task = await task_service.reopen_task(resolved_id)

@@ -44,7 +44,7 @@ async def get_project(
     """Get project details."""
     project_service = get_project_service()
 
-    project_id = await resolve_project_uuid(project_id, project_repo)
+    project_id = await resolve_project_uuid(project_id, project_service.repository)
     project = await project_service.get_project(project_id)
     format_output(project.model_dump(), output)
 

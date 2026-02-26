@@ -69,7 +69,7 @@ def mock_project_service():
 
     with (
         patch(
-            "todopro_cli.commands.projects.ProjectService", return_value=service_mock
+            "todopro_cli.commands.projects.get_project_service", return_value=service_mock
         ),
         patch(
             "todopro_cli.commands.projects.resolve_project_uuid",

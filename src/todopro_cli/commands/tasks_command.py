@@ -3,6 +3,7 @@
 import typer
 
 from todopro_cli.services.cache_service import get_background_cache
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.task_service import TaskService, get_task_service
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
@@ -41,7 +42,7 @@ async def list_tasks(
     # TODO: consider deprecated --status in favor of dedicated commands to view project tasks, etc.
 
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     tasks = await task_service.list_tasks(
@@ -96,7 +97,7 @@ async def create_task(
 ) -> None:
     """Create a new task."""
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     # Parse labels
@@ -129,7 +130,7 @@ async def update_task(
 ) -> None:
     """Update a task."""
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     if not any([content, description, project, due, priority is not None]):
@@ -150,26 +151,26 @@ async def update_task(
 
 
 # Replaced by the command 'delete task'
-# @app.command("delete")
-# @command_wrapper
-# async def delete_task(
-#     task_id: str = typer.Argument(..., help="Task ID or suffix"),
-#     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
-# ) -> None:
-#     """Delete a task."""
-#     if not yes:
-#         confirm = typer.confirm(f"Are you sure you want to delete task {task_id}?")
-#         if not confirm:
-#             format_error("Cancelled")
-#             raise typer.Exit(0)
+@app.command("delete")
+@command_wrapper
+async def delete_task(
+    task_id: str = typer.Argument(..., help="Task ID or suffix"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+) -> None:
+    """Delete a task."""
+    if not yes:
+        confirm = typer.confirm(f"Are you sure you want to delete task {task_id}?")
+        if not confirm:
+            format_error("Cancelled")
+            raise typer.Exit(0)
 
-#     storage_strategy_context = get_storage_strategy_context()
-#     task_repo = strategy_context.task_repository
-#     task_service = TaskService(task_repo)
+    storage_strategy_context = get_storage_strategy_context()
+    task_repo = storage_strategy_context.task_repository
+    task_service = TaskService(task_repo)
 
-#     resolved_id = await resolve_task_id(task_service, task_id)
-#     await task_service.delete_task(resolved_id)
-#     format_success(f"Task deleted: {resolved_id}")
+    resolved_id = await resolve_task_id(task_service, task_id)
+    await task_service.delete_task(resolved_id)
+    format_success(f"Task deleted: {resolved_id}")
 
 
 @app.command("reopen")
@@ -180,7 +181,7 @@ async def reopen_task(
 ) -> None:
     """Reopen a completed task."""
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     resolved_id = await resolve_task_id(task_service, task_id)
@@ -202,7 +203,7 @@ async def reschedule(
 ) -> None:
     """Reschedule a task or all overdue tasks."""
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     # Check if target is None or "overdue" for bulk reschedule

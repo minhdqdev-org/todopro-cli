@@ -6,9 +6,9 @@ from todopro_cli.services.api.client import get_client
 from todopro_cli.services.api.filters import FiltersAPI
 from todopro_cli.services.api.tasks import TasksAPI
 from todopro_cli.services.cache_service import get_background_cache
-from todopro_cli.services.label_service import LabelService
-from todopro_cli.services.project_service import ProjectService
-from todopro_cli.services.task_service import TaskService
+from todopro_cli.services.label_service import get_label_service
+from todopro_cli.services.project_service import get_project_service
+from todopro_cli.services.task_service import get_task_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_output
@@ -43,9 +43,7 @@ async def list_tasks(
     if json_opt:
         output = "json"
 
-    storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
-    task_service = TaskService(task_repo)
+    task_service = get_task_service()
 
     # When using default limit, check total count first and warn if large
     _BIG_TASK_THRESHOLD = 100
@@ -115,9 +113,7 @@ async def list_projects(
     if json_opt:
         output = "json"
 
-    storage_strategy_context = get_storage_strategy_context()
-    project_repo = storage_strategy_context.project_repository
-    project_service = ProjectService(project_repo)
+    project_service = get_project_service()
 
     projects = await project_service.list_projects(
         is_archived=None if include_archived else False
@@ -132,9 +128,7 @@ async def list_labels(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all labels."""
-    storage_strategy_context = get_storage_strategy_context()
-    label_repo = storage_strategy_context.label_repository
-    label_service = LabelService(label_repo)
+    label_service = get_label_service()
 
     labels = await label_service.list_labels()
     result = {"labels": [l.model_dump() for l in labels]}
@@ -203,13 +197,13 @@ async def list_location_contexts(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all location contexts (@home, @office, etc.)."""
-    from todopro_cli.services.location_context_service import LocationContextService
+    from todopro_cli.services.location_context_service import (
+        get_location_context_service,
+    )
 
-    storage_strategy_context = get_storage_strategy_context()
-    repo = factory.get_location_context_repository()
-    service = LocationContextService(repo)
+    service = get_location_context_service()
 
-    contexts = await service.list_contexts()
+    contexts = await service.list_location_contexts()
     result = {"contexts": [c.model_dump() for c in contexts]}
     format_output(result, output)
 
@@ -220,11 +214,9 @@ async def list_goals(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all focus goals."""
-    from todopro_cli.services.focus_service import FocusService
+    from todopro_cli.services.focus_service import get_focus_service
 
-    storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
-    service = FocusService(focus_repo)
+    service = get_focus_service()
 
     goals = await service.list_goals()
     result = {"goals": [g.model_dump() for g in goals]}
@@ -237,11 +229,9 @@ async def list_achievements(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all achievements."""
-    from todopro_cli.services.achievement_service import AchievementService
+    from todopro_cli.services.achievement_service import get_achievement_service
 
-    storage_strategy_context = get_storage_strategy_context()
-    repo = factory.get_achievement_repository()
-    service = AchievementService(repo)
+    service = get_achievement_service()
 
     achievements = await service.list_achievements()
     result = {"achievements": [a.model_dump() for a in achievements]}
@@ -254,11 +244,9 @@ async def list_focus_templates(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """List all focus session templates."""
-    from todopro_cli.services.focus_service import FocusService
+    from todopro_cli.services.focus_service import get_focus_service
 
-    storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
-    service = FocusService(focus_repo)
+    service = get_focus_service()
 
     templates = await service.list_templates()
     result = {"templates": [t.model_dump() for t in templates]}

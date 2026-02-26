@@ -58,12 +58,16 @@ def format_output(
 ) -> None:
     """Format and display output based on format."""
     if output_format == "json":
-        print(json.dumps(data, indent=2, default=str))
+        console.print(json.dumps(data, indent=2, default=str), style=None)
     elif output_format == "json-pretty":
-        print(json.dumps(data, indent=2, default=str, ensure_ascii=False))
+        console.print(
+            json.dumps(data, indent=2, default=str, ensure_ascii=False), style=None
+        )
     elif output_format == "yaml":
-        print(yaml.dump(data, default_flow_style=False, sort_keys=False))
-    elif output_format in ("table", "wide"):
+        console.print(
+            yaml.dump(data, default_flow_style=False, sort_keys=False), style=None
+        )
+    elif output_format in ("table",):
         format_table(data)
     elif output_format == "pretty":
         format_pretty(data, compact=compact, all_task_ids=all_task_ids)
@@ -328,7 +332,9 @@ def format_tasks_pretty(
 
     # Display overdue tasks separately
     if overdue_tasks:
-        console.print(f"\u23f3 Overdue ({len(overdue_tasks)})", style="bold red")
+        console.print(
+            f"[bold red]Overdue ({len(overdue_tasks)})[/bold red]", style=None
+        )
         for task in overdue_tasks:
             format_task_item(task, suffix_map=suffix_map)
         console.print()
@@ -367,6 +373,7 @@ def format_task_item(
     task: dict,
     indent: str = "",
     suffix_map: dict[str, int] | None = None,
+    compact: bool = False,
 ) -> None:
     """Format a single task item."""
     # Status icon
@@ -585,10 +592,10 @@ def format_quiet(data: Any) -> None:
     if isinstance(data, list):
         for item in data:
             if isinstance(item, dict) and "id" in item:
-                print(item["id"])
+                console.print(item["id"], style=None)
     elif isinstance(data, dict):
         if "id" in data:
-            print(data["id"])
+            console.print(data["id"], style=None)
         elif "items" in data:
             format_quiet(data["items"])
 
@@ -612,12 +619,15 @@ def is_today(date_str: str | None) -> bool:
         return False
 
 
-def is_overdue(due_date: str | None) -> bool:
+def is_overdue(due_date: str | datetime | None) -> bool:
     """Check if task is overdue."""
     if not due_date:
         return False
     try:
-        due = datetime.fromisoformat(due_date.replace("Z", "+00:00"))
+        if isinstance(due_date, datetime):
+            due = due_date
+        else:
+            due = datetime.fromisoformat(due_date.replace("Z", "+00:00"))
 
         # Make naive datetime timezone-aware if needed
         if due.tzinfo is None:

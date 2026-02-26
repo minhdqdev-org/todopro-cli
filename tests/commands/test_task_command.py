@@ -43,7 +43,7 @@ def mock_task_service(mock_task):
 
     with (
         patch(
-            "todopro_cli.commands.task_command.get_strategy_context",
+            "todopro_cli.commands.task_command.get_storage_strategy_context",
             return_value=strategy_mock,
         ),
         patch(

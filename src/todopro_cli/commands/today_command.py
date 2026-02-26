@@ -84,8 +84,8 @@ async def today_command(
             elif due_date_str == today_str:
                 today_tasks.append(task)
 
-    # Combine tasks
-    all_tasks_today = overdue_tasks + today_tasks
+    # Combine tasks (overdue at bottom, before summary)
+    all_tasks_today = today_tasks + overdue_tasks
 
     # Filter out tasks being completed in background
     cache = get_background_cache()

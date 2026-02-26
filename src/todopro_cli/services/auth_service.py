@@ -1,5 +1,7 @@
 """Service for handling authentication-related operations."""
 
+from todopro_cli.services.config_service import get_config_service
+
 
 class AuthService:
     """Service for handling authentication-related operations."""

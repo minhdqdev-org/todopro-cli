@@ -29,10 +29,10 @@ def mock_config_manager(tmp_path):
 async def test_client_initialization(mock_config_manager):
     """Test API client initialization."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
         assert client.base_url == "https://todopro.minhdq.dev/api"
         assert client.timeout == 30
         assert client._client is None
@@ -42,10 +42,10 @@ async def test_client_initialization(mock_config_manager):
 async def test_get_headers_without_auth(mock_config_manager):
     """Test getting headers without authentication."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
         headers = client._get_headers(skip_auth=True)
 
         assert headers["Content-Type"] == "application/json"
@@ -77,7 +77,7 @@ async def test_get_headers_with_auth(mock_config_manager):
         "todopro_cli.services.context_manager.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
         headers = client._get_headers()
 
         assert headers["Authorization"] == "Bearer test_token"
@@ -87,10 +87,10 @@ async def test_get_headers_with_auth(mock_config_manager):
 async def test_get_client_creates_httpx_client(mock_config_manager):
     """Test _get_client creates httpx client."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
         httpx_client = await client._get_client()
 
         assert isinstance(httpx_client, httpx.AsyncClient)
@@ -103,10 +103,10 @@ async def test_get_client_creates_httpx_client(mock_config_manager):
 async def test_close_client(mock_config_manager):
     """Test closing the client."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
         await client._get_client()
 
         assert client._client is not None
@@ -119,10 +119,10 @@ async def test_close_client(mock_config_manager):
 async def test_request_success(mock_config_manager):
     """Test successful request."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -144,10 +144,10 @@ async def test_request_success(mock_config_manager):
 async def test_request_with_retry_on_server_error(mock_config_manager):
     """Test request retries on server error."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
 
         # Create a mock response for 500 error
         mock_error_response = MagicMock()
@@ -174,10 +174,10 @@ async def test_request_with_retry_on_server_error(mock_config_manager):
 async def test_request_no_retry_on_client_error(mock_config_manager):
     """Test request doesn't retry on client error (4xx)."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
 
         # Create a mock response for 404 error
         mock_error_response = MagicMock()
@@ -204,10 +204,10 @@ async def test_request_no_retry_on_client_error(mock_config_manager):
 async def test_get_method(mock_config_manager):
     """Test GET request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -228,10 +228,10 @@ async def test_get_method(mock_config_manager):
 async def test_post_method(mock_config_manager):
     """Test POST request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
 
         mock_response = MagicMock()
         mock_response.status_code = 201
@@ -252,10 +252,10 @@ async def test_post_method(mock_config_manager):
 async def test_put_method(mock_config_manager):
     """Test PUT request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -274,10 +274,10 @@ async def test_put_method(mock_config_manager):
 async def test_patch_method(mock_config_manager):
     """Test PATCH request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -298,10 +298,10 @@ async def test_patch_method(mock_config_manager):
 async def test_delete_method(mock_config_manager):
     """Test DELETE request method."""
     with patch(
-        "todopro_cli.services.context_manager.get_context_manager",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
-        client = APIClient(profile="test")
+        client = APIClient()
 
         mock_response = MagicMock()
         mock_response.status_code = 204
@@ -318,6 +318,6 @@ async def test_delete_method(mock_config_manager):
 
 def test_get_client_factory():
     """Test get_client factory function."""
-    client = get_client(profile="test")
+    client = get_client()
     assert isinstance(client, APIClient)
     assert client.config_manager is not None

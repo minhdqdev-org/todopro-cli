@@ -80,9 +80,9 @@ class SqliteLabelRepository(LabelRepository):
 
         try:
             self.connection.execute(
-                """INSERT INTO labels (id, name, color, user_id, created_at)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (label_id, data["name"], data.get("color"), user_id, now),
+                """INSERT INTO labels (id, name, color, user_id, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (label_id, data["name"], data.get("color"), user_id, now, now),
             )
             self.connection.commit()
         except sqlite3.IntegrityError as e:

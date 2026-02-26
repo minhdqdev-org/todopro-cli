@@ -35,11 +35,13 @@ def mock_task():
 
 @pytest.fixture
 def mock_strategy():
-    """Mock strategy context with task service."""
-    with patch("todopro_cli.commands.create_command.get_strategy_context") as mock:
-        strategy = MagicMock()
-        mock.return_value = strategy
-        yield mock, strategy
+    """Mock task service via get_task_service."""
+    service_mock = MagicMock()
+    with patch(
+        "todopro_cli.commands.create_command.get_task_service",
+        return_value=service_mock,
+    ) as mock:
+        yield mock, service_mock
 
 
 class TestCreateTaskRecurrence:
@@ -53,13 +55,9 @@ class TestCreateTaskRecurrence:
         assert "--recur-end" in result.stdout
 
     def test_create_task_daily_recur(self, mock_strategy, mock_task):
-        mock_strat_ctx, strategy = mock_strategy
-        service_mock = MagicMock()
+        mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        with patch(
-            "todopro_cli.commands.create_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(app, ["task", "Daily standup", "--recur", "daily"])
+        result = runner.invoke(app, ["task", "Daily standup", "--recur", "daily"])
         assert result.exit_code == 0
         service_mock.add_task.assert_awaited_once()
         call_kwargs = service_mock.add_task.call_args.kwargs
@@ -67,99 +65,71 @@ class TestCreateTaskRecurrence:
         assert call_kwargs.get("recurrence_rule") == "FREQ=DAILY"
 
     def test_create_task_weekly_recur(self, mock_strategy, mock_task):
-        mock_strat_ctx, strategy = mock_strategy
-        service_mock = MagicMock()
+        mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        with patch(
-            "todopro_cli.commands.create_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(app, ["task", "Weekly review", "--recur", "weekly"])
+        result = runner.invoke(app, ["task", "Weekly review", "--recur", "weekly"])
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
         assert call_kwargs.get("recurrence_rule") == "FREQ=WEEKLY"
 
     def test_create_task_weekdays_recur(self, mock_strategy, mock_task):
-        mock_strat_ctx, strategy = mock_strategy
-        service_mock = MagicMock()
+        mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        with patch(
-            "todopro_cli.commands.create_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(app, ["task", "Standup", "--recur", "weekdays"])
+        result = runner.invoke(app, ["task", "Standup", "--recur", "weekdays"])
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
         assert call_kwargs.get("recurrence_rule") == "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
 
     def test_create_task_biweekly_recur(self, mock_strategy, mock_task):
-        mock_strat_ctx, strategy = mock_strategy
-        service_mock = MagicMock()
+        mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        with patch(
-            "todopro_cli.commands.create_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(
-                app, ["task", "Biweekly sync", "--recur", "bi-weekly"]
-            )
+        result = runner.invoke(
+            app, ["task", "Biweekly sync", "--recur", "bi-weekly"]
+        )
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
         assert call_kwargs.get("recurrence_rule") == "FREQ=WEEKLY;INTERVAL=2"
 
     def test_create_task_monthly_recur(self, mock_strategy, mock_task):
-        mock_strat_ctx, strategy = mock_strategy
-        service_mock = MagicMock()
+        mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        with patch(
-            "todopro_cli.commands.create_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(
-                app, ["task", "Monthly report", "--recur", "monthly"]
-            )
+        result = runner.invoke(
+            app, ["task", "Monthly report", "--recur", "monthly"]
+        )
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
         assert call_kwargs.get("recurrence_rule") == "FREQ=MONTHLY"
 
     def test_create_task_invalid_recur_exits(self, mock_strategy):
         """Invalid --recur value should exit with non-zero and error message."""
-        mock_strat_ctx, strategy = mock_strategy
-        service_mock = MagicMock()
+        mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock()
-        with patch(
-            "todopro_cli.commands.create_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(app, ["task", "Test", "--recur", "hourly"])
+        result = runner.invoke(app, ["task", "Test", "--recur", "hourly"])
         assert result.exit_code != 0
         assert "hourly" in result.stdout
 
     def test_create_task_recur_with_end_date(self, mock_strategy, mock_task):
-        mock_strat_ctx, strategy = mock_strategy
-        service_mock = MagicMock()
+        mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        with patch(
-            "todopro_cli.commands.create_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(
-                app,
-                [
-                    "task",
-                    "Daily standup",
-                    "--recur",
-                    "daily",
-                    "--recur-end",
-                    "2025-12-31",
-                ],
-            )
+        result = runner.invoke(
+            app,
+            [
+                "task",
+                "Daily standup",
+                "--recur",
+                "daily",
+                "--recur-end",
+                "2025-12-31",
+            ],
+        )
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
         assert call_kwargs.get("recurrence_end") == "2025-12-31"
 
     def test_create_task_no_recur_defaults_to_false(self, mock_strategy, mock_task):
-        mock_strat_ctx, strategy = mock_strategy
-        service_mock = MagicMock()
+        mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        with patch(
-            "todopro_cli.commands.create_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(app, ["task", "Regular task"])
+        result = runner.invoke(app, ["task", "Regular task"])
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
         assert call_kwargs.get("is_recurring") is False

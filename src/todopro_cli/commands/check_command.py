@@ -18,11 +18,11 @@ async def check_achievements(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Check for new achievements."""
-    from todopro_cli.services.achievement_service import AchievementService
+    from todopro_cli.services.achievement_service import (
+        get_achievement_service,
+    )
 
-    storage_strategy_context = get_storage_strategy_context()
-    repo = factory.get_achievement_repository()
-    service = AchievementService(repo)
+    service = get_achievement_service()
 
     new_achievements = await service.check_achievements()
     result = {"achievements": [a.model_dump() for a in new_achievements]}
@@ -35,11 +35,11 @@ async def check_location(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Check current location context."""
-    from todopro_cli.services.location_context_service import LocationContextService
+    from todopro_cli.services.location_context_service import (
+        get_location_context_service,
+    )
 
-    storage_strategy_context = get_storage_strategy_context()
-    repo = factory.get_location_context_repository()
-    service = LocationContextService(repo)
+    service = get_location_context_service()
 
     location = await service.check_current_location()
     format_output(

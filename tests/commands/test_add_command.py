@@ -59,8 +59,8 @@ def _make_strategy(task_add_result=None, projects=None):
     proj_repo = MagicMock()
     proj_repo.list_all = AsyncMock(return_value=projects or [INBOX_PROJECT])
     strategy = MagicMock()
-    storage_strategy_context.task_repository = task_repo
-    storage_strategy_context.project_repository = proj_repo
+    strategy.task_repository = task_repo
+    strategy.project_repository = proj_repo
     return strategy
 
 
@@ -78,7 +78,7 @@ class TestAddOutputFlags:
                 return_value=config,
             ),
             patch(
-                "todopro_cli.commands.add_command.get_strategy_context",
+                "todopro_cli.commands.add_command.get_storage_strategy_context",
                 return_value=strategy,
             ),
         ):
@@ -120,8 +120,8 @@ class TestAddProjectFlag:
         proj_repo.list_all = AsyncMock(return_value=[INBOX_PROJECT, ROUTINES_PROJECT])
         proj_repo.get = AsyncMock(return_value=ROUTINES_PROJECT)
         strategy = MagicMock()
-        storage_strategy_context.task_repository = task_repo
-        storage_strategy_context.project_repository = proj_repo
+        strategy.task_repository = task_repo
+        strategy.project_repository = proj_repo
 
         with (
             patch(
@@ -129,7 +129,7 @@ class TestAddProjectFlag:
                 return_value=_make_config_with_local_context(),
             ),
             patch(
-                "todopro_cli.commands.add_command.get_strategy_context",
+                "todopro_cli.commands.add_command.get_storage_strategy_context",
                 return_value=strategy,
             ),
         ):
@@ -151,8 +151,8 @@ class TestAddProjectFlag:
         proj_repo = MagicMock()
         proj_repo.list_all = AsyncMock(return_value=[INBOX_PROJECT])
         strategy = MagicMock()
-        storage_strategy_context.task_repository = task_repo
-        storage_strategy_context.project_repository = proj_repo
+        strategy.task_repository = task_repo
+        strategy.project_repository = proj_repo
 
         with (
             patch(
@@ -160,7 +160,7 @@ class TestAddProjectFlag:
                 return_value=_make_config_with_local_context(),
             ),
             patch(
-                "todopro_cli.commands.add_command.get_strategy_context",
+                "todopro_cli.commands.add_command.get_storage_strategy_context",
                 return_value=strategy,
             ),
         ):
@@ -226,17 +226,13 @@ class TestCreateProjectSimpleOutput:
         """create project shows name in success message, not full table."""
         mock_project = ROUTINES_PROJECT.model_copy()
 
-        with (
-            patch(
-                "todopro_cli.commands.create_command.get_strategy_context"
-            ) as mock_ctx,
-            patch("todopro_cli.commands.create_command.ProjectService") as mock_svc_cls,
-        ):
-            mock_svc = MagicMock()
-            mock_svc.create_project = AsyncMock(return_value=mock_project)
-            mock_svc_cls.return_value = mock_svc
-            mock_ctx.return_value.project_repository = MagicMock()
+        mock_svc = MagicMock()
+        mock_svc.create_project = AsyncMock(return_value=mock_project)
 
+        with patch(
+            "todopro_cli.commands.create_command.get_project_service",
+            return_value=mock_svc,
+        ):
             from todopro_cli.commands.create_command import app as create_app
 
             result = runner.invoke(create_app, ["project", "Routines"])
@@ -250,17 +246,13 @@ class TestCreateProjectSimpleOutput:
         """--json flag outputs JSON project."""
         mock_project = ROUTINES_PROJECT.model_copy()
 
-        with (
-            patch(
-                "todopro_cli.commands.create_command.get_strategy_context"
-            ) as mock_ctx,
-            patch("todopro_cli.commands.create_command.ProjectService") as mock_svc_cls,
-        ):
-            mock_svc = MagicMock()
-            mock_svc.create_project = AsyncMock(return_value=mock_project)
-            mock_svc_cls.return_value = mock_svc
-            mock_ctx.return_value.project_repository = MagicMock()
+        mock_svc = MagicMock()
+        mock_svc.create_project = AsyncMock(return_value=mock_project)
 
+        with patch(
+            "todopro_cli.commands.create_command.get_project_service",
+            return_value=mock_svc,
+        ):
             from todopro_cli.commands.create_command import app as create_app
 
             result = runner.invoke(create_app, ["project", "Routines", "--json"])

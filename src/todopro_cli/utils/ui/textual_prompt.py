@@ -14,7 +14,7 @@ from textual.containers import Vertical
 from textual.suggester import Suggester
 from textual.widgets import Input, Static
 
-from todopro_cli.services.config_service import get_config_service
+from todopro_cli.services.config_service import get_config_service, get_storage_strategy_context
 
 
 class TaskSuggester(Suggester):
@@ -88,10 +88,7 @@ class HighlightedInput(Input):
 
     def get_suggestions(self, text: str) -> list[str]:
         """Get suggestions list for display."""
-        if not self.projects and not self.labels:
-            return []
-
-        # Label completion
+        # Label completion (@)
         if "@" in text:
             parts = text.rsplit("@", 1)
             if len(parts) == 2:
@@ -105,7 +102,7 @@ class HighlightedInput(Input):
                     return sorted(matches, key=lambda x: x.lower())[:10]
                 return sorted([f"@{label}" for label in self.labels])[:10]
 
-        # Project completion
+        # Project completion (#)
         if "#" in text:
             parts = text.rsplit("#", 1)
             if len(parts) == 2:
@@ -118,6 +115,28 @@ class HighlightedInput(Input):
                     ]
                     return sorted(matches, key=lambda x: x.lower())[:10]
                 return sorted([f"#{project}" for project in self.projects])[:10]
+
+        # Priority completion (p1-p4 or !!1-!!4)
+        _PRIORITY_OPTIONS = [
+            "p1 (Urgent)",
+            "p2 (High)",
+            "p3 (Medium)",
+            "p4 (Normal)",
+        ]
+        _PRIORITY_BANG_OPTIONS = ["!!1 (Urgent)", "!!2 (High)", "!!3 (Medium)", "!!4 (Normal)"]
+        words = text.split()
+        if words:
+            last_word = words[-1].lower()
+            if last_word.startswith("p") and len(last_word) <= 2:
+                if last_word == "p":
+                    return _PRIORITY_OPTIONS
+                matches = [o for o in _PRIORITY_OPTIONS if o.lower().startswith(last_word)]
+                if matches:
+                    return matches
+            elif last_word.startswith("!!"):
+                matches = [o for o in _PRIORITY_BANG_OPTIONS if o.startswith(last_word)]
+                if matches:
+                    return matches
 
         return []
 
@@ -205,21 +224,29 @@ class QuickAddApp(App):
                 markup=True,
             )
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         """Focus the input when app starts and load suggestions data."""
         # Load projects and labels for suggestions
         task_input = self.query_one("#task-input", HighlightedInput)
         suggester = task_input.suggester
 
         try:
-            projects, labels = load_cache()
+            from todopro_cli.models.core import ProjectFilters  # pylint: disable=import-outside-toplevel
+
+            storage_strategy_context = get_storage_strategy_context()
+            projects_data = await storage_strategy_context.project_repository.list_all(
+                ProjectFilters()
+            )
+            labels_data = await storage_strategy_context.label_repository.list_all()
+            projects = [p.name for p in projects_data] if projects_data else []
+            labels = [l.name for l in labels_data] if labels_data else []
             task_input.projects = projects
             task_input.labels = labels
             if isinstance(suggester, TaskSuggester):
                 suggester.projects = projects
                 suggester.labels = labels
         except Exception:
-            # Silently fail if cache loading fails - suggestions just won't work
+            # Silently fail if data loading fails - suggestions just won't work
             pass
 
         task_input.focus()
@@ -309,8 +336,6 @@ def load_cache() -> tuple[list[str], list[str]]:
         )
 
     return (projects, labels)
-
-    return projects, labels
 
 
 def get_interactive_input(default_project: str = "Inbox") -> str | None:

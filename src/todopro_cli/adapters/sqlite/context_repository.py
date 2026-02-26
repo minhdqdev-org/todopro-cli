@@ -110,7 +110,9 @@ class SqliteLocationContextRepository(LocationContextRepository):
 
         return True
 
-    async def get_available(self, latitude: float, longitude: float) -> list[Context]:
+    async def get_available(
+        self, latitude: float, longitude: float
+    ) -> list[LocationContext]:
         """Get contexts available at a specific location (within geofence).
 
         Uses haversine formula to calculate distance and filter contexts

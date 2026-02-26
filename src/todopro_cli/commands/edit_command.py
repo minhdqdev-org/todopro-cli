@@ -25,7 +25,7 @@ async def _resolve_project_name(project_input: str, strategy) -> str:
     """Resolve a project name or ID to a project ID using fuzzy matching."""
     from todopro_cli.utils.uuid_utils import is_full_uuid, resolve_project_uuid
 
-    project_repo = storage_strategy_context.project_repository
+    project_repo = strategy.project_repository
     # If it looks like a UUID prefix, resolve directly
     if is_full_uuid(project_input) or len(project_input) >= 8 and "-" in project_input:
         return await resolve_project_uuid(project_input, project_repo)

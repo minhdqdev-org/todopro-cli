@@ -108,5 +108,4 @@ def get_label_service():
         get_storage_strategy_context,  # type: ignore
     )
 
-    storage_strategy_context = get_storage_strategy_context()
-    return LabelService(storage_strategy_context.label_repository)
+    return LabelService(get_storage_strategy_context().label_repository)

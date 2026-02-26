@@ -3,6 +3,7 @@
 import typer
 
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_output
 
 from .decorators import command_wrapper
@@ -190,9 +191,9 @@ async def show_config(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Show current configuration."""
-    from todopro_cli.services.config_service import ConfigService
+    from todopro_cli.services.config_service import get_config_service
 
-    config_service = ConfigService()
+    config_service = get_config_service()
     config = config_service.get_all()
     format_output(config, output)
 

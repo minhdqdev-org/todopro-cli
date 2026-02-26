@@ -56,8 +56,21 @@ def mock_task_service():
     service_mock.complete_task = AsyncMock()
     service_mock.bulk_complete_tasks = AsyncMock()
 
-    with patch(
-        "todopro_cli.commands.tasks_command.TaskService", return_value=service_mock
+    strategy_mock = MagicMock()
+    strategy_mock.task_repository = MagicMock()
+
+    with (
+        patch(
+            "todopro_cli.commands.tasks_command.get_storage_strategy_context",
+            return_value=strategy_mock,
+        ),
+        patch(
+            "todopro_cli.commands.tasks_command.get_task_service",
+            return_value=service_mock,
+        ),
+        patch(
+            "todopro_cli.commands.tasks_command.TaskService", return_value=service_mock
+        ),
     ):
         yield service_mock
 

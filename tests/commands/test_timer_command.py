@@ -12,7 +12,7 @@ import httpx
 import pytest
 from typer.testing import CliRunner
 
-from todopro_cli.commands.timer import app
+from todopro_cli.commands.timer_command import app
 
 
 def strip_ansi(text: str) -> str:
@@ -27,7 +27,7 @@ runner = CliRunner()
 @pytest.fixture
 def mock_api_client():
     """Mock APIClient for testing."""
-    with patch("todopro_cli.commands.timer.APIClient") as mock_client_class:
+    with patch("todopro_cli.commands.timer_command.APIClient") as mock_client_class:
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
 
@@ -208,7 +208,7 @@ class TestTimerStats:
 class TestTimerStart:
     """Tests for timer start command."""
 
-    @patch("todopro_cli.commands.timer.time")
+    @patch("todopro_cli.commands.timer_command.time")
     def test_start_basic(self, mock_time, mock_api_client):
         """Test basic timer start (mocked to finish immediately)."""
         # Mock the timer to finish immediately
@@ -265,7 +265,7 @@ class TestTimerStart:
 
         mock_api_client.post.side_effect = [start_response, complete_response]
 
-        with patch("todopro_cli.commands.timer.time", mock_time_module):
+        with patch("todopro_cli.commands.timer_command.time", mock_time_module):
             result = runner.invoke(
                 app, ["start", "--task-id", "task-123", "--duration", "1"]
             )
@@ -289,7 +289,7 @@ class TestTimerStart:
 class TestTimerQuick:
     """Tests for quick timer command."""
 
-    @patch("todopro_cli.commands.timer.time")
+    @patch("todopro_cli.commands.timer_command.time")
     def test_quick_timer_default_duration(self, mock_time):
         """Test quick timer with default 25 minutes."""
         # Mock time to finish immediately
@@ -301,7 +301,7 @@ class TestTimerQuick:
         # Should complete without API calls
         assert result.exit_code == 0 or "Timer running" in result.stdout
 
-    @patch("todopro_cli.commands.timer.time")
+    @patch("todopro_cli.commands.timer_command.time")
     def test_quick_timer_custom_duration(self, mock_time):
         """Test quick timer with custom duration."""
         mock_time.time.side_effect = [0, 601]

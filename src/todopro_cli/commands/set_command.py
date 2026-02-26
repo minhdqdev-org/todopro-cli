@@ -45,7 +45,7 @@ async def set_goal(
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Set a focus goal."""
-    from todopro_cli.focus.goals import GoalsManager
+    from todopro_cli.models.focus.goals import GoalsManager
     from todopro_cli.utils.ui.formatters import format_success
 
     manager = GoalsManager()

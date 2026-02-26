@@ -237,7 +237,8 @@ class SectionSeparator(Rule):
         super().__init__(*args, **kwargs)
         self.left_section = left_section
 
-    def on_click(self, event):
+    def on_click(self, _):
+        """Handle click events on the separator to select it without triggering section title click events."""
         return
 
 
@@ -269,11 +270,13 @@ class Body(HorizontalScroll):
         for section in self.query(Section):
             section.styles.width = section_width
 
-    def on_click(self, event):
+    def on_click(self, _: events.Click) -> None:
+        """Handle click events on the body to deselect components when clicking on empty space."""
+
         if self.app.mode.startswith("edit"):
             if isinstance(self.app.selected_component, Input):
                 self.app.selected_component.blur()
-            self.app.mode = "normal"
+            self.app.switch_mode("normal")
 
 
 class BoardViewApp(App):
@@ -293,7 +296,7 @@ class BoardViewApp(App):
     ):
         super().__init__()
         self.project_code = project_code
-        self.mode = "normal"
+        self.mode: str = "normal"
 
         self.tasks: list[TaskViewModel] = []
         self.task_card_map: dict[str, TaskCard] = {}
@@ -306,6 +309,11 @@ class BoardViewApp(App):
 
         # Initialize data before UI composition
         self._init_data(tasks_list or [])
+
+    def switch_mode(self, mode: str):
+        """Switch the app mode."""
+        self.mode = mode
+        self.log_debug(f"Switched to mode: {mode}")
 
     def _init_data(self, tasks_list: list):
         """Initialize the data structures synchronously."""
@@ -320,13 +328,10 @@ class BoardViewApp(App):
             # Format due date
             due_date = None
             if task_data.get("due_date"):
-                try:
-                    dt = datetime.fromisoformat(
-                        task_data["due_date"].replace("Z", "+00:00")
-                    )
-                    due_date = dt.strftime("%Y-%m-%d")
-                except Exception:
-                    due_date = task_data.get("due_date")
+                dt = datetime.fromisoformat(
+                    task_data["due_date"].replace("Z", "+00:00")
+                )
+                due_date = dt.strftime("%Y-%m-%d")
 
             task = TaskViewModel(
                 id=task_data["id"],
@@ -356,10 +361,7 @@ class BoardViewApp(App):
         if self.selected_component:
             self.go_to_component(self.selected_component)
 
-    def go_to_component(
-        self,
-        component: TaskCard | SectionSeparator | AddTaskButton | SectionTitle | Input,
-    ):
+    def go_to_component(self, component: Widget):
         """Highlight the selected component."""
         if self.selected_component is not None:
             if isinstance(self.selected_component, SectionSeparator):
@@ -673,10 +675,9 @@ def run_board_view(project_code: str):
     async def preload_data():
         """Preload task data before app starts."""
         if current_context.type == "local":
-            from todopro_cli.services.task_service import TaskService
+            from todopro_cli.services.task_service import get_task_service
 
-            storage_strategy_context = get_storage_strategy_context()
-            task_service = TaskService(storage_strategy_context.task_repository)
+            task_service = get_task_service()
 
             if project_code.lower() == "inbox":
                 tasks = await task_service.list_tasks(status="active")

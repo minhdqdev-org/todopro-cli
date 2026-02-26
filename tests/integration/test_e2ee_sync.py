@@ -178,9 +178,7 @@ class TestE2EESyncIntegration:
         from todopro_cli.services.config_service import ConfigService
 
         # Create repository
-        config_service = Mock(spec=ConfigService)
-        config_service.profile = Mock()
-        repo = RestApiTaskRepository(config_service)
+        repo = RestApiTaskRepository()
 
         # Replace e2ee handler with our mock
         repo._e2ee_handler = mock_e2ee_handler

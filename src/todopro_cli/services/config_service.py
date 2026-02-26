@@ -7,19 +7,6 @@ for all configuration management in TodoPro CLI. It handles:
 - Context management (list, add, remove, switch, rename)
 - Credential management for remote contexts
 - Config file initialization with sensible defaults
-
-Architecture Notes (Post Spec 10-14 Refactoring):
-- ConfigService is the PRIMARY configuration manager
-- ContextManager (context_manager.py) is a deprecated thin wrapper
-- All commands use get_strategy_context() which internally uses ConfigService
-- Config format: JSON (config.json), not YAML
-
-Example Usage:
-    from todopro_cli.services.config_service import ConfigService
-
-    config_service = ConfigService()
-    contexts = config_service.list_contexts()
-    config_service.use_context("my-context")
 """
 
 from __future__ import annotations
@@ -310,7 +297,9 @@ class ConfigService:
 @lru_cache(maxsize=1)
 def get_config_service() -> ConfigService:
     """Get a cached ConfigService instance."""
-    return ConfigService()
+    config_service = ConfigService()
+    config_service.load_config()  # Ensure config is loaded and storage context initialized
+    return config_service
 
 
 def get_storage_strategy_context() -> StorageStrategyContext:

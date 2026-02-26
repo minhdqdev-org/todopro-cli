@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from todopro_cli.models import (
-    Context,
-    ContextCreate,
     Label,
     LabelCreate,
+    LocationContext,
+    LocationContextCreate,
     Project,
     ProjectCreate,
     ProjectFilters,
@@ -19,8 +19,8 @@ from todopro_cli.models import (
     TaskUpdate,
 )
 from todopro_cli.services import (
-    ContextService,
     LabelService,
+    LocationContextService,
     ProjectService,
     TaskService,
 )
@@ -441,22 +441,26 @@ class TestContextService:
     async def test_list_contexts(self, mock_context_repo):
         """Test listing contexts."""
         mock_contexts = [
-            Context(id="1", name="@office", latitude=40.7, longitude=-74.0, radius=100),
-            Context(id="2", name="@home", latitude=40.8, longitude=-73.9, radius=50),
+            LocationContext(
+                id="1", name="@office", latitude=40.7, longitude=-74.0, radius=100
+            ),
+            LocationContext(
+                id="2", name="@home", latitude=40.8, longitude=-73.9, radius=50
+            ),
         ]
         mock_context_repo.list_all.return_value = mock_contexts
 
-        service = ContextService(mock_context_repo)
-        contexts = await service.list_contexts()
+        service = LocationContextService(mock_context_repo)
+        contexts = await service.list_location_contexts()
 
         assert len(contexts) == 2
         assert contexts[0].name == "@office"
         mock_context_repo.list_all.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_context(self, mock_context_repo):
-        """Test creating a context."""
-        mock_context = Context(
+    async def test_create_location_context(self, mock_context_repo):
+        """Test creating a location context."""
+        mock_context = LocationContext(
             id="new-123",
             name="@gym",
             latitude=40.75,
@@ -465,8 +469,8 @@ class TestContextService:
         )
         mock_context_repo.create.return_value = mock_context
 
-        service = ContextService(mock_context_repo)
-        context = await service.create_context(
+        service = LocationContextService(mock_context_repo)
+        context = await service.create_location_context(
             name="@gym",
             latitude=40.75,
             longitude=-73.98,
@@ -476,10 +480,10 @@ class TestContextService:
         assert context.name == "@gym"
         assert context.radius == 150
 
-        # Check ContextCreate
+        # Check LocationContextCreate
         call_args = mock_context_repo.create.call_args
         context_data = call_args[0][0]
-        assert isinstance(context_data, ContextCreate)
+        assert isinstance(context_data, LocationContextCreate)
         assert context_data.name == "@gym"
         assert context_data.latitude == 40.75
 
@@ -487,37 +491,41 @@ class TestContextService:
     async def test_get_available_contexts(self, mock_context_repo):
         """Test getting contexts available at location."""
         mock_contexts = [
-            Context(id="1", name="@office", latitude=40.7, longitude=-74.0, radius=100),
+            LocationContext(
+                id="1", name="@office", latitude=40.7, longitude=-74.0, radius=100
+            ),
         ]
         mock_context_repo.get_available.return_value = mock_contexts
 
-        service = ContextService(mock_context_repo)
-        contexts = await service.get_available_contexts(40.7, -74.0)
+        service = LocationContextService(mock_context_repo)
+        contexts = await service.get_available_location_contexts(40.7, -74.0)
 
         assert len(contexts) == 1
         assert contexts[0].name == "@office"
         mock_context_repo.get_available.assert_called_once_with(40.7, -74.0)
 
     @pytest.mark.asyncio
-    async def test_get_or_create_context_existing(self, mock_context_repo):
-        """Test get_or_create returns existing context."""
+    async def test_get_or_create_location_context_existing(self, mock_context_repo):
+        """Test get_or_create returns existing location context."""
         existing_contexts = [
-            Context(id="1", name="@office", latitude=40.7, longitude=-74.0, radius=100),
+            LocationContext(
+                id="1", name="@office", latitude=40.7, longitude=-74.0, radius=100
+            ),
         ]
         mock_context_repo.list_all.return_value = existing_contexts
 
-        service = ContextService(mock_context_repo)
-        context = await service.get_or_create_context("@office", 40.7, -74.0)
+        service = LocationContextService(mock_context_repo)
+        context = await service.get_or_create_location_context("@office", 40.7, -74.0)
 
         assert context.id == "1"
         assert context.name == "@office"
         mock_context_repo.create.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_get_or_create_context_new(self, mock_context_repo):
-        """Test get_or_create creates new context if not exists."""
+    async def test_get_or_create_location_context_new(self, mock_context_repo):
+        """Test get_or_create creates new location context if not exists."""
         mock_context_repo.list_all.return_value = []
-        new_context = Context(
+        new_context = LocationContext(
             id="new-123",
             name="@newlocation",
             latitude=40.7,
@@ -526,8 +534,8 @@ class TestContextService:
         )
         mock_context_repo.create.return_value = new_context
 
-        service = ContextService(mock_context_repo)
-        context = await service.get_or_create_context(
+        service = LocationContextService(mock_context_repo)
+        context = await service.get_or_create_location_context(
             "@newlocation", 40.7, -74.0, radius=100
         )
 

@@ -3,7 +3,7 @@
 import typer
 from rich.panel import Panel
 
-from todopro_cli.focus.achievements import ACHIEVEMENTS, AchievementTracker
+from todopro_cli.models.focus.achievements import ACHIEVEMENTS, AchievementTracker
 from todopro_cli.utils.ui.console import get_console
 
 console = get_console()
@@ -96,7 +96,7 @@ def list_achievements(
                 required = data["required"]
                 percentage = data["percentage"]
 
-                bar = render_progress_bar(current, required)
+                progress_bar = render_progress_bar(current, required)
 
                 # Format current value based on type
                 if achievement.requirement["type"] in ["total_hours", "daily_hours"]:
@@ -112,7 +112,7 @@ def list_achievements(
                 console.print(f"  {achievement.icon} [bold]{achievement.name}[/bold]")
                 console.print(f"     {achievement.description}")
                 console.print(
-                    f"     {bar} {current_str}/{required_str} ({percentage:.0f}%)"
+                    f"     {progress_bar} {current_str}/{required_str} ({percentage:.0f}%)"
                 )
                 console.print()
 

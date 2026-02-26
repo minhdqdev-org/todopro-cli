@@ -18,7 +18,7 @@ class TestAchievementsCommand:
 
     def test_list_achievements_empty(self):
         with patch(
-            "todopro_cli.commands.achievements.AchievementTracker"
+            "todopro_cli.commands.achievements_command.AchievementTracker"
         ) as MockTracker:
             mock_tracker = MockTracker.return_value
             mock_tracker.check_achievements.return_value = []
@@ -35,7 +35,7 @@ class TestAchievementsCommand:
         mock_achievement.requirement = {"type": "streak_days"}
 
         with patch(
-            "todopro_cli.commands.achievements.AchievementTracker"
+            "todopro_cli.commands.achievements_command.AchievementTracker"
         ) as MockTracker:
             mock_tracker = MockTracker.return_value
             mock_tracker.check_achievements.return_value = []
@@ -45,7 +45,7 @@ class TestAchievementsCommand:
 
     def test_check_achievements_none(self):
         with patch(
-            "todopro_cli.commands.achievements.AchievementTracker"
+            "todopro_cli.commands.achievements_command.AchievementTracker"
         ) as MockTracker:
             mock_tracker = MockTracker.return_value
             mock_tracker.check_achievements.return_value = []
@@ -54,7 +54,7 @@ class TestAchievementsCommand:
 
     def test_achievement_stats(self):
         with patch(
-            "todopro_cli.commands.achievements.AchievementTracker"
+            "todopro_cli.commands.achievements_command.AchievementTracker"
         ) as MockTracker:
             mock_tracker = MockTracker.return_value
             mock_tracker.get_earned_achievements.return_value = []

@@ -12,12 +12,12 @@ import typer
 from rich.prompt import Confirm, Prompt
 
 # Import focus mode modules
-from todopro_cli.focus.cycling import CycleState, PomodoroConfig
-from todopro_cli.focus.history import HistoryLogger
-from todopro_cli.focus.state import SessionState, SessionStateManager
-from todopro_cli.focus.suggestions import TaskSuggestionEngine
-from todopro_cli.focus.templates import TemplateManager
-from todopro_cli.focus.ui import (
+from todopro_cli.models.focus.cycling import CycleState, PomodoroConfig
+from todopro_cli.models.focus.history import HistoryLogger
+from todopro_cli.models.focus.state import SessionState, SessionStateManager
+from todopro_cli.models.focus.suggestions import TaskSuggestionEngine
+from todopro_cli.models.focus.templates import TemplateManager
+from todopro_cli.models.focus.ui import (
     TimerDisplay,
     show_completion_message,
     show_stopped_message,
@@ -443,9 +443,9 @@ def auto_cycle(
         try:
             idx = int(choice) - 1
             task_id = suggestions[idx]["task"]["id"]
-        except (ValueError, IndexError):
+        except (ValueError, IndexError) as e:
             console.print("[red]Invalid selection[/red]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     # Get task details using TaskService
     task_service = get_task_service()
@@ -455,7 +455,7 @@ def auto_cycle(
         current_task_title = current_task.content
     except Exception as e:
         console.print(f"[red]Error fetching task: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     # Initialize cycle config
     config = PomodoroConfig(
@@ -470,7 +470,7 @@ def auto_cycle(
     state_manager = SessionStateManager()
 
     config_service = get_config_service()
-    current_context = config_service.config.current_context
+    current_context = config_service.get_current_context()
 
     console.print("\n[bold green]🍅 Starting auto-cycle mode[/bold green]")
     console.print(

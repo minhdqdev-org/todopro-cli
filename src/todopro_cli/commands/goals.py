@@ -3,8 +3,9 @@
 import typer
 from rich.table import Table
 
-from todopro_cli.focus.goals import GoalsManager
+from todopro_cli.models.focus.goals import GoalsManager
 from todopro_cli.utils.ui.console import get_console
+
 console = get_console()
 app = typer.Typer(help="Focus goals and targets")
 

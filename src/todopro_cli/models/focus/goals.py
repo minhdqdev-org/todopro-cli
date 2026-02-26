@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from todopro_cli.focus.analytics import FocusAnalytics
+from todopro_cli.models.focus.analytics import FocusAnalytics
 from todopro_cli.services.config_service import get_config_service
 
 

@@ -16,8 +16,6 @@ def start_focus(
     template: str | None = typer.Option(None, "--template", help="Template name"),
 ) -> None:
     """Start a focus session on a task."""
+    from todopro_cli.commands.focus import start_focus as _impl
 
-    if template is not None:
-        from todopro_cli.commands.focus import start_focus as _impl
-
-        _impl(task_id=task_id, duration=duration, template=template)
+    _impl(task_id=task_id, duration=duration, template=template)

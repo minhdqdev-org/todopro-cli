@@ -18,7 +18,7 @@ from todopro_cli.repositories import (
     ProjectRepository,
     TaskRepository,
 )
-from todopro_cli.services.config_service import ConfigService
+from todopro_cli.services.config_service import ConfigService, get_storage_strategy_context
 
 
 class TestLocalStorageStrategy:
@@ -187,10 +187,10 @@ class TestStorageStrategyContext:
 
 
 # NOTE: These tests are for deprecated ContextManager.bootstrap() pattern
-# The new pattern uses get_strategy_context() directly from context_manager module
+# The new pattern uses get_storage_strategy_context() directly from context_manager module
 # These tests are kept for historical reference but skipped for MVP1
 @pytest.mark.skip(
-    reason="ContextManager.bootstrap() is deprecated, use get_strategy_context() instead"
+    reason="ContextManager.bootstrap() is deprecated, use get_storage_strategy_context() instead"
 )
 class TestContextManagerBootstrap:
     """Tests for ContextManager.bootstrap() method"""
@@ -318,16 +318,17 @@ class TestStrategyPatternIntegration:
         assert hasattr(service.repository, "delete")
 
     def test_caching_same_profile_returns_same_strategy(self):
-        """Test that get_strategy_context caches results"""
+        """Test that get_storage_strategy_context returns same instance (via cached ConfigService)"""
+        from todopro_cli.services.config_service import get_config_service
 
-        # Clear cache first
-        get_strategy_context.cache_clear()
+        # Clear the config service cache first
+        get_config_service.cache_clear()
 
-        # Get strategy twice - no profile parameter in new signature
-        strategy1 = get_strategy_context()
-        strategy2 = get_strategy_context()
+        # Get strategy twice - both should return same instance from ConfigService
+        strategy1 = get_storage_strategy_context()
+        strategy2 = get_storage_strategy_context()
 
-        # Should return same cached instance
+        # Should return same cached instance (via ConfigService._storage_strategy_context)
         assert strategy1 is strategy2
 
 
@@ -340,11 +341,12 @@ class TestStrategyPatternPerformance:
         """Benchmark bootstrap time"""
 
         # Clear cache
-        get_strategy_context.cache_clear()
+        from todopro_cli.services.config_service import get_config_service
+        get_config_service.cache_clear()
 
         # Benchmark first bootstrap
         def bootstrap():
-            return get_strategy_context()
+            return get_storage_strategy_context()
 
         result = benchmark(bootstrap)
         assert isinstance(result, StorageStrategyContext)
@@ -353,11 +355,11 @@ class TestStrategyPatternPerformance:
         """Benchmark cached strategy access"""
 
         # Warm up cache
-        get_strategy_context()
+        get_storage_strategy_context()
 
         # Benchmark cached access (should be O(1) lru_cache lookup)
         def get_cached():
-            return get_strategy_context()
+            return get_storage_strategy_context()
 
         result = benchmark(get_cached)
         assert isinstance(result, StorageStrategyContext)

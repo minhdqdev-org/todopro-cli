@@ -224,6 +224,16 @@ def test_is_overdue_with_none():
     assert is_overdue(None) is False
 
 
+def test_is_overdue_with_datetime_object():
+    """Test is_overdue with datetime objects (as returned by model_dump)."""
+    from datetime import timedelta
+
+    past_datetime = datetime.now() - timedelta(days=1)
+    future_datetime = datetime.now() + timedelta(days=1)
+    assert is_overdue(past_datetime) is True
+    assert is_overdue(future_datetime) is False
+
+
 def test_format_due_date_today():
     """Test formatting due date for today."""
     now = datetime.now()

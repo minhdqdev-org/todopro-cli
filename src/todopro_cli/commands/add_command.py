@@ -217,8 +217,10 @@ def _create_local_task(
             from todopro_cli.commands.edit_command import _resolve_project_name
 
             try:
-                project_id = await _resolve_project_name(project_override, strategy)
-                proj = await get_project_service().get_project(project_id)
+                project_id = await _resolve_project_name(project_override, storage_strategy_context)
+                from todopro_cli.services.project_service import ProjectService
+                proj_repo = storage_strategy_context.project_repository
+                proj = await ProjectService(proj_repo).get_project(project_id)
                 effective_project_name = proj.name
             except ValueError as e:
                 from todopro_cli.utils.ui.formatters import format_error

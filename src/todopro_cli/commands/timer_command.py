@@ -9,6 +9,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from todopro_cli.services.api.client import APIClient
+from todopro_cli.utils.ui.console import get_console
 
 from .utils import handle_api_error
 

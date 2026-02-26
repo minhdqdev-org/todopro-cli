@@ -8,8 +8,8 @@ from pathlib import Path
 
 import typer
 
-from todopro_cli.focus.analytics import FocusAnalytics
-from todopro_cli.focus.history import HistoryLogger
+from todopro_cli.models.focus.analytics import FocusAnalytics
+from todopro_cli.models.focus.history import HistoryLogger
 from todopro_cli.utils.ui.console import get_console
 
 console = get_console()
