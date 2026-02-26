@@ -46,9 +46,11 @@ async def set_goal(
 ) -> None:
     """Set a focus goal."""
     from todopro_cli.models.focus.goals import GoalsManager
+    from todopro_cli.services.config_service import get_config_service
     from todopro_cli.utils.ui.formatters import format_success
 
-    manager = GoalsManager()
+    svc = get_config_service()
+    manager = GoalsManager(config=svc.load_config(), save_config=svc.save_config)
     manager.set_goal(goal_type.replace("-", "_"), target)
     format_success(f"Goal set: {goal_type} = {target}")
 

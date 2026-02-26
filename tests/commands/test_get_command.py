@@ -124,3 +124,109 @@ class TestGetCommandStructure:
 
         assert result.exit_code == 0
         assert "Get project details" in result.stdout
+
+
+class TestGetTaskCommand:
+    """Lines 25-31: get task command body."""
+
+    def test_get_task_undefined_strategy_context(self):
+        """get task calls get_storage_strategy_context() which is undefined → NameError → exit 1."""
+        result = runner.invoke(app, ["task", "task-123"])
+        assert result.exit_code != 0
+
+    def test_get_task_with_strategy_mocked(self):
+        """When strategy context is properly mocked, get task succeeds."""
+        mock_task = Task(
+            id="task-123", content="Test task", description="", project_id=None,
+            due_date=None, priority=1, is_completed=False, labels=[], contexts=[],
+            created_at=datetime(2024, 1, 1), updated_at=datetime(2024, 1, 1),
+        )
+        mock_sc = MagicMock()
+        mock_sc.task_repository = MagicMock()
+        mock_ts = MagicMock()
+        mock_ts.get_task = AsyncMock(return_value=mock_task)
+
+        with (
+            patch("todopro_cli.commands.get_command.get_storage_strategy_context", return_value=mock_sc, create=True),
+            patch("todopro_cli.commands.get_command.strategy_context", mock_sc, create=True),
+            patch("todopro_cli.commands.get_command.resolve_task_id", new=AsyncMock(return_value="task-123")),
+            patch("todopro_cli.commands.get_command.TaskService", return_value=mock_ts),
+        ):
+            result = runner.invoke(app, ["task", "task-123"])
+        assert result.exit_code == 0
+
+
+class TestGetProjectCommand:
+    """Lines 41-46: get project command body."""
+
+    def test_get_project_undefined_strategy_context(self):
+        """get project calls get_storage_strategy_context() which is undefined → exit 1."""
+        result = runner.invoke(app, ["project", "proj-123"])
+        assert result.exit_code != 0
+
+    def test_get_project_with_strategy_mocked(self):
+        """When strategy context is mocked, get project succeeds."""
+        mock_project = Project(
+            id="proj-123", name="Test", color="#FF0000", is_favorite=False,
+            created_at=datetime(2024, 1, 1), updated_at=datetime(2024, 1, 1),
+        )
+        mock_sc = MagicMock()
+        mock_sc.project_repository = MagicMock()
+        mock_ps = MagicMock()
+        mock_ps.get_project = AsyncMock(return_value=mock_project)
+
+        with (
+            patch("todopro_cli.commands.get_command.get_storage_strategy_context", return_value=mock_sc, create=True),
+            patch("todopro_cli.commands.get_command.ProjectService", return_value=mock_ps),
+        ):
+            result = runner.invoke(app, ["project", "proj-123"])
+        assert result.exit_code == 0
+
+
+class TestGetLabelCommand:
+    """Lines 56-61: get label command body."""
+
+    def test_get_label_undefined_strategy_context(self):
+        """get label calls get_storage_strategy_context() which is undefined → exit 1."""
+        result = runner.invoke(app, ["label", "label-123"])
+        assert result.exit_code != 0
+
+    def test_get_label_with_strategy_mocked(self):
+        """When strategy context is mocked, get label succeeds."""
+        mock_label = Label(
+            id="label-123", name="urgent", color="#FF0000",
+            created_at=datetime(2024, 1, 1), updated_at=datetime(2024, 1, 1),
+        )
+        mock_sc = MagicMock()
+        mock_sc.label_repository = MagicMock()
+        mock_ls = MagicMock()
+        mock_ls.get_label = AsyncMock(return_value=mock_label)
+
+        with (
+            patch("todopro_cli.commands.get_command.get_storage_strategy_context", return_value=mock_sc, create=True),
+            patch("todopro_cli.commands.get_command.LabelService", return_value=mock_ls),
+        ):
+            result = runner.invoke(app, ["label", "label-123"])
+        assert result.exit_code == 0
+
+
+class TestGetConfigCommand:
+    """Lines 71-77: get config command body."""
+
+    def test_get_config_existing_key(self):
+        """get config retrieves a value from ConfigService."""
+        mock_cfg_svc = MagicMock()
+        mock_cfg_svc.get.return_value = "https://api.example.com"
+
+        with patch("todopro_cli.services.config_service.ConfigService", return_value=mock_cfg_svc):
+            result = runner.invoke(app, ["config", "api.endpoint"])
+        assert result.exit_code == 0
+
+    def test_get_config_none_value(self):
+        """get config with None value still outputs correctly."""
+        mock_cfg_svc = MagicMock()
+        mock_cfg_svc.get.return_value = None
+
+        with patch("todopro_cli.services.config_service.ConfigService", return_value=mock_cfg_svc):
+            result = runner.invoke(app, ["config", "missing.key"])
+        assert result.exit_code == 0

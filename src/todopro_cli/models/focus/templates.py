@@ -1,8 +1,9 @@
 """Focus mode templates for different work types."""
 
+from collections.abc import Callable
 from typing import Any
 
-from todopro_cli.services.config_service import get_config_service
+from todopro_cli.models.config_models import AppConfig
 
 DEFAULT_TEMPLATES = {
     "deep_work": {
@@ -31,10 +32,15 @@ DEFAULT_TEMPLATES = {
 class TemplateManager:
     """Manage focus session templates."""
 
-    def __init__(self):
-        """Initialize template manager."""
-        self.config_service = get_config_service()
-        self.config = self.config_service.load_config()
+    def __init__(self, config: AppConfig, save_config: Callable[[], None]):
+        """Initialize template manager.
+
+        Args:
+            config: Current application configuration.
+            save_config: Callable that persists the configuration.
+        """
+        self.config = config
+        self.save_config = save_config
 
     def get_templates(self) -> dict[str, dict[str, Any]]:
         """Get all templates (default + custom)."""
@@ -63,7 +69,7 @@ class TemplateManager:
             "description": description or f"Custom {duration}-minute session",
         }
 
-        self.config_service.save_config(self.config)
+        self.save_config()
 
     def delete_template(self, name: str) -> bool:
         """Delete a custom template (can't delete defaults)."""
@@ -72,7 +78,7 @@ class TemplateManager:
 
         if self.config.focus_templates and name in self.config.focus_templates:
             del self.config.focus_templates[name]
-            self.config_service.save_config(self.config)
+            self.save_config()
             return True
 
         return False

@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from todopro_cli.repositories.repository import (
+from todopro_cli.repositories import (
+    AchievementRepository,
     LabelRepository,
     LocationContextRepository,
     ProjectRepository,
@@ -47,7 +48,7 @@ class StorageStrategy(ABC):
 
     @abstractmethod
     def get_achievement_repository(self) -> AchievementRepository:
-        """Get achievement repository imp
+        """Get achievement repository implementation for this strategy."""
 
     @property
     @abstractmethod
@@ -102,6 +103,9 @@ class LocalStorageStrategy(StorageStrategy):
     def get_location_context_repository(self) -> LocationContextRepository:
         return self._location_context_repo
 
+    def get_achievement_repository(self) -> AchievementRepository:
+        raise NotImplementedError("Achievement repository not yet implemented for local storage")
+
     @property
     def storage_type(self) -> str:
         return "local"
@@ -144,6 +148,9 @@ class RemoteStorageStrategy(StorageStrategy):
 
     def get_location_context_repository(self) -> LocationContextRepository:
         return self._location_context_repo
+
+    def get_achievement_repository(self) -> AchievementRepository:
+        raise NotImplementedError("Achievement repository not yet implemented for remote storage")
 
     @property
     def storage_type(self) -> str:

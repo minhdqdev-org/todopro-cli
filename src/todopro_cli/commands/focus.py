@@ -56,6 +56,18 @@ def get_task_service() -> TaskService:
     return TaskService(get_storage_strategy_context().task_repository)
 
 
+def _get_template_manager() -> TemplateManager:
+    """Create a TemplateManager with injected config dependencies."""
+    svc = get_config_service()
+    return TemplateManager(config=svc.load_config(), save_config=svc.save_config)
+
+
+def _get_suggestion_engine() -> TaskSuggestionEngine:
+    """Create a TaskSuggestionEngine with injected config."""
+    svc = get_config_service()
+    return TaskSuggestionEngine(config=svc.load_config())
+
+
 @app.command("start")
 def start_focus(
     task_id: str = typer.Argument(..., help="Task ID to focus on"),
@@ -70,7 +82,7 @@ def start_focus(
     """Start a focus session on a task."""
     # Apply template if specified
     if template:
-        tm = TemplateManager()
+        tm = _get_template_manager()
         template_data = tm.get_template(template)
         if template_data:
             duration = template_data["duration"]
@@ -424,8 +436,19 @@ def auto_cycle(
     # Get initial task
     if not task_id:
         console.print("[cyan]No task specified. Suggesting tasks...[/cyan]\n")
-        engine = TaskSuggestionEngine()
-        suggestions = engine.suggest_tasks(limit=5)
+        task_service = get_task_service()
+        try:
+            raw_tasks = run_async(task_service.list_tasks(status="active"))
+            tasks_dicts = [
+                {"id": t.id, "title": t.content, "priority": t.priority,
+                 "due_date": t.due_date, "labels": t.labels,
+                 "estimated_minutes": getattr(t, "estimated_minutes", 25)}
+                for t in raw_tasks
+            ]
+        except Exception:
+            tasks_dicts = []
+        engine = _get_suggestion_engine()
+        suggestions = engine.suggest_tasks(tasks=tasks_dicts, limit=5)
 
         if not suggestions:
             console.print("[yellow]No tasks available for focus[/yellow]")
@@ -579,8 +602,18 @@ def auto_cycle(
                         console.print("[green]✓ Task marked as completed[/green]")
 
                         # Get next task
-                        engine = TaskSuggestionEngine()
-                        suggestions = engine.suggest_tasks(limit=1)
+                        try:
+                            raw_tasks = run_async(task_service.list_tasks(status="active"))
+                            tasks_dicts = [
+                                {"id": t.id, "title": t.content, "priority": t.priority,
+                                 "due_date": t.due_date, "labels": t.labels,
+                                 "estimated_minutes": getattr(t, "estimated_minutes", 25)}
+                                for t in raw_tasks
+                            ]
+                        except Exception:
+                            tasks_dicts = []
+                        engine = _get_suggestion_engine()
+                        suggestions = engine.suggest_tasks(tasks=tasks_dicts, limit=1)
 
                         if suggestions:
                             current_task_id = suggestions[0]["task"]["id"]
@@ -622,7 +655,7 @@ def auto_cycle(
 @app.command("templates")
 def list_templates():
     """List available focus session templates."""
-    tm = TemplateManager()
+    tm = _get_template_manager()
     templates = tm.list_templates()
 
     console.print("\n[bold cyan]Focus Session Templates[/bold cyan]\n")
@@ -654,7 +687,7 @@ def manage_template(
     description: str = typer.Option("", "--description", help="Template description"),
 ):
     """Create or delete a custom focus template."""
-    tm = TemplateManager()
+    tm = _get_template_manager()
 
     if action == "create":
         tm.create_template(

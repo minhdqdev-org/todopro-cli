@@ -4,10 +4,17 @@ import typer
 from rich.table import Table
 
 from todopro_cli.models.focus.goals import GoalsManager
+from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.ui.console import get_console
 
 console = get_console()
 app = typer.Typer(help="Focus goals and targets")
+
+
+def _get_goals_manager() -> GoalsManager:
+    """Create a GoalsManager with injected config dependencies."""
+    svc = get_config_service()
+    return GoalsManager(config=svc.load_config(), save_config=svc.save_config)
 
 
 def format_duration(minutes: float) -> str:
@@ -33,7 +40,7 @@ def render_progress_bar(value: float, max_value: float, width: int = 12) -> str:
 @app.command()
 def show_goals():
     """Show current goals and progress."""
-    manager = GoalsManager()
+    manager = _get_goals_manager()
     goals = manager.get_goals()
     progress = manager.get_all_progress()
 
@@ -137,7 +144,7 @@ def set_goal(
     goal_type = goal_type.replace("-", "_")
 
     try:
-        manager = GoalsManager()
+        manager = _get_goals_manager()
         manager.set_goal(goal_type, value)
 
         # Format display
@@ -160,7 +167,7 @@ def set_goal(
 @app.command("list")
 def list_goals():
     """List all configured goals."""
-    manager = GoalsManager()
+    manager = _get_goals_manager()
     goals = manager.get_goals()
 
     console.print("\n[bold cyan]Focus Goals Configuration[/bold cyan]\n")
@@ -189,7 +196,7 @@ def list_goals():
 @app.command("reset")
 def reset_goals():
     """Reset goals to defaults."""
-    manager = GoalsManager()
+    manager = _get_goals_manager()
 
     defaults = {
         "daily_sessions": 8,
@@ -200,7 +207,7 @@ def reset_goals():
     }
 
     manager.config.focus_goals = defaults
-    manager.context_manager.save_config()
+    manager.save_config()
 
     console.print("\n[green]✓ Goals reset to defaults[/green]")
     console.print("\n[dim]Run 'todopro goals list' to see default values[/dim]\n")

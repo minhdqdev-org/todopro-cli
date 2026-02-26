@@ -1,18 +1,24 @@
 """Goals and targets for focus sessions."""
 
+from collections.abc import Callable
 from typing import Any
 
+from todopro_cli.models.config_models import AppConfig
 from todopro_cli.models.focus.analytics import FocusAnalytics
-from todopro_cli.services.config_service import get_config_service
 
 
 class GoalsManager:
     """Manage focus goals and track progress."""
 
-    def __init__(self):
-        """Initialize goals manager."""
-        self.config_service = get_config_service()
-        self.config = self.config_service.load_config()
+    def __init__(self, config: AppConfig, save_config: Callable[[], None]):
+        """Initialize goals manager.
+
+        Args:
+            config: Current application configuration.
+            save_config: Callable that persists the configuration.
+        """
+        self.config = config
+        self.save_config = save_config
         self.analytics = FocusAnalytics()
 
     def get_goals(self) -> dict[str, Any]:
@@ -54,7 +60,7 @@ class GoalsManager:
             )
 
         self.config.focus_goals[goal_type] = value
-        self.context_manager.save_config(self.config)
+        self.save_config()
 
     def get_daily_progress(self) -> dict[str, Any]:
         """Get progress toward daily goals."""

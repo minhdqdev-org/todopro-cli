@@ -242,3 +242,236 @@ class TestRescheduleCommand:
 
         assert result.exit_code == 0
         assert "No overdue tasks" in result.stdout or "🎉" in result.stdout
+
+
+class TestListJsonFlag:
+    """Line 50: test --json flag sets output to json."""
+
+    @patch("todopro_cli.commands.tasks_command.get_background_cache")
+    def test_list_json_flag(self, mock_cache, mock_task_service, mock_task):
+        mock_task_service.list_tasks.return_value = [mock_task]
+        mock_cache.return_value.get_completing_tasks.return_value = []
+        result = runner.invoke(app, ["list", "--json"])
+        assert result.exit_code == 0
+
+
+class TestGetTaskServicePath:
+    """Line 71: get command uses get_task_service() directly."""
+
+    @patch("todopro_cli.commands.tasks_command.resolve_task_id")
+    def test_get_task_direct(self, mock_resolve, mock_task_service, mock_task):
+        mock_resolve.return_value = "task-123"  # non-async return
+        mock_task_service.get_task.return_value = mock_task
+        result = runner.invoke(app, ["get", "task-123"])
+        assert result.exit_code == 0
+
+
+class TestStartCommand:
+    """Lines 236-255: start command delegates to focus.start_focus."""
+
+    def test_start_delegates_to_focus(self):
+        with patch("todopro_cli.commands.focus.start_focus") as mock_impl:
+            result = runner.invoke(app, ["start", "task-123"])
+        assert result.exit_code == 0
+        mock_impl.assert_called_once()
+
+    def test_start_with_duration(self):
+        with patch("todopro_cli.commands.focus.start_focus") as mock_impl:
+            result = runner.invoke(app, ["start", "task-123", "--duration", "30"])
+        assert result.exit_code == 0
+
+    def test_start_with_template(self):
+        with patch("todopro_cli.commands.focus.start_focus") as mock_impl:
+            result = runner.invoke(app, ["start", "task-123", "--template", "deep"])
+        assert result.exit_code == 0
+
+
+class TestStopCommand:
+    """Lines 263-265: stop command delegates to focus.stop_focus."""
+
+    def test_stop_delegates(self):
+        with patch("todopro_cli.commands.focus.stop_focus") as mock_impl:
+            result = runner.invoke(app, ["stop"])
+        assert result.exit_code == 0
+        mock_impl.assert_called_once()
+
+
+class TestResumeCommand:
+    """Line 275: resume command delegates to focus.resume_focus."""
+
+    def test_resume_delegates(self):
+        with patch("todopro_cli.commands.focus.resume_focus") as mock_impl:
+            result = runner.invoke(app, ["resume"])
+        assert result.exit_code == 0
+        mock_impl.assert_called_once()
+
+
+class TestFocusStatusCommand:
+    """Lines 293-295: status command delegates to focus.focus_status."""
+
+    def test_status_delegates(self):
+        with patch("todopro_cli.commands.focus.focus_status") as mock_impl:
+            result = runner.invoke(app, ["status"])
+        assert result.exit_code == 0
+        mock_impl.assert_called_once()
+
+
+class TestSkipCommand:
+    """Lines 301-341: skip command uses API client."""
+
+    def _make_api(self, skip_result=None):
+        mock_client = MagicMock()
+        mock_client.close = AsyncMock()
+        mock_api = MagicMock()
+        mock_api.skip_task = AsyncMock(
+            return_value=skip_result or {"id": "task-123", "content": "test"}
+        )
+        return mock_client, mock_api
+
+    def test_skip_success(self):
+        mock_client, mock_api = self._make_api()
+        with (
+            patch(
+                "todopro_cli.services.api.client.get_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "todopro_cli.services.api.tasks.TasksAPI", return_value=mock_api
+            ),
+        ):
+            result = runner.invoke(app, ["skip", "task-123"])
+        assert result.exit_code == 0
+        assert "Skipped" in result.output
+
+    def test_skip_with_json_output(self):
+        mock_client, mock_api = self._make_api()
+        with (
+            patch(
+                "todopro_cli.services.api.client.get_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "todopro_cli.services.api.tasks.TasksAPI", return_value=mock_api
+            ),
+        ):
+            result = runner.invoke(app, ["skip", "task-123", "--output", "json"])
+        assert result.exit_code == 0
+
+
+class TestNextTaskCommand:
+    """Lines 352-363: next command."""
+
+    def test_next_no_tasks(self, mock_task_service):
+        mock_task_service.list_tasks.return_value = []
+        result = runner.invoke(app, ["next"])
+        assert result.exit_code == 0
+        assert "No active tasks" in result.output
+
+    def test_next_with_task_pretty(self, mock_task_service, mock_task):
+        mock_task_service.list_tasks.return_value = [mock_task]
+        with patch(
+            "todopro_cli.utils.ui.formatters.format_next_task"
+        ) as mock_fmt:
+            result = runner.invoke(app, ["next"])
+        assert result.exit_code == 0
+
+    def test_next_with_task_json_output(self, mock_task_service, mock_task):
+        mock_task_service.list_tasks.return_value = [mock_task]
+        result = runner.invoke(app, ["next", "--output", "json"])
+        assert result.exit_code == 0
+
+
+class TestListCompletingTasksFilter:
+    """Line 71: list_tasks filters out tasks being completed in background."""
+
+    @patch("todopro_cli.commands.tasks_command.get_background_cache")
+    def test_completing_tasks_filtered_from_list(self, mock_cache, mock_task_service, mock_task):
+        """When completing_tasks is non-empty, matching tasks are excluded."""
+        mock_task_service.list_tasks.return_value = [mock_task]
+        # Simulate a completing task with ID suffix matching our mock_task
+        mock_cache.return_value.get_completing_tasks.return_value = ["task-123"]
+        result = runner.invoke(app, ["list"])
+        assert result.exit_code == 0
+        # task-123 should be filtered out
+
+    @patch("todopro_cli.commands.tasks_command.get_background_cache")
+    def test_non_matching_task_not_filtered(self, mock_cache, mock_task_service, mock_task):
+        """Tasks whose ID doesn't match completing_tasks are NOT filtered."""
+        mock_task_service.list_tasks.return_value = [mock_task]
+        mock_cache.return_value.get_completing_tasks.return_value = ["xxxxxx"]
+        result = runner.invoke(app, ["list"])
+        assert result.exit_code == 0
+
+
+class TestRescheduleWithConfirmation:
+    """Lines 236-255: reschedule bulk overdue with user confirmation."""
+
+    def _make_overdue_task(self, task_id="task-overdue"):
+        from datetime import date
+        task = MagicMock()
+        task.id = task_id
+        task.content = "Overdue task"
+        task.due_date = MagicMock()
+        task.due_date.date.return_value.isoformat.return_value = "2020-01-01"
+        task.model_dump.return_value = {"id": task_id, "content": "Overdue task"}
+        return task
+
+    def test_reschedule_overdue_user_confirms(self, mock_task_service):
+        """User confirms bulk reschedule → tasks get rescheduled."""
+        overdue_task = self._make_overdue_task()
+        mock_task_service.list_tasks.return_value = [overdue_task]
+        mock_task_service.update_task.return_value = overdue_task
+        result = runner.invoke(app, ["reschedule"], input="y\n")
+        assert result.exit_code == 0
+        assert "Rescheduled" in result.output or "task" in result.output.lower()
+
+    def test_reschedule_overdue_user_cancels(self, mock_task_service):
+        """User declines bulk reschedule → cancelled."""
+        overdue_task = self._make_overdue_task()
+        mock_task_service.list_tasks.return_value = [overdue_task]
+        result = runner.invoke(app, ["reschedule"], input="n\n")
+        assert result.exit_code == 0
+        # Should not call update_task
+        mock_task_service.update_task.assert_not_called()
+
+    def test_reschedule_overdue_yes_flag(self, mock_task_service):
+        """--yes skips confirmation and rescheduled tasks."""
+        overdue_task = self._make_overdue_task()
+        mock_task_service.list_tasks.return_value = [overdue_task]
+        mock_task_service.update_task.return_value = overdue_task
+        result = runner.invoke(app, ["reschedule", "--yes"])
+        assert result.exit_code == 0
+        mock_task_service.update_task.assert_called()
+
+
+class TestRescheduleAutoDate:
+    """Lines 263-265: reschedule single task without providing --date."""
+
+    @patch("todopro_cli.commands.tasks_command.resolve_task_id")
+    def test_reschedule_single_no_date_uses_today(self, mock_resolve, mock_task_service):
+        """When no --date given, defaults to today's date."""
+        from unittest.mock import AsyncMock
+        mock_resolve.return_value = "task-123"
+        mock_task = MagicMock()
+        mock_task.content = "Short task"
+        mock_task_service.update_task.return_value = mock_task
+        result = runner.invoke(app, ["reschedule", "task-123"])
+        assert result.exit_code == 0
+
+
+class TestRescheduleContentTruncation:
+    """Line 275: reschedule with content longer than 60 chars."""
+
+    @patch("todopro_cli.commands.tasks_command.resolve_task_id")
+    def test_reschedule_long_content_truncated(self, mock_resolve, mock_task_service):
+        """Content > 60 chars is truncated to 57 chars + '...'."""
+        from unittest.mock import AsyncMock
+        mock_resolve.return_value = "task-123"
+        long_content = "This is a very long task content that definitely exceeds sixty characters in total"
+        mock_task = MagicMock()
+        mock_task.content = long_content
+        mock_task_service.update_task.return_value = mock_task
+        result = runner.invoke(app, ["reschedule", "task-123", "--date", "2024-12-31"])
+        assert result.exit_code == 0
+        # Should show truncated content with ...
+        assert "..." in result.output or long_content[:10] in result.output

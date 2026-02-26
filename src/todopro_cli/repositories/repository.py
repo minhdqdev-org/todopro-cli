@@ -23,6 +23,8 @@ from todopro_cli.models import (
     TaskFilters,
     TaskUpdate,
 )
+from todopro_cli.models.core import LocationContext, LocationContextCreate
+from todopro_cli.models.focus.achievements import Achievement, AchievementCreate
 
 
 class TaskRepository(ABC):
@@ -409,11 +411,11 @@ class LocationContextRepository(ABC):
     """
 
     @abstractmethod
-    async def list_all(self) -> list[Context]:
+    async def list_all(self) -> list[LocationContext]:
         """List all contexts.
 
         Returns:
-            List of all Context objects
+            List of all LocationContext objects
 
         Raises:
             NotImplementedError: Must be implemented by concrete adapter
@@ -423,14 +425,14 @@ class LocationContextRepository(ABC):
         )
 
     @abstractmethod
-    async def get(self, context_id: str) -> Context:
+    async def get(self, context_id: str) -> LocationContext:
         """Get a specific context by ID.
 
         Args:
             context_id: Unique identifier for the context
 
         Returns:
-            Context object
+            LocationContext object
 
         Raises:
             NotImplementedError: Must be implemented by concrete adapter
@@ -441,14 +443,14 @@ class LocationContextRepository(ABC):
         )
 
     @abstractmethod
-    async def create(self, context_data: ContextCreate) -> Context:
+    async def create(self, context_data: LocationContextCreate) -> LocationContext:
         """Create a new context.
 
         Args:
-            context_data: ContextCreate object with context details
+            context_data: LocationContextCreate object with context details
 
         Returns:
-            Created Context object with generated ID
+            Created LocationContext object with generated ID
 
         Raises:
             NotImplementedError: Must be implemented by concrete adapter
@@ -477,7 +479,9 @@ class LocationContextRepository(ABC):
         )
 
     @abstractmethod
-    async def get_available(self, latitude: float, longitude: float) -> list[Context]:
+    async def get_available(
+        self, latitude: float, longitude: float
+    ) -> list[LocationContext]:
         """Get contexts available at a specific location (within geofence).
 
         Uses haversine formula to calculate distance and filter contexts
@@ -495,4 +499,82 @@ class LocationContextRepository(ABC):
         """
         raise NotImplementedError(
             "LocationContextRepository.get_available() must be implemented by adapter"
+        )
+
+
+class AchievementRepository(ABC):
+    """Abstract base class for achievement persistence operations.
+
+    This interface defines CRUD operations for achievements, which are a new
+    feature in the focus module. For now, they are stored in the same repository
+    as contexts, but this abstraction allows us to separate them in the future
+    if needed.
+    """
+
+    @abstractmethod
+    async def list_all(self) -> list[Achievement]:
+        """List all achievements.
+
+        Returns:
+            List of all Achievement objects
+
+        Raises:
+            NotImplementedError: Must be implemented by concrete adapter
+        """
+        raise NotImplementedError(
+            "AchievementRepository.list_all() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def get(self, achievement_id: str) -> Achievement:
+        """Get a specific achievement by ID.
+
+        Args:
+            achievement_id: Unique identifier for the achievement
+
+        Returns:
+            Achievement object
+
+        Raises:
+            NotImplementedError: Must be implemented by concrete adapter
+            NotFoundError: If achievement does not exist
+        """
+        raise NotImplementedError(
+            "AchievementRepository.get() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def create(self, achievement_data: AchievementCreate) -> Achievement:
+        """Create a new achievement.
+
+        Args:
+            achievement_data: AchievementCreate object with achievement details
+
+        Returns:
+            Created Achievement object with generated ID
+
+        Raises:
+            NotImplementedError: Must be implemented by concrete adapter
+            ValidationError: If achievement data is invalid
+        """
+        raise NotImplementedError(
+            "AchievementRepository.create() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def delete(self, achievement_id: str) -> bool:
+        """Delete an achievement.
+
+        Args:
+            achievement_id: Unique identifier for the achievement
+
+        Returns:
+            True if deletion was successful
+
+        Raises:
+            NotImplementedError: Must be implemented by concrete adapter
+            NotFoundError: If achievement does not exist
+        """
+        raise NotImplementedError(
+            "AchievementRepository.delete() must be implemented by adapter"
         )

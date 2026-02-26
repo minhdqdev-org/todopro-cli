@@ -23,12 +23,14 @@ class TestSetGoal:
 
     def test_set_goal_calls_goals_manager(self):
         """Test that set goal calls GoalsManager.set_goal."""
-        with patch("todopro_cli.focus.goals.GoalsManager") as mock_gm_cls:
-            mock_gm = MagicMock()
-            mock_gm_cls.return_value = mock_gm
-            result = runner.invoke(app, ["goal", "daily-sessions", "8"])
-            # Verify the command ran without import error
-            assert result.exit_code == 0 or "Error" in result.output
+        with patch("todopro_cli.services.config_service.get_config_service") as mock_get_svc:
+            mock_svc = MagicMock()
+            mock_svc.load_config.return_value = MagicMock()
+            mock_svc.save_config = MagicMock()
+            mock_get_svc.return_value = mock_svc
+            with patch("todopro_cli.models.focus.goals.GoalsManager.set_goal"):
+                result = runner.invoke(app, ["goal", "daily-sessions", "8"])
+                assert result.exit_code == 0 or "Error" in result.output
 
     def test_set_goal_help(self):
         """Test set goal help output."""
@@ -46,9 +48,11 @@ class TestSetGoal:
             "streak-target",
         ]
         for goal_type in valid_types:
-            with patch("todopro_cli.focus.goals.GoalsManager") as mock_gm_cls:
-                mock_gm = MagicMock()
-                mock_gm_cls.return_value = mock_gm
+            with patch("todopro_cli.services.config_service.get_config_service") as mock_get_svc:
+                mock_svc = MagicMock()
+                mock_svc.load_config.return_value = MagicMock()
+                mock_svc.save_config = MagicMock()
+                mock_get_svc.return_value = mock_svc
                 result = runner.invoke(app, ["goal", goal_type, "10"])
                 # Should not raise a "No such command" error
                 assert "No such command" not in result.output
@@ -88,14 +92,68 @@ class TestSetGoalUnitLogic:
         captured_calls = []
 
         class FakeGoalsManager:
-            def __init__(self):
+            def __init__(self, config, save_config):
                 pass
 
             def set_goal(self, goal_type, target):
                 captured_calls.append((goal_type, target))
 
-        with patch("todopro_cli.focus.goals.GoalsManager", FakeGoalsManager):
-            result = runner.invoke(app, ["goal", "daily-sessions", "8"])
-            if captured_calls:
-                assert captured_calls[0][0] == "daily_sessions"
-                assert captured_calls[0][1] == 8
+        with patch("todopro_cli.services.config_service.get_config_service") as mock_get_svc:
+            mock_svc = MagicMock()
+            mock_svc.load_config.return_value = MagicMock()
+            mock_svc.save_config = MagicMock()
+            mock_get_svc.return_value = mock_svc
+            with patch("todopro_cli.models.focus.goals.GoalsManager", FakeGoalsManager):
+                result = runner.invoke(app, ["goal", "daily-sessions", "8"])
+                if captured_calls:
+                    assert captured_calls[0][0] == "daily_sessions"
+                    assert captured_calls[0][1] == 8
+
+
+class TestSetTimezone:
+    """Lines 64-68: set timezone command."""
+
+    def test_set_timezone_success(self):
+        """set timezone calls AuthService.set_timezone."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        mock_auth_svc = MagicMock()
+        mock_auth_svc.set_timezone = AsyncMock()
+
+        with patch("todopro_cli.services.auth_service.AuthService", return_value=mock_auth_svc):
+            result = runner.invoke(app, ["timezone", "America/New_York"])
+        assert result.exit_code == 0
+        assert "Timezone" in result.output or "America/New_York" in result.output
+
+    def test_set_timezone_help(self):
+        """timezone subcommand has help."""
+        result = runner.invoke(app, ["timezone", "--help"])
+        assert result.exit_code == 0
+        assert "timezone" in result.output.lower() or "Timezone" in result.output
+
+    def test_set_reminder_success(self):
+        """set reminder command works with offset format."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        mock_client = MagicMock()
+        mock_client.close = AsyncMock()
+        mock_api = MagicMock()
+        mock_api.set_reminder = AsyncMock(return_value={"id": "rem-1"})
+
+        with (
+            patch("todopro_cli.commands.set_command.get_client", return_value=mock_client),
+            patch("todopro_cli.commands.set_command.TasksAPI", return_value=mock_api),
+        ):
+            result = runner.invoke(app, ["reminder", "task-123", "1h"])
+        assert result.exit_code == 0
+        assert "Reminder" in result.output
+
+    def test_set_reminder_invalid_time_format(self):
+        """Invalid when format → exit 1."""
+        result = runner.invoke(app, ["reminder", "task-123", "invalid-time"])
+        assert result.exit_code == 1
+
+    def test_set_reminder_past_time_exits_1(self):
+        """Past datetime → exit 1."""
+        result = runner.invoke(app, ["reminder", "task-123", "2000-01-01T00:00:00"])
+        assert result.exit_code == 1

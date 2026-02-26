@@ -20,6 +20,15 @@ from .decorators import command_wrapper
 app = typer.Typer(cls=SuggestingGroup, help="Task management commands")
 console = get_console()
 
+# ---------- sub-typer mounts (comment, link, apply) ----------
+from .comment_command import app as _comment_app  # noqa: E402
+from .link_command import app as _link_app  # noqa: E402
+from .apply_command import app as _apply_app  # noqa: E402
+
+app.add_typer(_comment_app, name="comment", help="Manage task comments")
+app.add_typer(_link_app, name="link", help="Manage task dependencies")
+app.add_typer(_apply_app, name="apply", help="Apply saved filters")
+
 
 @app.command("list")
 @command_wrapper
@@ -271,19 +280,84 @@ async def reschedule(
 
 # TODO: Refactor classify to use service layer
 # @app.command("classify")
-# def classify_task_cmd(
-#     task_id: str = typer.Argument(..., help="Task ID or suffix to classify"),
-#     urgent: bool = typer.Option(None, "--urgent/--not-urgent", help="Mark as urgent"),
-#     important: bool = typer.Option(
-#         None, "--important/--not-important", help="Mark as important"
-#     ),
-# ) -> None:
-#     """Classify a task in the Eisenhower Matrix."""
-#     pass
+
+# ---------- focus-session delegation ----------
+
+@app.command("start")
+def task_start(
+    task_id: str = typer.Argument(..., help="Task ID to focus on"),
+    duration: int = typer.Option(25, "--duration", help="Session duration in minutes"),
+    template: str | None = typer.Option(None, "--template", help="Template name"),
+) -> None:
+    """Start a Pomodoro focus session on a task."""
+    from todopro_cli.commands.focus import start_focus as _impl
+
+    _impl(task_id=task_id, duration=duration, template=template)
 
 
-# TODO: Refactor focus to use service layer
-# @app.command("focus")
-# def focus_on_q2() -> None:
-#     """Show Q2 tasks (Important but Not Urgent) - Strategic work."""
-#     pass
+@app.command("stop")
+def task_stop() -> None:
+    """Stop the current focus session."""
+    from todopro_cli.commands.focus import stop_focus as _impl
+
+    _impl()
+
+
+@app.command("resume")
+def task_resume() -> None:
+    """Resume a paused focus session."""
+    from todopro_cli.commands.focus import resume_focus as _impl
+
+    _impl()
+
+
+@app.command("status")
+def task_focus_status() -> None:
+    """Show current focus session status."""
+    from todopro_cli.commands.focus import focus_status as _impl
+
+    _impl()
+
+
+# ---------- skip ----------
+
+@app.command("skip")
+@command_wrapper
+async def skip_task(
+    task_id: str = typer.Argument(..., help="Task ID to skip"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+) -> None:
+    """Skip the current instance of a recurring task."""
+    from todopro_cli.services.api.client import get_client
+    from todopro_cli.services.api.tasks import TasksAPI
+
+    client = get_client()
+    api = TasksAPI(client)
+    try:
+        result = await api.skip_task(task_id)
+        format_success(f"Skipped recurring task: {task_id}")
+        format_output(result, output)
+    finally:
+        await client.close()
+
+
+# ---------- next ----------
+
+@app.command("next")
+@command_wrapper
+async def next_task(
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
+) -> None:
+    """Show the next most important task."""
+    from todopro_cli.utils.ui.formatters import format_next_task
+
+    task_service = get_task_service()
+    tasks = await task_service.list_tasks(status="active", limit=50)
+    if not tasks:
+        console.print("[dim]No active tasks.[/dim]")
+        return
+    task = tasks[0]
+    if output == "pretty":
+        format_next_task(task.model_dump())
+    else:
+        format_output(task.model_dump(), output)

@@ -355,3 +355,139 @@ class TestTimerIntegration:
         assert result.exit_code == 0
         assert "Show Pomodoro statistics" in clean_output
         assert "--days" in clean_output
+
+
+class TestTimerStartSessionComplete:
+    """Lines 74-83: session complete after countdown."""
+
+    def test_start_session_complete_path(self, mock_api_client):
+        """Countdown completes → 'Session Complete' + complete API call."""
+        start_response = MagicMock()
+        start_response.json.return_value = {"id": "session-123", "session_type": "work", "duration": 1}
+
+        complete_response = MagicMock()
+        complete_response.json.return_value = {"success": True}
+
+        mock_api_client.post.side_effect = [start_response, complete_response]
+
+        call_count = [0]
+        def time_side_effect():
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return 0  # start_time
+            return 9999   # subsequent calls - well past the duration
+
+        with patch("todopro_cli.commands.timer_command.time") as mock_time:
+            mock_time.time.side_effect = time_side_effect
+            mock_time.sleep = MagicMock()
+            result = runner.invoke(app, ["start", "--duration", "1"])
+
+        assert result.exit_code == 0
+        assert mock_api_client.post.call_count == 2
+        assert "Complete" in result.stdout or "Session" in result.stdout
+
+
+class TestTimerStartInterrupt:
+    """Lines 92-99: KeyboardInterrupt handling in start timer."""
+
+    def test_start_keyboard_interrupt(self, mock_api_client):
+        """KeyboardInterrupt during countdown triggers interrupt API call."""
+        start_response = MagicMock()
+        start_response.json.return_value = {"id": "session-456", "session_type": "work", "duration": 25}
+
+        interrupt_response = MagicMock()
+        interrupt_response.json.return_value = {"success": True}
+
+        mock_api_client.post.side_effect = [start_response, interrupt_response]
+
+        with patch("todopro_cli.commands.timer_command.time") as mock_time:
+            call_count = [0]
+            def time_side_effect():
+                call_count[0] += 1
+                return 0  # keep returning 0 so loop condition is met
+            mock_time.time.side_effect = time_side_effect
+            mock_time.sleep.side_effect = KeyboardInterrupt()
+            result = runner.invoke(app, ["start", "--duration", "25"])
+
+        assert result.exit_code == 0
+        assert mock_api_client.post.call_count == 2
+        interrupt_call = mock_api_client.post.call_args_list[1]
+        assert "interrupt" in str(interrupt_call)
+
+
+class TestTimerHistoryInterruptedStatus:
+    """Lines 156-161: history with interrupted and pending sessions."""
+
+    def test_history_interrupted_session_shows_yellow_x(self, mock_api_client):
+        """Interrupted session shows '✗' with yellow color."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "sessions": [
+                {
+                    "started_at": "2026-02-10T10:00:00Z",
+                    "session_type": "work",
+                    "task_content": "Debug issue",
+                    "actual_duration_minutes": 10,
+                    "is_completed": False,
+                    "is_interrupted": True,
+                }
+            ]
+        }
+        mock_api_client.get.return_value = mock_response
+        result = runner.invoke(app, ["history"], catch_exceptions=False)
+        assert result.exit_code == 0
+        assert "✗" in result.stdout or "Debug issue" in result.stdout
+
+    def test_history_in_progress_session_shows_circle(self, mock_api_client):
+        """Session that is neither completed nor interrupted shows '○'."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "sessions": [
+                {
+                    "started_at": "2026-02-10T10:00:00Z",
+                    "session_type": "work",
+                    "task_content": "In progress",
+                    "actual_duration_minutes": 5,
+                    "is_completed": False,
+                    "is_interrupted": False,
+                }
+            ]
+        }
+        mock_api_client.get.return_value = mock_response
+        result = runner.invoke(app, ["history"], catch_exceptions=False)
+        assert result.exit_code == 0
+        assert "○" in result.stdout or "In progress" in result.stdout
+
+
+class TestQuickTimerComplete:
+    """Lines 239-246: quick timer completion path."""
+
+    @patch("todopro_cli.commands.timer_command.time")
+    def test_quick_timer_completion_message(self, mock_time):
+        """Quick timer exits loop and prints Time's up."""
+        call_count = [0]
+        def time_side_effect():
+            call_count[0] += 1
+            return 0 if call_count[0] == 1 else 9999
+
+        mock_time.time.side_effect = time_side_effect
+        mock_time.sleep = MagicMock()
+
+        result = runner.invoke(app, ["quick", "1"])
+        assert result.exit_code == 0
+        assert "Time's up" in result.stdout or "timer started" in result.stdout.lower()
+
+    @patch("todopro_cli.commands.timer_command.time")
+    def test_quick_timer_keyboard_interrupt(self, mock_time):
+        """Lines 253-254: KeyboardInterrupt stops quick timer."""
+        call_count = [0]
+        def time_side_effect():
+            call_count[0] += 1
+            return 0  # stay in loop
+
+        mock_time.time.side_effect = time_side_effect
+        mock_time.sleep.side_effect = KeyboardInterrupt()
+
+        result = runner.invoke(app, ["quick", "1"])
+        assert result.exit_code == 0
+        assert "Timer stopped" in result.stdout or "stopped" in result.stdout.lower()

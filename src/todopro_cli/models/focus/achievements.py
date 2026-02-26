@@ -4,8 +4,6 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
-from todopro_cli.services.config_service import get_config_service
-
 from .analytics import FocusAnalytics
 
 
@@ -184,17 +182,15 @@ class AchievementTracker:
     def __init__(self):
         """Initialize achievement tracker."""
         self.analytics = FocusAnalytics()
-        self.config_service = get_config_service()
-        self.config = self.config_service.config
 
-        # Initialize achievements storage in config
-        if not hasattr(self.config, "achievements") or self.config.achievements is None:
-            self.config.achievements = {
-                "earned": [],
-                "progress": {},
-                "last_check": None,
-            }
-            self.config_service.save_config(self.config)
+        # # Initialize achievements storage in config
+        # if not hasattr(self.config, "achievements") or self.config.achievements is None:
+        #     self.config.achievements = {
+        #         "earned": [],
+        #         "progress": {},
+        #         "last_check": None,
+        #     }
+        #     self.config_service.save_config(self.config)
 
     def check_achievements(self) -> list[Achievement]:
         """Check for newly earned achievements."""
@@ -202,20 +198,20 @@ class AchievementTracker:
 
         for achievement in ACHIEVEMENTS:
             # Skip if already earned
-            if achievement.id in self.config.achievements["earned"]:
+            if achievement.id in self.achievements["earned"]:
                 continue
 
             # Check if requirement is met
             if self._check_requirement(achievement.requirement):
                 newly_earned.append(achievement)
-                self.config.achievements["earned"].append(achievement.id)
+                self.achievements["earned"].append(achievement.id)
 
         # Update last check time
-        self.config.achievements["last_check"] = datetime.now().isoformat()
+        self.achievements["last_check"] = datetime.now().isoformat()
 
         # Save if any new achievements
-        if newly_earned:
-            self.config_service.save_config(self.config)
+        # if newly_earned:
+        #     self.config_service.save_config(self.config)
 
         return newly_earned
 
@@ -492,3 +488,19 @@ class AchievementTracker:
             return 100.0 if current else 0.0
 
         return min((current / required * 100), 100.0) if required > 0 else 0.0
+
+
+class AchievementCreate:
+    """Data model for creating a new achievement (if we want to support custom ones in the future)."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        icon: str,
+        requirement: dict[str, Any],
+    ):
+        self.name = name
+        self.description = description
+        self.icon = icon
+        self.requirement = requirement

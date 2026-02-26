@@ -24,18 +24,10 @@ class TestResetGoals:
 
     def test_reset_goals_with_force_flag(self):
         """Test reset goals with --force skips confirmation."""
-
-        class FakeContextManager:
-            def save_config(self):
-                pass
-
-        class FakeGoalsManager:
-            def __init__(self):
-                self.config = MagicMock()
-                self.config.focus_goals = {}
-                self.context_manager = FakeContextManager()
-
-        with patch("todopro_cli.focus.goals.GoalsManager", FakeGoalsManager):
+        with patch("todopro_cli.commands.reset_command.get_goal_service") as mock_get_svc:
+            mock_svc = MagicMock()
+            mock_svc.reset_goals = MagicMock()
+            mock_get_svc.return_value = mock_svc
             result = runner.invoke(app, ["goals", "--force"])
             assert result.exit_code == 0
 
@@ -52,33 +44,14 @@ class TestResetGoals:
             assert result.exit_code == 0
 
     def test_reset_goals_sets_defaults(self):
-        """Test reset goals sets the expected default values."""
-        expected_defaults = {
-            "daily_sessions": 8,
-            "daily_minutes": 200,
-            "weekly_sessions": 40,
-            "weekly_minutes": 1000,
-            "streak_target": 30,
-        }
-        saved_goals = {}
-
-        class FakeContextManager:
-            def save_config(self):
-                pass
-
-        class FakeGoalsManager:
-            def __init__(self):
-                self.config = MagicMock()
-                self.context_manager = FakeContextManager()
-
-            @property
-            def focus_goals(self):
-                return saved_goals
-
-        with patch("todopro_cli.focus.goals.GoalsManager", FakeGoalsManager):
+        """Test reset goals calls reset_goals on the goal service."""
+        with patch("todopro_cli.commands.reset_command.get_goal_service") as mock_get_svc:
+            mock_svc = MagicMock()
+            mock_svc.reset_goals = MagicMock()
+            mock_get_svc.return_value = mock_svc
             result = runner.invoke(app, ["goals", "--force"])
-            # Just verify no crash
             assert result.exit_code == 0
+            mock_svc.reset_goals.assert_called_once()
 
 
 class TestResetConfig:

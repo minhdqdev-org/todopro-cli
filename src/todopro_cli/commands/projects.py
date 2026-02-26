@@ -136,3 +136,38 @@ async def unarchive_project(
     project = await project_service.unarchive_project(project_id)
     format_success(f"Project unarchived: {project_id}")
     format_output(project.model_dump(), output)
+
+
+@app.command("describe")
+@command_wrapper
+async def describe_project(
+    project_id: str = typer.Argument(..., help="Project ID"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+) -> None:
+    """Describe a project in detail."""
+    project_service = get_project_service()
+
+    project_id = await resolve_project_uuid(project_id, project_service.repository)
+    project = await project_service.get_project(project_id)
+    format_output(project.model_dump(), output)
+
+
+@app.command("view")
+def view_project(
+    project_code: str = typer.Argument(..., help="Project code or ID"),
+    layout: str = typer.Option("board", "--layout", help="View layout (board)"),
+) -> None:
+    """View project in interactive TUI board mode."""
+    from todopro_cli.utils.ui.board_view import run_board_view
+
+    if layout != "board":
+        format_error(f"Unsupported layout: {layout}. Only 'board' is supported.")
+        raise typer.Exit(1)
+
+    run_board_view(project_code)
+
+
+# ---------- share (collaborate) sub-typer ----------
+from .collaborate_command import app as _collaborate_app  # noqa: E402
+
+app.add_typer(_collaborate_app, name="share", help="Manage project collaboration")

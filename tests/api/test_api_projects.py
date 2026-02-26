@@ -114,3 +114,74 @@ async def test_unarchive_project(mock_client):
 
     assert result["is_archived"] is False
     mock_client.post.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_list_projects_archived(mock_client):
+    """Test listing projects with archived=True passes the param."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"projects": [{"id": "p1", "is_archived": True}]}
+    mock_client.get.return_value = mock_response
+
+    projects_api = ProjectsAPI(mock_client)
+    result = await projects_api.list_projects(archived=True)
+
+    assert result["projects"][0]["is_archived"] is True
+    mock_client.get.assert_called_once_with(
+        "/v1/projects", params={"archived": True}
+    )
+
+
+@pytest.mark.asyncio
+async def test_list_projects_favorites(mock_client):
+    """Test listing projects with favorites=True passes the param."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"projects": [{"id": "p2", "favorite": True}]}
+    mock_client.get.return_value = mock_response
+
+    projects_api = ProjectsAPI(mock_client)
+    result = await projects_api.list_projects(favorites=True)
+
+    assert result["projects"][0]["favorite"] is True
+    mock_client.get.assert_called_once_with(
+        "/v1/projects", params={"favorites": True}
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_project_with_color(mock_client):
+    """Test creating a project with a custom color includes color in payload."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "id": "proj-456",
+        "name": "Colorful Project",
+        "color": "#FF0000",
+    }
+    mock_client.post.return_value = mock_response
+
+    projects_api = ProjectsAPI(mock_client)
+    result = await projects_api.create_project("Colorful Project", color="#FF0000")
+
+    assert result["color"] == "#FF0000"
+    call_kwargs = mock_client.post.call_args
+    assert call_kwargs[1]["json"]["color"] == "#FF0000"
+    assert call_kwargs[1]["json"]["name"] == "Colorful Project"
+
+
+@pytest.mark.asyncio
+async def test_get_project_stats(mock_client):
+    """Test getting project statistics."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "total_tasks": 42,
+        "completed_tasks": 30,
+        "overdue_tasks": 5,
+    }
+    mock_client.get.return_value = mock_response
+
+    projects_api = ProjectsAPI(mock_client)
+    result = await projects_api.get_project_stats("proj-123")
+
+    assert result["total_tasks"] == 42
+    assert result["completed_tasks"] == 30
+    mock_client.get.assert_called_once_with("/v1/projects/proj-123/stats")

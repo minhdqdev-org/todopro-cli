@@ -5,18 +5,22 @@ from io import StringIO
 from unittest.mock import patch
 
 from todopro_cli.utils.ui.formatters import (
+    calculate_unique_suffixes,
     format_dict_table,
     format_due_date,
     format_generic_list_pretty,
+    format_next_task,
     format_output,
     format_pretty,
     format_project_item,
     format_projects_pretty,
+    format_relative_time,
     format_single_item,
     format_single_item_pretty,
     format_table,
     format_task_item,
     format_tasks_pretty,
+    is_overdue,
     is_today,
 )
 
@@ -32,9 +36,9 @@ def test_format_output_default():
 def test_format_output_json_pretty():
     """Test JSON pretty output format."""
     data = {"key": "value"}
-    with patch("builtins.print") as mock_print:
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
         format_output(data, "json-pretty")
-        mock_print.assert_called_once()
+        mock_console.print.assert_called_once()
 
 
 def test_format_output_wide():
@@ -47,22 +51,20 @@ def test_format_output_wide():
 def test_format_dict_table_with_boolean():
     """Test formatting table with boolean values."""
     data = [{"id": "1", "completed": True}, {"id": "2", "completed": False}]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
-        format_dict_table(data, wide=False)
+    # format_dict_table uses rich console - just verify no exception
+    format_dict_table(data)
 
 
 def test_format_dict_table_with_list_values():
     """Test formatting table with list values."""
     data = [{"id": "1", "labels": ["work", "urgent"]}]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
-        format_dict_table(data, wide=False)
+    format_dict_table(data)
 
 
 def test_format_dict_table_with_none_values():
     """Test formatting table with None values."""
     data = [{"id": "1", "description": None}]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
-        format_dict_table(data, wide=False)
+    format_dict_table(data)
 
 
 def test_format_single_item_with_various_types():
@@ -165,7 +167,7 @@ def test_format_tasks_pretty_with_completed():
         },
     ]
     with patch("sys.stdout", new=StringIO()) as fake_out:
-        format_tasks_pretty(tasks, compact=False)
+        format_tasks_pretty(tasks)
 
 
 def test_format_tasks_pretty_with_overdue():
@@ -182,11 +184,11 @@ def test_format_tasks_pretty_with_overdue():
         }
     ]
     with patch("sys.stdout", new=StringIO()) as fake_out:
-        format_tasks_pretty(tasks, compact=False)
+        format_tasks_pretty(tasks)
 
 
 def test_format_tasks_pretty_compact():
-    """Test formatting tasks in compact mode."""
+    """Test formatting tasks - standard call."""
     now = datetime.now()
     future = now + timedelta(days=1)
     tasks = [
@@ -200,7 +202,7 @@ def test_format_tasks_pretty_compact():
         }
     ]
     with patch("sys.stdout", new=StringIO()) as fake_out:
-        format_tasks_pretty(tasks, compact=True)
+        format_tasks_pretty(tasks)
 
 
 def test_format_task_item_recurring():
@@ -378,8 +380,189 @@ def test_is_today_invalid_date():
 def test_format_quiet_with_items_key():
     """Test quiet format with items key in dict."""
     data = {"items": [{"id": "123"}, {"id": "456"}]}
-    with patch("builtins.print") as mock_print:
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
         from todopro_cli.utils.ui.formatters import format_quiet
 
         format_quiet(data)
-        assert mock_print.call_count == 2
+        assert mock_console.print.call_count == 2
+
+
+# ===========================================================================
+# calculate_unique_suffixes — else branch (line 48)
+# ===========================================================================
+
+def test_calculate_unique_suffixes_else_branch():
+    """When a task ID is always a suffix of another, the else branch fires."""
+    # "ab" is a proper suffix of "aab": every length suffix of "ab" matches "aab"
+    result = calculate_unique_suffixes(["ab", "aab"])
+    # "ab" can only be fully distinguished by its full 2-char length
+    assert result["ab"] == 2
+    # "aab" gets a unique suffix at length 3
+    assert result["aab"] == 3
+
+
+def test_calculate_unique_suffixes_empty_returns_empty():
+    assert calculate_unique_suffixes([]) == {}
+
+
+def test_calculate_unique_suffixes_single_id():
+    result = calculate_unique_suffixes(["abc123"])
+    assert result["abc123"] == 1  # single item, length 1 is unique
+
+
+# ===========================================================================
+# format_dict_table — empty items (lines 115-116)
+# ===========================================================================
+
+def test_format_dict_table_empty_items():
+    """Directly calling format_dict_table([]) must print 'No items found'."""
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_dict_table([])
+    mock_console.print.assert_called_once()
+    call_args = str(mock_console.print.call_args)
+    assert "No items" in call_args or "found" in call_args.lower()
+
+
+# ===========================================================================
+# is_today — timezone-aware datetime (line 616)
+# ===========================================================================
+
+def test_is_today_with_timezone_aware_datetime():
+    """is_today must handle a timezone-aware datetime string (line 616)."""
+    from datetime import timezone
+
+    # Use a UTC datetime for today
+    today_utc = datetime.now(tz=timezone.utc).replace(
+        hour=12, minute=0, second=0, microsecond=0
+    )
+    date_str = today_utc.isoformat()
+    # The result may be True or False depending on TZ offset, but must not raise
+    result = is_today(date_str)
+    assert isinstance(result, bool)
+
+
+def test_is_today_with_z_suffix():
+    """Datetime with 'Z' suffix should be parsed and handled correctly."""
+    today_z = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    result = is_today(today_z)
+    assert isinstance(result, bool)
+
+
+# ===========================================================================
+# format_relative_time — timezone-aware datetime (line 690)
+# ===========================================================================
+
+def test_format_relative_time_with_timezone_aware_datetime():
+    """format_relative_time with tz-aware input triggers the UTC now branch (line 690)."""
+    from datetime import timezone
+
+    # A timezone-aware datetime 2 hours ago
+    two_hours_ago = datetime.now(tz=timezone.utc) - timedelta(hours=2)
+    result = format_relative_time(two_hours_ago)
+    assert "ago" in result.lower() or "h ago" in result
+
+    # 5 minutes ago
+    five_min_ago = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
+    result2 = format_relative_time(five_min_ago)
+    assert "ago" in result2.lower() or "m ago" in result2
+
+
+def test_format_relative_time_with_z_suffix_string():
+    """format_relative_time with a Z-suffix string also uses UTC branch."""
+    # 3 hours ago as ISO string with Z
+    three_hours_ago = datetime.utcnow() - timedelta(hours=3)
+    date_str = three_hours_ago.strftime("%Y-%m-%dT%H:%M:%SZ")
+    result = format_relative_time(date_str)
+    assert result  # non-empty
+
+
+# ===========================================================================
+# format_next_task (lines 762-821)
+# ===========================================================================
+
+def test_format_next_task_minimal():
+    """format_next_task with only required fields must not raise."""
+    task = {"id": "abc123def456", "content": "Write unit tests"}
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_next_task(task)
+    assert mock_console.print.called
+
+
+def test_format_next_task_with_due_date():
+    task = {
+        "id": "abc123def456",
+        "content": "Ship feature",
+        "due_date": "2025-01-15T10:00:00Z",
+    }
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_next_task(task)
+    assert mock_console.print.called
+
+
+def test_format_next_task_with_project():
+    task = {
+        "id": "abc123def456",
+        "content": "Review PR",
+        "project": {"name": "Work"},
+    }
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_next_task(task)
+    assert mock_console.print.called
+
+
+def test_format_next_task_with_eisenhower_quadrant():
+    task = {
+        "id": "abc123def456",
+        "content": "Fix critical bug",
+        "eisenhower_quadrant": "Q1",
+    }
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_next_task(task)
+    assert mock_console.print.called
+
+
+def test_format_next_task_with_description():
+    task = {
+        "id": "abc123def456",
+        "content": "Design new feature",
+        "description": "Detailed description of the feature work.",
+    }
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_next_task(task)
+    assert mock_console.print.called
+
+
+def test_format_next_task_with_recurring():
+    task = {
+        "id": "abc123def456",
+        "content": "Daily standup",
+        "is_recurring": True,
+    }
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_next_task(task)
+    assert mock_console.print.called
+
+
+def test_format_next_task_full_metadata():
+    """All metadata fields combined."""
+    task = {
+        "id": "abc123def456",
+        "content": "Deploy to production",
+        "due_date": "2025-06-01T14:00:00Z",
+        "project": {"name": "Infrastructure"},
+        "eisenhower_quadrant": "Q2",
+        "is_recurring": False,
+        "description": "Deploy the new release to prod servers.",
+    }
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_next_task(task)
+    # Should have printed at least: header, task line, meta line, description, newline
+    assert mock_console.print.call_count >= 4
+
+
+def test_format_next_task_no_id():
+    """Task without an 'id' must not raise."""
+    task = {"content": "Task without id"}
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
+        format_next_task(task)
+    assert mock_console.print.called

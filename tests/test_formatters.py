@@ -54,25 +54,25 @@ def test_format_info():
 def test_format_output_json():
     """Test JSON output format."""
     data = {"key": "value", "number": 42}
-    with patch("builtins.print") as mock_print:
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
         format_output(data, "json")
-        mock_print.assert_called_once()
+        mock_console.print.assert_called_once()
 
 
 def test_format_output_yaml():
     """Test YAML output format."""
     data = {"key": "value", "number": 42}
-    with patch("builtins.print") as mock_print:
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
         format_output(data, "yaml")
-        mock_print.assert_called_once()
+        mock_console.print.assert_called_once()
 
 
 def test_format_output_quiet():
     """Test quiet output format."""
     data = [{"id": "123"}, {"id": "456"}]
-    with patch("builtins.print") as mock_print:
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
         format_output(data, "quiet")
-        assert mock_print.call_count == 2
+        assert mock_console.print.call_count == 2
 
 
 def test_format_output_table():
@@ -171,17 +171,17 @@ def test_format_pretty_with_projects():
 def test_format_quiet_with_list():
     """Test quiet format with list of items."""
     data = [{"id": "123"}, {"id": "456"}]
-    with patch("builtins.print") as mock_print:
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
         format_quiet(data)
-        assert mock_print.call_count == 2
+        assert mock_console.print.call_count == 2
 
 
 def test_format_quiet_with_dict():
     """Test quiet format with single dict."""
     data = {"id": "123"}
-    with patch("builtins.print") as mock_print:
+    with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
         format_quiet(data)
-        mock_print.assert_called_once_with("123")
+        mock_console.print.assert_called_once_with("123", style=None)
 
 
 def test_is_today_with_today_date():

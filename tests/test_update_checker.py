@@ -326,3 +326,131 @@ def test_get_backend_url_expired_cache_fallback(mock_cache_dir):
         url = get_backend_url()
         # Should use expired cache as fallback
         assert url == "https://expired.cache.com/api"
+
+
+# ---------------------------------------------------------------------------
+# Exception handler paths (corrupt cache files)
+# ---------------------------------------------------------------------------
+
+def test_check_for_updates_corrupt_cache_falls_through_to_pypi(mock_cache_dir):
+    """Lines 39-40: corrupt cache triggers except → falls through to PyPI fetch."""
+    cache_file = mock_cache_dir / "update_check.json"
+    mock_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("NOT VALID JSON {{{{")  # corrupt
+
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"info": {"version": "99.99.99"}}
+
+    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+        check_for_updates()
+    # No assertion needed - if lines 39-40 weren't hit, the test would error
+
+
+def test_check_for_updates_corrupt_cache_no_crash(mock_cache_dir, capsys):
+    """Lines 39-40: corrupt cache is silently ignored."""
+    cache_file = mock_cache_dir / "update_check.json"
+    mock_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("{invalid json")
+
+    with patch("todopro_cli.utils.update_checker.requests.get", side_effect=Exception("network")):
+        check_for_updates()
+    # No crash; no update message shown
+    captured = capsys.readouterr()
+    assert "New version available" not in captured.out
+
+
+def test_get_latest_version_corrupt_cache_falls_through(mock_cache_dir):
+    """Lines 84-85: corrupt cache in get_latest_version triggers except → fetches from PyPI."""
+    cache_file = mock_cache_dir / "update_check.json"
+    mock_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("{{not json}}")
+
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"info": {"version": "5.0.0"}}
+
+    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+        version = get_latest_version()
+    assert version == "5.0.0"
+
+
+def test_get_latest_version_corrupt_cache_returns_none_on_network_error(mock_cache_dir):
+    """Lines 84-85: corrupt cache + network error → returns None."""
+    cache_file = mock_cache_dir / "update_check.json"
+    mock_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("not json at all")
+
+    with patch("todopro_cli.utils.update_checker.requests.get", side_effect=Exception("net")):
+        version = get_latest_version()
+    assert version is None
+
+
+def test_get_backend_url_corrupt_cache_priority2_falls_through(mock_cache_dir):
+    """Lines 143-144: corrupt cache in priority-2 branch falls through to PyPI."""
+    cache_file = mock_cache_dir / "update_check.json"
+    mock_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("!!! not json !!!")
+
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "info": {
+            "version": "1.0.0",
+            "project_urls": {"Backend": "https://pypi.backend.example/api"},
+        }
+    }
+
+    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+        url = get_backend_url()
+    assert url == "https://pypi.backend.example/api"
+
+
+def test_get_backend_url_pypi_caches_with_corrupt_existing_cache(mock_cache_dir):
+    """Lines 156-159: when PyPI returns a backend_url but existing cache is corrupt,
+    the corrupt cache is silently ignored and new data is written."""
+    cache_file = mock_cache_dir / "update_check.json"
+    mock_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("<<< corrupt >>>")
+
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "info": {
+            "version": "1.0.0",
+            "project_urls": {"Backend": "https://new-backend.example/api"},
+        }
+    }
+
+    with patch("todopro_cli.utils.update_checker.requests.get", return_value=mock_response):
+        url = get_backend_url()
+    assert url == "https://new-backend.example/api"
+    # New cache file should have been written with the backend URL
+    assert cache_file.exists()
+    import json as jsonlib
+    data = jsonlib.loads(cache_file.read_text())
+    assert data["backend_url"] == "https://new-backend.example/api"
+
+
+def test_get_backend_url_corrupt_expired_cache_fallback(mock_cache_dir):
+    """Lines 175-176: corrupt cache in expired-cache-fallback triggers except → uses default."""
+    cache_file = mock_cache_dir / "update_check.json"
+    mock_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("**garbage**")
+
+    with patch("todopro_cli.utils.update_checker.requests.get", side_effect=Exception("net")):
+        url = get_backend_url()
+    # Falls through to hard-coded default
+    assert url == DEFAULT_BACKEND_URL
+
+
+def test_get_backend_url_corrupt_expired_cache_no_crash(mock_cache_dir):
+    """Lines 175-176: corrupt expired cache is silently handled, no exception raised."""
+    cache_file = mock_cache_dir / "update_check.json"
+    mock_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("[invalid")
+
+    with patch("todopro_cli.utils.update_checker.requests.get", side_effect=Exception("fail")):
+        # Should not raise
+        url = get_backend_url()
+    assert isinstance(url, str)  # returns something valid

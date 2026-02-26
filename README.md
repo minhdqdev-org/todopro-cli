@@ -137,7 +137,7 @@ Want to sync across devices?
 
 ```bash
 # 1. Sign up
-todopro signup
+todopro auth signup
 
 # 2. Set up encryption
 todopro encryption setup
@@ -150,7 +150,7 @@ todopro sync push
 **On another device:**
 ```bash
 # 1. Login
-todopro login
+todopro auth login
 
 # 2. Recover encryption key
 todopro encryption recover
@@ -173,9 +173,9 @@ todopro add "Buy groceries today" --project Inbox  # assign to project by name
 todopro add "Stand-up at 9am #Work" --output json  # JSON output (-o json / --json also works)
 
 # List tasks
-todopro list tasks
+todopro task list
 todopro today                    # Today's tasks (shows unique short suffix like #3f)
-todopro list tasks --filter=overdue
+todopro task list --filter=overdue
 
 # Complete/reopen
 todopro complete <suffix>        # suffix shown in brackets, e.g. [3f]
@@ -186,7 +186,7 @@ todopro edit <id>                # interactive mode
 todopro edit <id> --content "New title" --project Work  # flag mode (project by name)
 
 # Delete
-todopro delete task <id>
+todopro task delete <id>
 ```
 
 ### Projects & Labels
@@ -196,14 +196,14 @@ todopro delete task <id>
 # The default project is "Inbox" (ID: 00000000-0000-0000-0000-000000000000).
 # All tasks without an explicit project belong to Inbox.
 # Inbox cannot be archived, deleted, or renamed.
-todopro create project "Work"
-todopro list project             # pretty list (default)
-todopro list project --json      # JSON output
-todopro archive project <id>
+todopro project create "Work"
+todopro project list             # pretty list (default)
+todopro project list --json      # JSON output
+todopro project archive <id>
 
 # Labels
-todopro create label "urgent" --color red
-todopro list labels
+todopro label create "urgent" --color red
+todopro label list
 ```
 
 ### Sync & Backup

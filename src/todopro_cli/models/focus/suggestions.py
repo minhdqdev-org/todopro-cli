@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from typing import Any
 
-from todopro_cli.services.api.client import APIClient
+from todopro_cli.models.config_models import AppConfig
 
 from .analytics import FocusAnalytics
 from .history import HistoryLogger
@@ -13,12 +13,15 @@ from .history import HistoryLogger
 class TaskSuggestionEngine:
     """Generate smart task suggestions based on multiple factors."""
 
-    def __init__(self, profile: str = "default"):
-        """Initialize suggestion engine."""
-        self.api = APIClient()
+    def __init__(self, config: AppConfig, profile: str = "default"):
+        """Initialize suggestion engine.
+
+        Args:
+            config: Current application configuration.
+            profile: Suggestion profile name (reserved for future use).
+        """
+        self.config = config
         self.analytics = FocusAnalytics()
-        self.context_manager = get_config_service()
-        self.config = self.context_manager.load_config()
 
     def _get_priority_score(self, task: dict[str, Any]) -> int:
         """Get priority score (higher is more urgent)."""
@@ -117,17 +120,18 @@ class TaskSuggestionEngine:
             return result[0] > 0 if result else False
 
     def suggest_tasks(
-        self, limit: int = 5, label: str | None = None
+        self, tasks: list[dict[str, Any]], limit: int = 5, label: str | None = None
     ) -> list[dict[str, Any]]:
         """
-        Get suggested tasks to focus on.
+        Score and rank pre-fetched tasks for focus.
 
         Args:
-            limit: Maximum number of suggestions
-            label: Optional label filter
+            tasks: List of task dicts (fetched by the caller).
+            limit: Maximum number of suggestions.
+            label: Optional label filter applied client-side.
 
         Returns:
-            List of task dicts with scores
+            List of task dicts with scores.
         """
         # Get weights from config
         suggestions_config = self.config.focus_suggestions or {}
@@ -136,31 +140,14 @@ class TaskSuggestionEngine:
         weight_eisenhower = suggestions_config.get("weight_eisenhower", 0.2)
         weight_time = suggestions_config.get("weight_time_estimate", 0.1)
 
-        # Fetch incomplete tasks
-        try:
-            # Get tasks from API
-            params = {"completed": "false"}
-            if label:
-                params["labels"] = label
-
-            tasks = self.api.get("/v1/tasks", params=params)
-
-            if isinstance(tasks, dict) and "tasks" in tasks:
-                tasks = tasks["tasks"]
-
-            if not tasks:
-                return []
-
-        except Exception:
-            # API not available or error - return empty suggestions
+        if not isinstance(tasks, list) or not tasks:
             return []
 
-        # Score each task
+        # Apply optional label filter client-side
+        if label:
+            tasks = [t for t in tasks if label in (t.get("labels") or [])]
+
         scored_tasks = []
-
-        if not isinstance(tasks, list):
-            return []
-
         for task in tasks:
             # Skip recently worked on tasks
             if self._was_recently_worked_on(task["id"]):
