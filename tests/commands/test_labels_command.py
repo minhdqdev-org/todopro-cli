@@ -263,12 +263,11 @@ def _make_strategy_ctx(label_service):
 
 
 def _patch_labels(label_service_mock):
-    """Context manager: injects get_storage_strategy_context and LabelService."""
+    """Context manager: injects get_storage_strategy_context, LabelService, and resolve_label_id."""
     ctx_mock = _make_strategy_ctx(label_service_mock)
 
     return patch(
         "todopro_cli.commands.labels.get_storage_strategy_context",
-         # name doesn't exist in module yet — inject it
         return_value=ctx_mock,
     )
 
@@ -287,23 +286,26 @@ def label_svc():
 class TestLabelsCommandsStrategyPattern:
     """
     Tests for label commands using the Strategy pattern (no Factory).
-    Patches get_storage_strategy_context (injected via create=True) and
-    LabelService so commands complete end-to-end.
+    Patches get_storage_strategy_context, LabelService, and resolve_label_id
+    so commands complete end-to-end without needing a real DB or cache.
     """
+
+    # resolve_label_id is patched to pass through the raw value in all tests
+    _RESOLVE = patch("todopro_cli.commands.labels.resolve_label_id", new=AsyncMock(side_effect=lambda lid, _repo: lid))
 
     # ------------------------------------------------------------------
     # list
     # ------------------------------------------------------------------
 
     def test_list_labels_success(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["list"])
         assert result.exit_code == 0
         label_svc.list_labels.assert_called_once()
 
     def test_list_labels_json_output(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["list", "--output", "json"])
         assert result.exit_code == 0
@@ -313,7 +315,7 @@ class TestLabelsCommandsStrategyPattern:
     # ------------------------------------------------------------------
 
     def test_get_label_success(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["get", "lbl-999"])
         assert result.exit_code == 0
@@ -324,7 +326,7 @@ class TestLabelsCommandsStrategyPattern:
     # ------------------------------------------------------------------
 
     def test_create_label_name_only(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["create", "urgent"])
         assert result.exit_code == 0
@@ -333,7 +335,7 @@ class TestLabelsCommandsStrategyPattern:
         assert call_kwargs["name"] == "urgent"
 
     def test_create_label_with_color(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["create", "work", "--color", "#0000FF"])
         assert result.exit_code == 0
@@ -346,7 +348,7 @@ class TestLabelsCommandsStrategyPattern:
     # ------------------------------------------------------------------
 
     def test_update_label_name(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["update", "lbl-999", "--name", "critical"])
         assert result.exit_code == 0
@@ -355,7 +357,7 @@ class TestLabelsCommandsStrategyPattern:
         assert call_kwargs["name"] == "critical"
 
     def test_update_label_color(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["update", "lbl-999", "--color", "#00FF00"])
         assert result.exit_code == 0
@@ -364,7 +366,7 @@ class TestLabelsCommandsStrategyPattern:
 
     def test_update_label_no_changes_exits_1(self, label_svc):
         """Calling update with no flags → 'No updates specified' and exit 1."""
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["update", "lbl-999"])
         assert result.exit_code == 1
@@ -375,7 +377,7 @@ class TestLabelsCommandsStrategyPattern:
     # ------------------------------------------------------------------
 
     def test_delete_label_with_yes_flag(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["delete", "lbl-999", "--yes"])
         assert result.exit_code == 0
@@ -383,7 +385,7 @@ class TestLabelsCommandsStrategyPattern:
         assert "Label deleted" in result.output
 
     def test_delete_label_confirmed_interactively(self, label_svc):
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["delete", "lbl-999"], input="y\n")
         assert result.exit_code == 0
@@ -391,7 +393,7 @@ class TestLabelsCommandsStrategyPattern:
 
     def test_delete_label_cancelled(self, label_svc):
         """Answering 'no' to confirm prompt cancels deletion."""
-        with _patch_labels(label_svc):
+        with _patch_labels(label_svc), self._RESOLVE:
             with patch("todopro_cli.commands.labels.LabelService", return_value=label_svc):
                 result = _runner.invoke(app, ["delete", "lbl-999"], input="n\n")
         assert result.exit_code == 0
