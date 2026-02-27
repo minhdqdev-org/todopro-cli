@@ -10,6 +10,7 @@ from platformdirs import user_cache_dir
 CACHE_DIR = Path(user_cache_dir("todopro"))
 PROCESSING_CACHE_FILE = CACHE_DIR / "processing_tasks.json"
 SUFFIX_MAPPING_FILE = CACHE_DIR / "suffix_mapping.json"
+PROJECT_SUFFIX_MAPPING_FILE = CACHE_DIR / "project_suffix_mapping.json"
 CACHE_TTL = 30  # 30 seconds
 SUFFIX_MAPPING_TTL = 300  # 5 minutes for suffix mappings
 
@@ -177,4 +178,40 @@ def get_suffix_mapping() -> dict[str, str]:
         return mapping
     except Exception:
         # Return empty dict on corrupted file
+        return {}
+
+
+def save_project_suffix_mapping(suffix_map: dict[str, str]) -> None:
+    """Save suffix to full project ID mapping.
+
+    Args:
+        suffix_map: Dict mapping suffix -> full_project_id
+    """
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    data = {
+        "timestamp": time.time(),
+        "mapping": suffix_map,
+    }
+    PROJECT_SUFFIX_MAPPING_FILE.write_text(json.dumps(data, indent=2))
+
+
+def get_project_suffix_mapping() -> dict[str, str]:
+    """Get cached suffix to project ID mapping.
+
+    Returns:
+        Dict mapping suffix -> full_project_id, or empty dict if expired/missing
+    """
+    if not PROJECT_SUFFIX_MAPPING_FILE.exists():
+        return {}
+
+    try:
+        data = json.loads(PROJECT_SUFFIX_MAPPING_FILE.read_text())
+        timestamp = data.get("timestamp", 0)
+        mapping = data.get("mapping", {})
+
+        if time.time() - timestamp > SUFFIX_MAPPING_TTL:
+            return {}
+
+        return mapping
+    except Exception:
         return {}

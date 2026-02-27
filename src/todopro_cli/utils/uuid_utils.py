@@ -131,12 +131,12 @@ async def resolve_task_uuid(
 async def resolve_project_uuid(
     short_or_full_id: str, repository: ProjectRepository, min_length: int = 8
 ) -> str:
-    """Resolve a short UUID, full UUID, or project name to a full UUID.
+    """Resolve a short UUID, full UUID, ID suffix, or project name to a full UUID.
 
-    Tries in order: full UUID → UUID prefix → case-insensitive name match.
+    Tries in order: full UUID → cached suffix → UUID prefix → case-insensitive name match.
 
     Args:
-        short_or_full_id: Full UUID, UUID prefix (min 8 chars), or project name
+        short_or_full_id: Full UUID, ID suffix (from ``tp project list``), UUID prefix, or project name
         repository: ProjectRepository instance
         min_length: Minimum length for UUID prefix matching (default 8)
 
@@ -146,7 +146,7 @@ async def resolve_project_uuid(
     Raises:
         ValueError: If not found or ambiguous
     """
-    short_or_full_id_stripped = short_or_full_id.strip()
+    short_or_full_id_stripped = short_or_full_id.strip().lstrip("#")
     normalized = short_or_full_id_stripped.lower()
 
     # Full UUID — look up by id directly
@@ -155,6 +155,13 @@ async def resolve_project_uuid(
         if project is None:
             raise ValueError(f"Project not found: {short_or_full_id_stripped}")
         return normalized
+
+    # Check cached suffix mapping (populated when `tp project list` is run)
+    from todopro_cli.services.cache_service import get_project_suffix_mapping
+
+    suffix_mapping = get_project_suffix_mapping()
+    if short_or_full_id_stripped in suffix_mapping:
+        return suffix_mapping[short_or_full_id_stripped]
 
     # Looks like a UUID prefix (only hex digits and dashes) — try prefix search
     uuid_prefix_re = re.compile(r"^[0-9a-f\-]+$", re.IGNORECASE)
@@ -187,7 +194,7 @@ async def resolve_project_uuid(
             f"Ambiguous name '{short_or_full_id_stripped}' matches {len(name_matches)} projects: {matches}"
         )
 
-    raise ValueError(f"Project not found: '{short_or_full_id_stripped}' (tried UUID, UUID prefix, and name)")
+    raise ValueError(f"Project not found: '{short_or_full_id_stripped}' (tried UUID, suffix cache, UUID prefix, and name)")
 
 
 def validate_uuid_field(value: str | None, field_name: str = "id") -> str | None:

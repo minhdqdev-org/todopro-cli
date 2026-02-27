@@ -500,6 +500,19 @@ def format_projects_pretty(projects: list[dict], compact: bool = False) -> None:
     console.print(header)
     console.print()
 
+    # Calculate unique suffix lengths and persist to cache for later resolution
+    all_project_ids = [p["id"] for p in projects if p.get("id")]
+    suffix_map = calculate_unique_suffixes(all_project_ids)
+
+    from todopro_cli.services.cache_service import save_project_suffix_mapping
+
+    suffix_to_id = {
+        pid[-length:]: pid
+        for pid, length in suffix_map.items()
+        if length > 0
+    }
+    save_project_suffix_mapping(suffix_to_id)
+
     # Group projects
     favorites = [p for p in active_projects if p.get("is_favorite", False)]
     non_favorites = [p for p in active_projects if not p.get("is_favorite", False)]
@@ -508,34 +521,51 @@ def format_projects_pretty(projects: list[dict], compact: bool = False) -> None:
     if favorites:
         console.print("⭐ FAVORITES", style="bold yellow")
         for project in favorites:
-            format_project_item(project, compact, indent="  ")
+            format_project_item(project, compact, indent="  ", suffix_map=suffix_map)
         console.print()
 
     # Display active projects
     if non_favorites:
         console.print("📂 ACTIVE PROJECTS", style="bold blue")
         for project in non_favorites:
-            format_project_item(project, compact, indent="  ")
+            format_project_item(project, compact, indent="  ", suffix_map=suffix_map)
         console.print()
 
     # Display archived projects
     if archived_projects:
         console.print(f"🗃️  ARCHIVED ({len(archived_projects)})", style="bold dim")
         for project in archived_projects:
-            format_project_item(project, compact, indent="  ")
+            format_project_item(project, compact, indent="  ", suffix_map=suffix_map)
 
 
-def format_project_item(project: dict, compact: bool = False, indent: str = "") -> None:
+def format_project_item(
+    project: dict,
+    compact: bool = False,
+    indent: str = "",
+    suffix_map: dict[str, int] | None = None,
+) -> None:
     """Format a single project item."""
     icon = get_project_icon(project.get("name", ""))
     name = project.get("name", "Untitled")
     color = project.get("color", "#808080")
+    project_id = project.get("id", "")
+
+    # Compute the suffix to display
+    id_suffix = ""
+    if project_id:
+        if suffix_map and project_id in suffix_map:
+            length = suffix_map[project_id]
+            id_suffix = project_id[-length:] if length > 0 else project_id[-6:]
+        else:
+            id_suffix = project_id[-6:]
 
     if compact:
         line = Text()
         line.append(f"{indent}{icon} {name}", style="bold")
         if color and color != "#808080":
             line.append(f" {color}", style=color)
+        if id_suffix:
+            line.append(f"  #{id_suffix}", style="dim")
         console.print(line)
     else:
         # Project name with color
@@ -544,6 +574,8 @@ def format_project_item(project: dict, compact: bool = False, indent: str = "") 
         line.append(name, style="bold")
         if color and color != "#808080":
             line.append(f"  {color}", style="dim")
+        if id_suffix:
+            line.append(f"  #{id_suffix}", style="dim")
         console.print(line)
 
         # Stats line
