@@ -475,3 +475,164 @@ class TestRescheduleContentTruncation:
         assert result.exit_code == 0
         # Should show truncated content with ...
         assert "..." in result.output or long_content[:10] in result.output
+
+
+# ---------------------------------------------------------------------------
+# migrate command tests
+# ---------------------------------------------------------------------------
+
+def _make_project(pid: str, name: str) -> MagicMock:
+    p = MagicMock()
+    p.id = pid
+    p.name = name
+    return p
+
+
+def _make_task(tid: str, content: str, project_id: str = "src-id", completed: bool = False) -> Task:
+    return Task(
+        id=tid,
+        content=content,
+        description="",
+        project_id=project_id,
+        due_date=None,
+        priority=4,
+        is_completed=completed,
+        labels=[],
+        contexts=[],
+        created_at=datetime(2024, 1, 1),
+        updated_at=datetime(2024, 1, 1),
+    )
+
+
+class TestMigrateCommand:
+    """Tests for todopro tasks migrate."""
+
+    def _invoke(self, args, tasks=None, projects=None):
+        """Helper: invoke migrate with mocked storage and task service."""
+        if tasks is None:
+            tasks = [_make_task("t1", "Buy milk")]
+        projects = projects or {
+            "source": _make_project("src-id", "Inbox"),
+            "target": _make_project("tgt-id", "Work"),
+        }
+
+        svc = MagicMock()
+        svc.list_tasks = AsyncMock(return_value=tasks)
+        svc.bulk_update_tasks = AsyncMock(return_value=tasks)
+
+        proj_repo = MagicMock()
+        proj_repo.get = AsyncMock(side_effect=lambda pid: (
+            projects["source"] if pid == "src-id" else projects["target"]
+        ))
+
+        storage = MagicMock()
+        storage.project_repository = proj_repo
+        storage.task_repository = MagicMock()
+
+        with (
+            patch("todopro_cli.commands.tasks_command.get_storage_strategy_context", return_value=storage),
+            patch("todopro_cli.commands.tasks_command.TaskService", return_value=svc),
+            patch(
+                "todopro_cli.commands.tasks_command.resolve_project_uuid",
+                side_effect=lambda name, repo: "src-id" if name == "Inbox" else "tgt-id",
+            ),
+        ):
+            result = runner.invoke(app, ["migrate"] + args)
+        return result, svc
+
+    def test_help_shows_from_to_options(self):
+        result = runner.invoke(app, ["migrate", "--help"])
+        assert result.exit_code == 0
+        assert "--from" in result.output
+        assert "--to" in result.output
+
+    def test_requires_from_option(self):
+        result = runner.invoke(app, ["migrate", "--to", "Work"])
+        assert result.exit_code != 0
+
+    def test_requires_to_option(self):
+        result = runner.invoke(app, ["migrate", "--from", "Inbox"])
+        assert result.exit_code != 0
+
+    def test_dry_run_does_not_call_bulk_update(self):
+        result, svc = self._invoke(["--from", "Inbox", "--to", "Work", "--dry-run"])
+        assert result.exit_code == 0
+        svc.bulk_update_tasks.assert_not_called()
+
+    def test_dry_run_shows_preview(self):
+        result, _ = self._invoke(["--from", "Inbox", "--to", "Work", "--dry-run"])
+        assert result.exit_code == 0
+        assert "dry-run" in result.output.lower() or "would be moved" in result.output.lower()
+
+    def test_yes_flag_skips_confirmation(self):
+        result, svc = self._invoke(["--from", "Inbox", "--to", "Work", "--yes"])
+        assert result.exit_code == 0
+        svc.bulk_update_tasks.assert_awaited_once()
+
+    def test_bulk_update_called_with_correct_project_id(self):
+        result, svc = self._invoke(["--from", "Inbox", "--to", "Work", "--yes"])
+        assert result.exit_code == 0
+        _, kwargs = svc.bulk_update_tasks.call_args
+        assert kwargs.get("project_id") == "tgt-id"
+
+    def test_shows_success_message(self):
+        result, _ = self._invoke(["--from", "Inbox", "--to", "Work", "--yes"])
+        assert result.exit_code == 0
+        assert "Inbox" in result.output
+        assert "Work" in result.output
+
+    def test_exits_zero_when_no_tasks(self):
+        result, svc = self._invoke(["--from", "Inbox", "--to", "Work", "--yes"], tasks=[])
+        assert result.exit_code == 0
+        svc.bulk_update_tasks.assert_not_called()
+
+    def test_same_project_exits_nonzero(self):
+        svc = MagicMock()
+        proj_repo = MagicMock()
+        storage = MagicMock()
+        storage.project_repository = proj_repo
+        storage.task_repository = MagicMock()
+
+        with (
+            patch("todopro_cli.commands.tasks_command.get_storage_strategy_context", return_value=storage),
+            patch("todopro_cli.commands.tasks_command.TaskService", return_value=svc),
+            patch(
+                "todopro_cli.commands.tasks_command.resolve_project_uuid",
+                return_value="same-id",  # both resolve to same
+            ),
+        ):
+            result = runner.invoke(app, ["migrate", "--from", "X", "--to", "X", "--yes"])
+        assert result.exit_code != 0
+
+    def test_unknown_project_exits_nonzero(self):
+        svc = MagicMock()
+        storage = MagicMock()
+
+        with (
+            patch("todopro_cli.commands.tasks_command.get_storage_strategy_context", return_value=storage),
+            patch("todopro_cli.commands.tasks_command.TaskService", return_value=svc),
+            patch(
+                "todopro_cli.commands.tasks_command.resolve_project_uuid",
+                side_effect=ValueError("Project not found: 'Ghost'"),
+            ),
+        ):
+            result = runner.invoke(app, ["migrate", "--from", "Ghost", "--to", "Work", "--yes"])
+        assert result.exit_code != 0
+        assert "Ghost" in result.output
+
+    def test_shows_task_preview_table(self):
+        tasks = [_make_task(f"t{i}", f"Task {i}") for i in range(3)]
+        result, _ = self._invoke(["--from", "Inbox", "--to", "Work", "--yes"], tasks=tasks)
+        assert result.exit_code == 0
+        assert "Task 0" in result.output
+        assert "Task 1" in result.output
+
+    def test_table_truncates_long_content(self):
+        long = "A" * 70
+        result, _ = self._invoke(
+            ["--from", "Inbox", "--to", "Work", "--yes"],
+            tasks=[_make_task("t1", long)],
+        )
+        assert result.exit_code == 0
+        # Rich uses the single-character ellipsis (…) or the full string is absent
+        assert "…" in result.output or long not in result.output

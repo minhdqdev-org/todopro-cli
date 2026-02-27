@@ -351,6 +351,101 @@ async def skip_task(
         await client.close()
 
 
+# ---------- migrate ----------
+
+@app.command("migrate")
+@command_wrapper
+async def migrate_tasks(
+    from_project: str = typer.Option(..., "--from", help="Source project name or ID"),
+    to_project: str = typer.Option(..., "--to", help="Destination project name or ID"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview without moving tasks"),
+    include_completed: bool = typer.Option(
+        False, "--include-completed", help="Also migrate completed tasks"
+    ),
+) -> None:
+    """Migrate all tasks from one project to another.
+
+    Resolves projects by name, UUID, or UUID prefix. Active tasks are moved
+    by default; pass --include-completed to also migrate completed tasks.
+
+    Examples:
+        todopro tasks migrate --from "Inbox" --to "Work"
+        todopro tasks migrate --from inbox-uuid --to work-uuid --yes
+        todopro tasks migrate --from "Old Project" --to "New Project" --dry-run
+    """
+    from rich.table import Table
+
+    storage = get_storage_strategy_context()
+    project_repo = storage.project_repository
+    task_repo = storage.task_repository
+    task_service = TaskService(task_repo)
+
+    # Resolve both project IDs — supports name, full UUID, or UUID prefix
+    try:
+        source_id = await resolve_project_uuid(from_project, project_repo)
+        target_id = await resolve_project_uuid(to_project, project_repo)
+    except ValueError as exc:
+        format_error(str(exc))
+        raise typer.Exit(1) from exc
+
+    if source_id == target_id:
+        format_error("Source and destination project are the same.")
+        raise typer.Exit(1)
+
+    # Fetch tasks from the source project
+    status = None if include_completed else "active"
+    tasks = await task_service.list_tasks(project_id=source_id, status=status, limit=10000)
+
+    if not tasks:
+        format_info("No tasks found in the source project.")
+        return
+
+    # Show a preview table
+    source_project = await project_repo.get(source_id)
+    target_project = await project_repo.get(target_id)
+    source_name = source_project.name if source_project else source_id
+    target_name = target_project.name if target_project else target_id
+
+    table = Table(title=f"Tasks to migrate: {source_name} → {target_name}", show_header=True)
+    table.add_column("#", style="dim", justify="right", width=4)
+    table.add_column("Content", style="cyan")
+    table.add_column("Priority", justify="center", width=8)
+    table.add_column("Status", justify="center", width=10)
+
+    for i, task in enumerate(tasks[:20], 1):
+        status_label = "✓ done" if task.is_completed else "active"
+        priority_label = str(task.priority) if task.priority else "-"
+        content = task.content if len(task.content) <= 60 else task.content[:57] + "..."
+        table.add_row(str(i), content, priority_label, status_label)
+
+    if len(tasks) > 20:
+        table.add_row("…", f"… and {len(tasks) - 20} more", "", "")
+
+    console.print(table)
+    count = len(tasks)
+    task_word = "task" if count == 1 else "tasks"
+
+    if dry_run:
+        format_info(f"Dry-run: {count} {task_word} would be moved from '{source_name}' to '{target_name}'.")
+        return
+
+    if not yes:
+        confirmed = typer.confirm(
+            f"Move {count} {task_word} from '{source_name}' to '{target_name}'?",
+            default=True,
+        )
+        if not confirmed:
+            format_info("Cancelled.")
+            return
+
+    # Bulk-update project_id for all matched tasks
+    task_ids = [t.id for t in tasks]
+    await task_service.bulk_update_tasks(task_ids, project_id=target_id)
+
+    format_success(f"✓ Moved {count} {task_word} from '{source_name}' to '{target_name}'.")
+
+
 # ---------- next ----------
 
 @app.command("next")
