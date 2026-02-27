@@ -38,7 +38,7 @@ async def list_tasks(
     project: str | None = typer.Option(None, "--project", help="Filter by project ID"),
     priority: int | None = typer.Option(None, "--priority", help="Filter by priority"),
     search: str | None = typer.Option(None, "--search", help="Search tasks"),
-    limit: int = typer.Option(30, "--limit", help="Limit results"),
+    limit: int = typer.Option(250, "--limit", help="Limit results"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
     json_opt: bool = typer.Option(

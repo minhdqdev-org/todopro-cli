@@ -146,7 +146,7 @@ class SqliteTaskRepository(TaskRepository):
             if sort_field in ["due_date", "priority", "created_at", "updated_at"]:
                 query += f" ORDER BY t.{sort_field} {direction}"
         else:
-            query += " ORDER BY t.created_at DESC"
+            query += " ORDER BY t.priority ASC, t.project_id ASC, t.created_at DESC"
 
         # Pagination
         if filters.limit is not None:
