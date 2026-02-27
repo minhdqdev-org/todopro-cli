@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### 🆕 Added
+
+**Todoist Import (`todopro import todoist`):**
+- ✅ `todopro import todoist` — new subcommand to migrate active tasks, projects, and labels from Todoist via the v1 API
+- ✅ `--api-key` option (or `TODOIST_API_KEY` env var) for personal API token authentication
+- ✅ `--project-prefix` option (default `[Todoist]`) — prefixes imported project names to avoid conflicts
+- ✅ `--max-tasks` option — cap the number of tasks imported per project
+- ✅ `--dry-run` flag — fetch and count data without writing anything to the local database
+- ✅ Deduplication: skips projects/labels/tasks that already exist in TodoPro by name/content
+- ✅ Due date parsing for both date-only (`2025-12-31`) and datetime (`2025-12-31T10:00:00`) formats
+- ✅ Label mapping — Todoist personal labels are imported and linked to tasks
+- ✅ Fault-tolerant: per-resource errors are collected and reported without aborting the whole import
+- ✅ Rich summary table displayed on completion
+
+**Architecture (SOLID):**
+- ✅ `services/todoist/models.py` — Pydantic v2 models for all Todoist API v1 response shapes
+- ✅ `services/todoist/client.py` — `TodoistClientProtocol` (runtime-checkable `typing.Protocol`) + `TodoistClient` (httpx async); labels use `limit=200` to work around Todoist pagination bug
+- ✅ `services/todoist/importer.py` — `TodoistImportService` depends only on protocol abstractions (DIP)
+
+**Tests:**
+- ✅ `tests/services/test_todoist_client.py` — 12 unit tests for `TodoistClient` (protocol conformance, pagination, HTTP error handling)
+- ✅ `tests/services/test_todoist_importer.py` — 19 unit tests for `TodoistImportService` (happy path, dry-run, deduplication, error handling, due date parsing, label resolution)
+- ✅ `tests/commands/test_import_command.py` — 18 command-level tests covering auth, all option flags, output, and exit codes
+
+### 🔧 Fixed
+
+- Fixed `todopro task list` default sort — tasks now sorted by `priority ASC, project ASC, created_at DESC` instead of insertion order
+- Raised default `--limit` in `task list` from 30 → 250
+- Fixed `data_command.py` project filter bug: `ProjectFilters(name=...)` silently accepted unknown field; changed to `ProjectFilters(search=...)` with explicit exact-match check
+
+---
+
 ## [4.0.0] - 2026-02-24 (MVP4 Release — Ramble)
 
 **Ramble: voice-to-tasks is here.** 🎙️

@@ -55,6 +55,7 @@ TodoPro is a **CLI-first task manager** for power users, developers, and privacy
 - ✅ Export/import data (JSON, gzip)
 - ✅ Local SQLite + Cloud backend
 - ✅ Conflict resolution
+- ✅ **Todoist import** — migrate active tasks, projects, and labels from Todoist via API key (`todopro import todoist`)
 
 **Security:**
 
@@ -367,6 +368,12 @@ todopro --help
 todopro export data --output backup.json      # Export all data
 todopro import data backup.json               # Import data
 todopro purge data --dry-run                  # Preview data deletion
+
+# Import from Todoist (requires personal API token)
+todopro import todoist --api-key YOUR_TOKEN   # Import active tasks, projects, labels
+TODOIST_API_KEY=YOUR_TOKEN todopro import todoist        # API key from env var
+todopro import todoist --dry-run --api-key YOUR_TOKEN    # Preview without writing
+todopro import todoist --project-prefix "" --max-tasks 200  # No prefix, cap per-project
 
 # AI-agent and scripting friendly usage
 todopro list tasks --output json              # JSON output for parsing

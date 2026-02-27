@@ -19,6 +19,7 @@ from .commands.encryption_command import app as encryption_app
 from .commands.focus import app as focus_app
 from .commands.github_command import app as github_app
 from .commands.goals import app as goals_app
+from .commands.import_command import app as import_app
 from .commands.labels import app as labels_app
 from .commands.projects import app as projects_app
 from .commands.ramble_command import app as ramble_app
@@ -81,6 +82,7 @@ app.add_typer(data_app, name="data", help="Data — export and import")
 app.add_typer(encryption_app, name="encryption", help="End-to-end encryption")
 app.add_typer(template_app, name="template", help="Task templates")
 app.add_typer(github_app, name="github", help="GitHub Issues integration")
+app.add_typer(import_app, name="import", help="Import data — Todoist, JSON, …")
 app.add_typer(calendar_app, name="calendar", help="Google Calendar integration")
 
 
