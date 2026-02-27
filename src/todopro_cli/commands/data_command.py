@@ -14,6 +14,7 @@ from todopro_cli.models import ProjectFilters, TaskFilters
 from todopro_cli.services.api.client import get_client
 from todopro_cli.services.config_service import (
     get_config_service,
+    get_storage_strategy_context,
 )
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
@@ -285,10 +286,11 @@ def import_data(
                     # Check if project already exists by name
                     existing = (
                         await storage_strategy_context.project_repository.list_all(
-                            ProjectFilters(name=project_data.get("name"))
+                            ProjectFilters(search=project_data.get("name"))
                         )
                     )
-                    if existing:
+                    # Filter by exact name match (search is substring search)
+                    if any(p.name == project_data.get("name") for p in existing):
                         projects_skipped += 1
                         continue
 
@@ -364,11 +366,13 @@ def import_data(
                     if task_data.get("project_name"):
                         projects = (
                             await storage_strategy_context.project_repository.list_all(
-                                ProjectFilters(name=task_data["project_name"])
+                                ProjectFilters(search=task_data["project_name"])
                             )
                         )
-                        if projects:
-                            project_id = projects[0].id
+                        # Filter by exact name match (search is substring search)
+                        matching = [p for p in projects if p.name == task_data["project_name"]]
+                        if matching:
+                            project_id = matching[0].id
 
                     task_create = TaskCreate(
                         content=task_data["content"],

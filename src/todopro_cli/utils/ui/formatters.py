@@ -281,6 +281,8 @@ def format_pretty(
             format_tasks_pretty(data["tasks"], all_task_ids=all_task_ids)
         elif "projects" in data:
             format_projects_pretty(data["projects"], compact)
+        elif "labels" in data:
+            format_labels_pretty(data["labels"], compact)
         else:
             # Single item
             format_single_item_pretty(data)
@@ -449,6 +451,37 @@ def format_task_item(
                 meta_line.append(" \u00b7 ", style="dim")
             meta_line.append(text, style=style)
         console.print(meta_line)
+
+
+def format_labels_pretty(labels: list[dict], compact: bool = False) -> None:
+    """Format labels in pretty format."""
+    if not labels:
+        console.print("[yellow]No labels found[/yellow]")
+        return
+
+    header = Text()
+    header.append("🏷️  Labels ", style="bold cyan")
+    header.append(f"({len(labels)})", style="dim")
+    console.print(header)
+    console.print()
+
+    for label in labels:
+        name = label.get("name", "Untitled")
+        color = label.get("color") or ""
+        label_id = label.get("id", "")
+        short_id = label_id[:8] if label_id else "?"
+
+        line = Text()
+        swatch = "●" if color else "○"
+        line.append(f"  {swatch} ", style=color if color else "dim")
+        line.append(name, style="bold")
+        if not compact:
+            line.append(f"  {short_id}", style="dim")
+            if color:
+                line.append(f"  {color}", style="dim")
+        console.print(line)
+
+    console.print()
 
 
 def format_projects_pretty(projects: list[dict], compact: bool = False) -> None:

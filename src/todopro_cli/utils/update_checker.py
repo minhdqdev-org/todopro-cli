@@ -5,7 +5,7 @@ import os
 import time
 from pathlib import Path
 
-import requests
+import httpx
 from packaging import version
 from platformdirs import user_cache_dir
 
@@ -42,9 +42,7 @@ def check_for_updates() -> None:
     # 2. If cache expired or missing, fetch from PyPI
     if not latest_version:
         try:
-            response = requests.get(
-                "https://pypi.org/pypi/todopro-cli/json", timeout=0.5
-            )
+            response = httpx.get("https://pypi.org/pypi/todopro-cli/json", timeout=0.5)
             if response.status_code == 200:
                 latest_version = response.json()["info"]["version"]
                 # Save to cache
@@ -86,7 +84,7 @@ def get_latest_version() -> str | None:
 
     # Fetch from PyPI
     try:
-        response = requests.get("https://pypi.org/pypi/todopro-cli/json", timeout=2)
+        response = httpx.get("https://pypi.org/pypi/todopro-cli/json", timeout=2)
         if response.status_code == 200:
             latest_version = response.json()["info"]["version"]
             # Cache the result
@@ -145,7 +143,7 @@ def get_backend_url() -> str:
 
     # Priority 3: Fetch from PyPI metadata
     try:
-        response = requests.get("https://pypi.org/pypi/todopro-cli/json", timeout=2)
+        response = httpx.get("https://pypi.org/pypi/todopro-cli/json", timeout=2)
         if response.status_code == 200:
             data = response.json()
             backend_url = data.get("info", {}).get("project_urls", {}).get("Backend")

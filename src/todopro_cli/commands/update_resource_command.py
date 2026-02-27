@@ -2,6 +2,7 @@
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.label_service import LabelService
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.services.task_service import TaskService
@@ -29,7 +30,7 @@ async def update_task(
 ) -> None:
     """Update a task."""
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     if not any([content, description, project, due, priority is not None]):

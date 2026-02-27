@@ -233,7 +233,7 @@ async def test_project_too_short_id(tmp_path):
     db_path = str(tmp_path / "test.db")
     repo = SqliteProjectRepository(db_path=db_path)
 
-    with pytest.raises(ValueError, match="at least 8 characters"):
+    with pytest.raises(ValueError, match="not found"):
         await resolve_project_uuid("abc", repo)
 
 

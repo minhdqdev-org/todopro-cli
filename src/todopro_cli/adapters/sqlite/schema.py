@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS projects (
     color TEXT,
     is_favorite BOOLEAN DEFAULT 0,
     is_archived BOOLEAN DEFAULT 0,
+    protected BOOLEAN DEFAULT 0,
     user_id TEXT NOT NULL,
     workspace_id TEXT,
     display_order INTEGER,

@@ -268,7 +268,7 @@ def _patch_labels(label_service_mock):
 
     return patch(
         "todopro_cli.commands.labels.get_storage_strategy_context",
-        create=True,  # name doesn't exist in module yet — inject it
+         # name doesn't exist in module yet — inject it
         return_value=ctx_mock,
     )
 

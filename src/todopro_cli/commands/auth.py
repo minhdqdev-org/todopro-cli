@@ -22,9 +22,6 @@ def login(
     email: str | None = typer.Option(None, "--email", help="Email address"),
     password: str | None = typer.Option(None, "--password", help="Password"),
     endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
-    save_profile: bool = typer.Option(
-        False, "--save-profile", help="Save as default profile"
-    ),
 ) -> None:
     """Login to TodoPro."""
     try:
@@ -37,7 +34,7 @@ def login(
             format_error(
                 f"Login is only available for remote contexts. "
                 f"Current context '{current_context.name}' is '{current_context.type}'. "
-                f"Use 'tp use cloud' to switch to a remote context."
+                f"Use 'tp context use cloud' to switch to a remote context."
             )
             raise typer.Exit(1)
 
@@ -83,9 +80,6 @@ def login(
                     f"Logged in as {user.get('email', 'unknown')} "
                     f"(context: {context_name})"
                 )
-
-                if save_profile:
-                    format_success("Profile 'default' saved as default")
 
             finally:
                 await client.close()

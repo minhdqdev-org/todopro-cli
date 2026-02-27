@@ -25,10 +25,11 @@ MOCK_TASK = Task(
 )
 
 INBOX_PROJECT = Project(
-    id="00000000-0000-0000-0000-000000000000",
+    id="test-inbox-uuid-1234-5678-9abc",
     name="Inbox",
     color="#4a90d9",
     is_favorite=False,
+    protected=True,
     created_at=datetime(2024, 1, 1),
     updated_at=datetime(2024, 1, 1),
 )
@@ -163,11 +164,15 @@ class TestAddProjectFlag:
                 "todopro_cli.commands.add_command.get_storage_strategy_context",
                 return_value=strategy,
             ),
+            patch(
+                "todopro_cli.services.config_service.get_storage_strategy_context",
+                return_value=strategy,
+            ),
         ):
             result = runner.invoke(app, ["Meet Hung #Inbox"])
 
         assert result.exit_code == 0, result.output
-        assert captured.get("project_id") == "00000000-0000-0000-0000-000000000000"
+        assert captured.get("project_id") == INBOX_PROJECT.id
 
 
 class TestListContextJson:

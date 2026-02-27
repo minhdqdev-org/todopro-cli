@@ -111,18 +111,17 @@ class SessionStateManager:
         # Set secure permissions
         self.state_file.chmod(0o600)
 
-    def load_session(self) -> SessionState | None:
+    def load_session(self) -> SessionState:
         """Load session state from file."""
         if not self.state_file.exists():
-            return None
+            raise FileNotFoundError("No active session found")
 
         try:
             with open(self.state_file) as f:
                 data = json.load(f)
             return SessionState.from_dict(data)
-        except (json.JSONDecodeError, TypeError, KeyError):
-            # Corrupted state file
-            return None
+        except (json.JSONDecodeError, TypeError, KeyError) as e:
+            raise ValueError("Invalid session state file") from e
 
     def delete_session(self) -> None:
         """Delete session state file."""
@@ -131,8 +130,11 @@ class SessionStateManager:
 
     def has_active_session(self) -> bool:
         """Check if an active session exists."""
-        session = self.load_session()
-        return session is not None and session.status in ("active", "paused")
+        try:
+            session = self.load_session()
+            return session is not None and session.status in ("active", "paused")
+        except (FileNotFoundError, ValueError):
+            return False
 
     @staticmethod
     def create_session(

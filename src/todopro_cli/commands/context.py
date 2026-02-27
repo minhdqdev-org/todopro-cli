@@ -20,6 +20,7 @@ from todopro_cli.adapters.sqlite.schema import initialize_schema
 from todopro_cli.models.config_models import Context
 from todopro_cli.services.api.auth import AuthAPI
 from todopro_cli.services.api.client import get_client
+from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.ui.console import get_console
 
 from .decorators import command_wrapper

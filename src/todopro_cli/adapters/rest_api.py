@@ -16,6 +16,9 @@ from todopro_cli.models import (
     ProjectCreate,
     ProjectFilters,
     ProjectUpdate,
+    Section,
+    SectionCreate,
+    SectionUpdate,
     Task,
     TaskCreate,
     TaskFilters,
@@ -25,11 +28,13 @@ from todopro_cli.repositories.repository import (
     LabelRepository,
     LocationContextRepository,
     ProjectRepository,
+    SectionRepository,
     TaskRepository,
 )
 from todopro_cli.services.api.client import APIClient
 from todopro_cli.services.api.labels import LabelsAPI
 from todopro_cli.services.api.projects import ProjectsAPI
+from todopro_cli.services.api.sections import SectionsAPI
 from todopro_cli.services.api.tasks import TasksAPI
 
 
@@ -509,3 +514,55 @@ class RestApiLocationContextRepository(LocationContextRepository):
         except Exception:
             # Return empty list on error
             return []
+
+
+class RestApiSectionRepository(SectionRepository):
+    """Section repository implementation using REST API."""
+
+    def __init__(self):
+        self._client: APIClient | None = None
+        self._sections_api: SectionsAPI | None = None
+
+    @property
+    def sections_api(self) -> SectionsAPI:
+        if self._sections_api is None:
+            if self._client is None:
+                self._client = APIClient()
+            self._sections_api = SectionsAPI(self._client)
+        return self._sections_api
+
+    async def list_all(self, project_id: str) -> list[Section]:
+        """List all sections for a project."""
+        result = await self.sections_api.list_sections(project_id)
+        sections_data = result if isinstance(result, list) else []
+        return [Section(**s) for s in sections_data]
+
+    async def get(self, project_id: str, section_id: str) -> Section:
+        """Get a specific section by ID."""
+        result = await self.sections_api.get_section(project_id, section_id)
+        return Section(**result)
+
+    async def create(self, project_id: str, section_data: SectionCreate) -> Section:
+        """Create a new section."""
+        data = section_data.model_dump()
+        result = await self.sections_api.create_section(project_id, **data)
+        return Section(**result)
+
+    async def update(
+        self, project_id: str, section_id: str, updates: SectionUpdate
+    ) -> Section:
+        """Update an existing section."""
+        update_data = updates.model_dump(exclude_none=True)
+        result = await self.sections_api.update_section(
+            project_id, section_id, **update_data
+        )
+        return Section(**result)
+
+    async def delete(self, project_id: str, section_id: str) -> bool:
+        """Delete a section."""
+        await self.sections_api.delete_section(project_id, section_id)
+        return True
+
+    async def reorder(self, project_id: str, section_orders: list[dict]) -> None:
+        """Reorder sections within a project."""
+        await self.sections_api.reorder_sections(project_id, section_orders)

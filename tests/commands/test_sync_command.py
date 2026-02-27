@@ -183,7 +183,7 @@ class TestStatusCommand:
         svc.get_current_context.return_value = None
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["status"])
 
@@ -198,7 +198,7 @@ class TestStatusCommand:
         mock_state.get_all_sync_times.return_value = {}
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
                 result = runner.invoke(app, ["status"])
@@ -217,7 +217,7 @@ class TestStatusCommand:
         }
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
                 result = runner.invoke(app, ["status"])
@@ -235,7 +235,7 @@ class TestStatusCommand:
         }
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
                 result = runner.invoke(app, ["status"])
@@ -253,7 +253,7 @@ class TestStatusCommand:
         }
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
                 result = runner.invoke(app, ["status"])
@@ -271,7 +271,7 @@ class TestStatusCommand:
         }
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
                 result = runner.invoke(app, ["status"])
@@ -288,7 +288,7 @@ class TestStatusCommand:
         }
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
                 result = runner.invoke(app, ["status"])
@@ -305,7 +305,7 @@ class TestStatusCommand:
         }
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
                 result = runner.invoke(app, ["status"])
@@ -365,7 +365,7 @@ class TestPullPushInvocation:
         svc.get_current_context.return_value = None
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["pull", "--context", "remote"])
         assert result.exit_code == 1
@@ -376,7 +376,7 @@ class TestPullPushInvocation:
         svc.get_current_context.return_value = None
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["push", "--context", "remote"])
         assert result.exit_code == 1
@@ -387,7 +387,7 @@ class TestPullPushInvocation:
         svc = _make_config_svc(context=ctx)
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["pull"])
         assert result.exit_code == 1
@@ -399,7 +399,7 @@ class TestPullPushInvocation:
         svc = _make_config_svc(context=ctx)
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["pull"])
         assert result.exit_code == 1
@@ -410,7 +410,7 @@ class TestPullPushInvocation:
         svc = _make_config_svc(context=ctx)
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["push", "--context", "backup"])
         assert result.exit_code == 1
@@ -422,7 +422,7 @@ class TestPullPushInvocation:
         svc = _make_config_svc(context=ctx)
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["push"])
         assert result.exit_code == 1
@@ -434,7 +434,7 @@ class TestPullPushInvocation:
         svc.config.get_context.return_value = None  # unknown context
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["pull", "--context", "nonexistent"])
         assert result.exit_code == 1
@@ -446,7 +446,7 @@ class TestPullPushInvocation:
         svc.config.get_context.return_value = None  # unknown context
 
         with patch(
-            "todopro_cli.commands.sync.get_config_service", return_value=svc, create=True
+            "todopro_cli.commands.sync.get_config_service", return_value=svc
         ):
             result = runner.invoke(app, ["push", "--context", "nonexistent"])
         assert result.exit_code == 1
@@ -464,16 +464,12 @@ class TestPullPushHappyPath:
     def _full_patches(self, svc, mock_pull_svc=None, mock_push_svc=None):
         """Return context managers that inject all missing dependencies."""
         mock_storage = MagicMock()
-        mock_strategy = MagicMock()
         patches = [
-            patch("todopro_cli.commands.sync.get_config_service", return_value=svc, create=True),
+            patch("todopro_cli.commands.sync.get_config_service", return_value=svc),
             patch(
                 "todopro_cli.commands.sync.get_storage_strategy_context",
                 return_value=mock_storage,
-                create=True,
             ),
-            patch("todopro_cli.commands.sync.source_strategy", mock_strategy, create=True),
-            patch("todopro_cli.commands.sync.target_strategy", mock_strategy, create=True),
         ]
         if mock_pull_svc:
             patches.append(patch("todopro_cli.commands.sync.SyncPullService", return_value=mock_pull_svc))

@@ -440,9 +440,14 @@ def auto_cycle(
         try:
             raw_tasks = run_async(task_service.list_tasks(status="active"))
             tasks_dicts = [
-                {"id": t.id, "title": t.content, "priority": t.priority,
-                 "due_date": t.due_date, "labels": t.labels,
-                 "estimated_minutes": getattr(t, "estimated_minutes", 25)}
+                {
+                    "id": t.id,
+                    "title": t.content,
+                    "priority": t.priority,
+                    "due_date": t.due_date,
+                    "labels": t.labels,
+                    "estimated_minutes": getattr(t, "estimated_minutes", 25),
+                }
                 for t in raw_tasks
             ]
         except Exception:
@@ -534,7 +539,7 @@ def auto_cycle(
             duration_minutes=duration,
             status="active",
             session_type=session_type,
-            context=current_context,
+            context=current_context.name,
         )
 
         state_manager.save(session)
@@ -603,11 +608,20 @@ def auto_cycle(
 
                         # Get next task
                         try:
-                            raw_tasks = run_async(task_service.list_tasks(status="active"))
+                            raw_tasks = run_async(
+                                task_service.list_tasks(status="active")
+                            )
                             tasks_dicts = [
-                                {"id": t.id, "title": t.content, "priority": t.priority,
-                                 "due_date": t.due_date, "labels": t.labels,
-                                 "estimated_minutes": getattr(t, "estimated_minutes", 25)}
+                                {
+                                    "id": t.id,
+                                    "title": t.content,
+                                    "priority": t.priority,
+                                    "due_date": t.due_date,
+                                    "labels": t.labels,
+                                    "estimated_minutes": getattr(
+                                        t, "estimated_minutes", 25
+                                    ),
+                                }
                                 for t in raw_tasks
                             ]
                         except Exception:

@@ -18,6 +18,9 @@ from todopro_cli.models import (
     ProjectCreate,
     ProjectFilters,
     ProjectUpdate,
+    Section,
+    SectionCreate,
+    SectionUpdate,
     Task,
     TaskCreate,
     TaskFilters,
@@ -577,4 +580,100 @@ class AchievementRepository(ABC):
         """
         raise NotImplementedError(
             "AchievementRepository.delete() must be implemented by adapter"
+        )
+
+
+class SectionRepository(ABC):
+    """Abstract base class for section persistence operations."""
+
+    @abstractmethod
+    async def list_all(self, project_id: str) -> list[Section]:
+        """List all sections for a project.
+
+        Args:
+            project_id: Project ID to list sections for
+
+        Returns:
+            List of Section objects ordered by display_order
+        """
+        raise NotImplementedError(
+            "SectionRepository.list_all() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def get(self, project_id: str, section_id: str) -> Section:
+        """Get a specific section by ID.
+
+        Args:
+            project_id: Parent project ID
+            section_id: Unique identifier for the section
+
+        Returns:
+            Section object
+
+        Raises:
+            NotFoundError: If section does not exist
+        """
+        raise NotImplementedError(
+            "SectionRepository.get() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def create(self, project_id: str, section_data: SectionCreate) -> Section:
+        """Create a new section within a project.
+
+        Args:
+            project_id: Parent project ID
+            section_data: SectionCreate object with section details
+
+        Returns:
+            Created Section object
+        """
+        raise NotImplementedError(
+            "SectionRepository.create() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def update(
+        self, project_id: str, section_id: str, updates: SectionUpdate
+    ) -> Section:
+        """Update an existing section.
+
+        Args:
+            project_id: Parent project ID
+            section_id: Unique identifier for the section
+            updates: SectionUpdate object with fields to update
+
+        Returns:
+            Updated Section object
+        """
+        raise NotImplementedError(
+            "SectionRepository.update() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def delete(self, project_id: str, section_id: str) -> bool:
+        """Delete a section.
+
+        Args:
+            project_id: Parent project ID
+            section_id: Unique identifier for the section
+
+        Returns:
+            True if deletion was successful
+        """
+        raise NotImplementedError(
+            "SectionRepository.delete() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def reorder(self, project_id: str, section_orders: list[dict]) -> None:
+        """Reorder sections within a project.
+
+        Args:
+            project_id: Parent project ID
+            section_orders: List of dicts with 'section_id' and 'display_order'
+        """
+        raise NotImplementedError(
+            "SectionRepository.reorder() must be implemented by adapter"
         )

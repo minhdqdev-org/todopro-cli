@@ -35,6 +35,7 @@ TodoPro is a **CLI-first task manager** for power users, developers, and privacy
 ### ✨ Core Features
 
 **Task Management:**
+
 - ✅ Create, update, complete, delete tasks
 - ✅ Natural language dates ("tomorrow", "next friday")
 - ✅ Priority levels (P1-P4), due dates, descriptions
@@ -42,18 +43,21 @@ TodoPro is a **CLI-first task manager** for power users, developers, and privacy
 - ✅ Bulk operations
 
 **Organization:**
+
 - ✅ Projects for grouping tasks
 - ✅ Labels for tagging (#urgent, #work)
 - ✅ Multiple contexts (local, remote)
 - ✅ Archive completed projects
 
 **Sync & Backup:**
+
 - ✅ Bidirectional sync (push/pull)
 - ✅ Export/import data (JSON, gzip)
 - ✅ Local SQLite + Cloud backend
 - ✅ Conflict resolution
 
 **Security:**
+
 - ✅ End-to-end encryption (AES-256-GCM)
 - ✅ 24-word recovery phrase (BIP39)
 - ✅ Zero-knowledge architecture
@@ -80,19 +84,6 @@ uv tool install todopro-cli
 uv tool install git+https://github.com/minhdqdev-org/todopro-cli.git
 
 # Verify installation
-todopro version
-```
-
-### Using pip
-
-```bash
-# Install from PyPI (coming soon)
-pip install todopro-cli
-
-# Or install from GitHub
-pip install git+https://github.com/minhdqdev-org/todopro-cli.git
-
-# Verify
 todopro version
 ```
 
@@ -129,7 +120,7 @@ todopro complete <task-id>
 
 **→ [Getting Started Guide](./docs/GETTING_STARTED.md)** - Complete tutorial  
 **→ [FAQ](./docs/FAQ.md)** - Common questions  
-**→ [Troubleshooting](./docs/TROUBLESHOOTING.md)** - Fix issues  
+**→ [Troubleshooting](./docs/TROUBLESHOOTING.md)** - Fix issues
 
 ### ☁️ Optional: Cloud Sync
 
@@ -148,6 +139,7 @@ todopro sync push
 ```
 
 **On another device:**
+
 ```bash
 # 1. Login
 todopro auth login
@@ -193,9 +185,10 @@ todopro task delete <id>
 
 ```bash
 # Projects
-# The default project is "Inbox" (ID: 00000000-0000-0000-0000-000000000000).
+# The default project is "Inbox". It is created automatically for every user
+# with a unique random UUID (not shared across users or environments).
+# Inbox is "protected": it cannot be archived, deleted, or renamed.
 # All tasks without an explicit project belong to Inbox.
-# Inbox cannot be archived, deleted, or renamed.
 todopro project create "Work"
 todopro project list             # pretty list (default)
 todopro project list --json      # JSON output
@@ -257,6 +250,7 @@ todopro encryption rotate-key
 ### 💡 Examples
 
 **Daily Task Review Script:**
+
 ```bash
 #!/bin/bash
 echo "📅 Today's Tasks:"
@@ -266,6 +260,7 @@ todopro list tasks --filter=overdue
 ```
 
 **Weekly Backup:**
+
 ```bash
 #!/bin/bash
 todopro data export --compress \
@@ -273,6 +268,7 @@ todopro data export --compress \
 ```
 
 **Pomodoro Timer:**
+
 ```bash
 #!/bin/bash
 TASK_ID=$1
@@ -284,30 +280,39 @@ echo "✅ Pomodoro complete!"
 ---
 
 # Switch to local vault
+
 todopro use context my-vault
 
 # Now all commands work offline!
+
 todopro add "Work on the plane without WiFi"
 todopro list tasks
 
 # Pull tasks from cloud to local vault
+
 todopro pull
 
 # Make changes locally...
+
 todopro add "Another offline task"
 
 # Push changes back to cloud
+
 todopro push
 
 # Switch back to cloud
+
 todopro use context default-remote
 
 # List all contexts
+
 todopro list contexts
 
 # Check sync status
+
 todopro sync-status
-```
+
+````
 
 ### Additional Commands
 
@@ -374,7 +379,7 @@ echo $?                                        # Check exit code (0=success)
 # login/logout/signup only apply in remote context
 todopro login      # remote context only
 todopro logout     # remote context only
-```
+````
 
 ## Development
 
@@ -442,6 +447,7 @@ This project uses automated GitHub Actions workflows for testing and releasing.
 ### Recent Architecture Improvements (Feb 2025)
 
 The CLI recently underwent a major architecture stabilization effort (Specs 10-14):
+
 - ✅ Fixed 38+ broken import paths
 - ✅ Migrated all commands to Strategy Pattern (from Factory Pattern)
 - ✅ Cleaned up configuration layer (ConfigService as single source of truth)

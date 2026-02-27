@@ -5,6 +5,8 @@ from difflib import get_close_matches
 import typer
 from typer.core import TyperGroup
 
+from todopro_cli.utils.ui.console import get_console
+
 
 class SuggestingGroup(TyperGroup):
     """Custom Typer group that suggests commands on typos.

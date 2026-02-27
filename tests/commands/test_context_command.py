@@ -1,7 +1,7 @@
 """Unit tests for context.py (storage context management: list, use, create, delete, rename).
 
 get_config_service is NOT imported in context.py (missing import), so we use
-patch(..., create=True) to inject it into the module namespace.
+patch(...) to inject it into the module namespace.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ def _make_svc(*contexts, current="default"):
 
 def _patch_svc(svc):
     """Patch get_config_service in context module (missing import → create=True)."""
-    return patch("todopro_cli.commands.context.get_config_service", create=True, return_value=svc)
+    return patch("todopro_cli.commands.context.get_config_service", return_value=svc)
 
 
 # ---------------------------------------------------------------------------

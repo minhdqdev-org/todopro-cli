@@ -20,9 +20,14 @@ async def list_projects(
     archived: bool = typer.Option(False, "--archived", help="Show archived projects"),
     favorites: bool = typer.Option(False, "--favorites", help="Show only favorites"),
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
     """List projects."""
+    if json_opt:
+        output = "json"
     project_service = get_project_service()
 
     projects = await project_service.list_projects(

@@ -11,7 +11,6 @@ import sqlite3
 import pytest
 
 from todopro_cli.adapters.sqlite.project_repository import (
-    INBOX_PROJECT_ID,
     SqliteProjectRepository,
 )
 from todopro_cli.adapters.sqlite import schema as db_schema
@@ -93,37 +92,49 @@ class TestEnsureInboxProject:
         conn, user_id = db
         repo._ensure_inbox_project(user_id)
         cursor = conn.execute(
-            "SELECT id FROM projects WHERE id = ? AND user_id = ?",
-            (INBOX_PROJECT_ID, user_id),
+            "SELECT id, protected FROM projects WHERE user_id = ? AND LOWER(name) = 'inbox' AND deleted_at IS NULL",
+            (user_id,),
         )
-        assert cursor.fetchone() is not None
+        row = cursor.fetchone()
+        assert row is not None
+        assert row[1] == 1  # protected = True
 
     def test_idempotent_second_call(self, repo, db):
         conn, user_id = db
         repo._ensure_inbox_project(user_id)
         repo._ensure_inbox_project(user_id)  # Should not raise or duplicate
         cursor = conn.execute(
-            "SELECT COUNT(*) FROM projects WHERE id = ? AND user_id = ?",
-            (INBOX_PROJECT_ID, user_id),
+            "SELECT COUNT(*) FROM projects WHERE user_id = ? AND LOWER(name) = 'inbox' AND deleted_at IS NULL",
+            (user_id,),
         )
         assert cursor.fetchone()[0] == 1
 
-    def test_removes_old_inbox_with_different_id(self, repo, db):
+    def test_inbox_has_random_uuid(self, repo, db):
         conn, user_id = db
-        # Insert old-style inbox with random ID
-        conn.execute(
-            "INSERT INTO projects (id, name, user_id, created_at, updated_at) VALUES (?, 'Inbox', ?, '2024-01-01', '2024-01-01')",
-            ("old-inbox-id", user_id),
-        )
-        conn.commit()
         repo._ensure_inbox_project(user_id)
         cursor = conn.execute(
-            "SELECT COUNT(*) FROM projects WHERE user_id = ? AND LOWER(name) = 'inbox'",
+            "SELECT id FROM projects WHERE user_id = ? AND LOWER(name) = 'inbox' AND deleted_at IS NULL",
             (user_id,),
         )
-        # Should have exactly 1 inbox (the one with fixed ID)
-        count = cursor.fetchone()[0]
-        assert count == 1
+        inbox_id = cursor.fetchone()[0]
+        assert inbox_id != "00000000-0000-0000-0000-000000000000"
+        assert len(inbox_id) == 36  # standard UUID format
+
+    def test_second_call_returns_same_inbox_id(self, repo, db):
+        conn, user_id = db
+        repo._ensure_inbox_project(user_id)
+        cursor = conn.execute(
+            "SELECT id FROM projects WHERE user_id = ? AND LOWER(name) = 'inbox'",
+            (user_id,),
+        )
+        first_id = cursor.fetchone()[0]
+        repo._ensure_inbox_project(user_id)
+        cursor = conn.execute(
+            "SELECT id FROM projects WHERE user_id = ? AND LOWER(name) = 'inbox'",
+            (user_id,),
+        )
+        second_id = cursor.fetchone()[0]
+        assert first_id == second_id
 
     def test_migrates_null_project_id_tasks_to_inbox(self, repo, db):
         conn, user_id = db
@@ -135,10 +146,16 @@ class TestEnsureInboxProject:
         )
         conn.commit()
         repo._ensure_inbox_project(user_id)
+        # Get inbox id
+        cursor = conn.execute(
+            "SELECT id FROM projects WHERE user_id = ? AND protected = 1",
+            (user_id,),
+        )
+        inbox_id = cursor.fetchone()[0]
         cursor = conn.execute(
             "SELECT project_id FROM tasks WHERE id = 't-null-proj'",
         )
-        assert cursor.fetchone()[0] == INBOX_PROJECT_ID
+        assert cursor.fetchone()[0] == inbox_id
 
 
 # ---------------------------------------------------------------------------

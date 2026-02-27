@@ -14,6 +14,7 @@ from todopro_cli.utils.ui.formatters import (
     format_output,
     format_success,
 )
+from todopro_cli.utils.uuid_utils import resolve_project_uuid
 
 from .decorators import command_wrapper
 
@@ -54,15 +55,24 @@ async def list_tasks(
     task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
+    # Resolve project name/prefix to UUID if provided
+    project_uuid: str | None = None
+    if project is not None:
+        try:
+            project_repo = storage_strategy_context.project_repository
+            project_uuid = await resolve_project_uuid(project, project_repo)
+        except ValueError as e:
+            format_error(str(e))
+            raise typer.Exit(1)
+
     tasks = await task_service.list_tasks(
         status=status,
-        project_id=project,
+        project_id=project_uuid,
         priority=priority,
         search=search,
         limit=limit,
         offset=offset,
     )
-
     # Filter out tasks being completed in background
     cache = get_background_cache()
     completing_tasks = set(cache.get_completing_tasks())

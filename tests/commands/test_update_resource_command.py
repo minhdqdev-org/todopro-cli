@@ -118,8 +118,7 @@ class TestUpdateTaskWithChanges:
         mock_ts.update_task = AsyncMock(return_value=mock_task)
 
         with (
-            patch("todopro_cli.commands.update_resource_command.get_storage_strategy_context", return_value=mock_sc, create=True),
-            patch("todopro_cli.commands.update_resource_command.strategy_context", mock_sc, create=True),
+            patch("todopro_cli.commands.update_resource_command.get_storage_strategy_context", return_value=mock_sc),
             patch("todopro_cli.commands.update_resource_command.resolve_task_id", new=AsyncMock(return_value="task-abc")),
             patch("todopro_cli.commands.update_resource_command.TaskService", return_value=mock_ts),
         ):
@@ -157,7 +156,7 @@ class TestUpdateProjectWithChanges:
         mock_ps.update_project = AsyncMock(return_value=mock_project)
 
         with (
-            patch("todopro_cli.commands.update_resource_command.get_storage_strategy_context", return_value=mock_sc, create=True),
+            patch("todopro_cli.commands.update_resource_command.get_storage_strategy_context", return_value=mock_sc),
             patch("todopro_cli.commands.update_resource_command.ProjectService", return_value=mock_ps),
         ):
             return runner.invoke(app, args)
@@ -186,7 +185,7 @@ class TestUpdateLabelWithChanges:
         mock_ls.update_label = AsyncMock(return_value=mock_label)
 
         with (
-            patch("todopro_cli.commands.update_resource_command.get_storage_strategy_context", return_value=mock_sc, create=True),
+            patch("todopro_cli.commands.update_resource_command.get_storage_strategy_context", return_value=mock_sc),
             patch("todopro_cli.commands.update_resource_command.LabelService", return_value=mock_ls),
         ):
             return runner.invoke(app, args)
@@ -212,8 +211,7 @@ class TestUpdateTaskNoUpdatesWithMockedStrategy:
         mock_ts = MagicMock()
 
         with (
-            patch("todopro_cli.commands.update_resource_command.get_storage_strategy_context", return_value=mock_sc, create=True),
-            patch("todopro_cli.commands.update_resource_command.strategy_context", mock_sc, create=True),
+            patch("todopro_cli.commands.update_resource_command.get_storage_strategy_context", return_value=mock_sc),
             patch("todopro_cli.commands.update_resource_command.TaskService", return_value=mock_ts),
         ):
             result = runner.invoke(app, ["task", "task-abc"])

@@ -1044,7 +1044,7 @@ class TestGetProjectStats:
         self, analytics: FocusAnalytics, db_conn: sqlite3.Connection
     ) -> None:
         """top_tasks are sorted by total focus minutes, highest first."""
-        now = datetime.now()
+        now = datetime.now() - timedelta(days=1)  # use yesterday to stay within query window
         for i, (tid, minutes) in enumerate(
             [("task-a", 10), ("task-b", 50), ("task-c", 30)]
         ):
@@ -1071,7 +1071,7 @@ class TestGetProjectStats:
         self, analytics: FocusAnalytics, db_conn: sqlite3.Connection
     ) -> None:
         """tasks_completed and tasks_in_progress are counted separately."""
-        now = datetime.now()
+        now = datetime.now() - timedelta(days=1)  # use yesterday to stay within query window
         _insert(
             db_conn,
             id="done",
@@ -1125,7 +1125,7 @@ class TestGetProjectStats:
         self, analytics: FocusAnalytics, db_conn: sqlite3.Connection
     ) -> None:
         """avg_session_minutes = total_focus_minutes / total_sessions."""
-        now = datetime.now()
+        now = datetime.now() - timedelta(days=1)  # use yesterday to stay within query window
         for i, focus in enumerate([20, 40]):
             _insert(
                 db_conn,

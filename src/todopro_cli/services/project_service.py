@@ -118,7 +118,7 @@ class ProjectService:
         )
         if name is not None:
             current = await self.repository.get(project_id)
-            if current.name.lower() == "inbox" and name.lower() != "inbox":
+            if current.protected and name.lower() != "inbox":
                 raise ValueError("Cannot rename the Inbox project")
         return await self.repository.update(project_id, updates)
 
@@ -132,7 +132,7 @@ class ProjectService:
             True if deletion was successful
         """
         project = await self.repository.get(project_id)
-        if project.name.lower() == "inbox":
+        if project.protected:
             raise ValueError("Cannot delete the Inbox project")
         return await self.repository.delete(project_id)
 
@@ -146,7 +146,7 @@ class ProjectService:
             Updated Project object with is_archived=True
         """
         project = await self.repository.get(project_id)
-        if project.name.lower() == "inbox":
+        if project.protected:
             raise ValueError("Cannot archive the Inbox project")
         return await self.repository.archive(project_id)
 

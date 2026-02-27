@@ -13,6 +13,7 @@ from .repository import (
     LabelRepository,
     LocationContextRepository,
     ProjectRepository,
+    SectionRepository,
     TaskRepository,
 )
 
@@ -22,4 +23,5 @@ __all__ = [
     "LabelRepository",
     "LocationContextRepository",
     "AchievementRepository",
+    "SectionRepository",
 ]

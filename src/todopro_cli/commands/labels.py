@@ -2,12 +2,13 @@
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.label_service import LabelService
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
 
 from .decorators import command_wrapper
-from todopro_cli.utils.ui.console import get_console
 app = typer.Typer(cls=SuggestingGroup, help="Label management commands")
 console = get_console()
 
@@ -15,16 +16,26 @@ console = get_console()
 @app.command("list")
 @command_wrapper
 async def list_labels(
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    search: str | None = typer.Option(None, "--search", help="Search labels"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
+    compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
     """List all labels."""
+    if json_opt:
+        output = "json"
     storage_strategy_context = get_storage_strategy_context()
     label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
     labels = await label_service.list_labels()
+    if search:
+        search_lower = search.lower()
+        labels = [l for l in labels if search_lower in l.name.lower()]
     result = {"labels": [l.model_dump() for l in labels]}
-    format_output(result, output)
+    format_output(result, output, compact=compact)
 
 
 @app.command("get")

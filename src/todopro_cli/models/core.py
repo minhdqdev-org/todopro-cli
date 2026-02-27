@@ -31,6 +31,64 @@ class LabelCreate(BaseModel):
     color: str | None = None
 
 
+class Section(BaseModel):
+    """Section model representing a named group of tasks within a project.
+
+    Attributes:
+        id: Unique identifier for the section
+        project_id: Reference to the parent project
+        name: Section name
+        display_order: Order position within the project
+        task_count: Number of active tasks in this section
+        created_at: Creation timestamp
+        updated_at: Last update timestamp
+    """
+
+    id: str
+    project_id: str
+    name: str
+    display_order: int = 0
+    task_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
+class SectionCreate(BaseModel):
+    """Model for creating a new section.
+
+    Attributes:
+        name: Section name (required)
+        display_order: Optional order position
+    """
+
+    name: str
+    display_order: int = 0
+
+
+class SectionUpdate(BaseModel):
+    """Model for updating an existing section.
+
+    All fields are optional — only provided fields will be updated.
+
+    Attributes:
+        name: Section name
+        display_order: Order position
+    """
+
+    name: str | None = None
+    display_order: int | None = None
+
+
+class SectionFilters(BaseModel):
+    """Filters for querying sections.
+
+    Attributes:
+        project_id: Filter by project ID
+    """
+
+    project_id: str | None = None
+
+
 class Project(BaseModel):
     """Project model representing a complete project entity.
 
@@ -40,6 +98,7 @@ class Project(BaseModel):
         color: Optional hex color code for display
         is_favorite: Whether project is marked as favorite
         is_archived: Whether project is archived
+        protected: Whether project is protected (e.g. Inbox) and cannot be deleted/archived
         workspace_id: Optional reference to parent workspace
         created_at: Creation timestamp
         updated_at: Last update timestamp
@@ -50,6 +109,7 @@ class Project(BaseModel):
     color: str | None = None
     is_favorite: bool = False
     is_archived: bool = False
+    protected: bool = False
     workspace_id: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -135,6 +195,7 @@ class Task(BaseModel):
     content: str
     description: str | None = None
     project_id: str | None = None
+    section_id: str | None = None
     due_date: datetime | None = None
     priority: int = Field(default=4, ge=1, le=4)
     is_completed: bool = False
@@ -169,9 +230,9 @@ class TaskCreate(BaseModel):
     content: str
     description: str | None = None
     project_id: str | None = None
+    section_id: str | None = None
     due_date: datetime | None = None
     priority: int = Field(default=4, ge=1, le=4)
-    is_recurring: bool = False
     recurrence_rule: str | None = None
     recurrence_end: datetime | None = None
     labels: list[str] = Field(default_factory=list)

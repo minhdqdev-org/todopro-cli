@@ -255,7 +255,7 @@ class SqliteTaskRepository(TaskRepository):
                 description_encrypted,
                 data.get("project_id"),
                 data.get("due_date"),
-                data.get("priority", 1),
+                data.get("priority", 4),
                 False,
                 user_id,
                 now,

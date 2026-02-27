@@ -15,6 +15,7 @@ from todopro_cli.repositories import (
     LabelRepository,
     LocationContextRepository,
     ProjectRepository,
+    SectionRepository,
     TaskRepository,
 )
 
@@ -49,6 +50,10 @@ class StorageStrategy(ABC):
     @abstractmethod
     def get_achievement_repository(self) -> AchievementRepository:
         """Get achievement repository implementation for this strategy."""
+
+    @abstractmethod
+    def get_section_repository(self) -> SectionRepository:
+        """Get section repository implementation for this strategy."""
 
     @property
     @abstractmethod
@@ -106,6 +111,9 @@ class LocalStorageStrategy(StorageStrategy):
     def get_achievement_repository(self) -> AchievementRepository:
         raise NotImplementedError("Achievement repository not yet implemented for local storage")
 
+    def get_section_repository(self) -> SectionRepository:
+        raise NotImplementedError("Section repository not yet implemented for local storage")
+
     @property
     def storage_type(self) -> str:
         return "local"
@@ -129,6 +137,7 @@ class RemoteStorageStrategy(StorageStrategy):
             RestApiLabelRepository,
             RestApiLocationContextRepository,
             RestApiProjectRepository,
+            RestApiSectionRepository,
             RestApiTaskRepository,
         )  # type: ignore
 
@@ -136,6 +145,7 @@ class RemoteStorageStrategy(StorageStrategy):
         self._project_repo = RestApiProjectRepository()
         self._label_repo = RestApiLabelRepository()
         self._location_context_repo = RestApiLocationContextRepository()
+        self._section_repo = RestApiSectionRepository()
 
     def get_task_repository(self) -> TaskRepository:
         return self._task_repo
@@ -151,6 +161,9 @@ class RemoteStorageStrategy(StorageStrategy):
 
     def get_achievement_repository(self) -> AchievementRepository:
         raise NotImplementedError("Achievement repository not yet implemented for remote storage")
+
+    def get_section_repository(self) -> SectionRepository:
+        return self._section_repo
 
     @property
     def storage_type(self) -> str:
@@ -212,6 +225,11 @@ class StorageStrategyContext:
     def achievement_repository(self) -> LocationContextRepository:
         """Get achievement repository (same as context repository for now)."""
         return self._strategy.get_achievement_repository()
+
+    @property
+    def section_repository(self) -> SectionRepository:
+        """Get section repository from current strategy."""
+        return self._strategy.get_section_repository()
 
     @property
     def storage_type(self) -> str:

@@ -26,6 +26,7 @@ class _MockStrategy(StorageStrategy):
         self._label_repo = MagicMock(name="label_repo")
         self._context_repo = MagicMock(name="context_repo")
         self._achievement_repo = MagicMock(name="achievement_repo")
+        self._section_repo = MagicMock(name="section_repo")
 
     def get_task_repository(self):
         return self._task_repo
@@ -41,6 +42,9 @@ class _MockStrategy(StorageStrategy):
 
     def get_achievement_repository(self):
         return self._achievement_repo
+
+    def get_section_repository(self):
+        return self._section_repo
 
     @property
     def storage_type(self) -> str:

@@ -40,3 +40,24 @@ jobs:
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trigger-qa:
+    name: Trigger QA Tests
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Dispatch CLI tests to todopro-qa
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.QA_DISPATCH_TOKEN }}
+          repository: minhdqdev-org/todopro-qa
+          event-type: cli-released
+          client-payload: |
+            {
+              "environment": "staging",
+              "ref": "${{ github.ref }}",
+              "actor": "${{ github.actor }}",
+              "source_repo": "todopro-cli",
+              "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }

@@ -2,6 +2,7 @@
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console

@@ -44,9 +44,10 @@ def service(mock_repo):
     return ProjectService(mock_repo)
 
 
-def _make_project(name: str) -> MagicMock:
+def _make_project(name: str, protected: bool = False) -> MagicMock:
     p = MagicMock(spec=Project)
     p.name = name
+    p.protected = protected
     return p
 
 
@@ -57,8 +58,8 @@ def _make_project(name: str) -> MagicMock:
 
 @pytest.mark.asyncio
 async def test_update_project_rename_inbox_raises_value_error(service, mock_repo):
-    """Renaming a project whose name is 'inbox' (case-insensitive) must raise."""
-    mock_repo.get.return_value = _make_project("Inbox")
+    """Renaming a protected project must raise."""
+    mock_repo.get.return_value = _make_project("Inbox", protected=True)
 
     with pytest.raises(ValueError, match="Cannot rename"):
         await service.update_project("proj-1", name="Work")
@@ -66,8 +67,8 @@ async def test_update_project_rename_inbox_raises_value_error(service, mock_repo
 
 @pytest.mark.asyncio
 async def test_update_project_rename_inbox_lowercase_raises(service, mock_repo):
-    """Guard is case-insensitive – 'inbox' (all-lower) must also raise."""
-    mock_repo.get.return_value = _make_project("inbox")
+    """Guard uses protected field – lowercase 'inbox' with protected=True also raises."""
+    mock_repo.get.return_value = _make_project("inbox", protected=True)
 
     with pytest.raises(ValueError, match="Cannot rename"):
         await service.update_project("proj-1", name="Personal")
@@ -77,7 +78,7 @@ async def test_update_project_rename_inbox_lowercase_raises(service, mock_repo):
 @pytest.mark.asyncio
 async def test_update_project_non_inbox_succeeds(service, mock_repo):
     """Renaming a normal project should succeed without raising."""
-    mock_project = _make_project("Work")
+    mock_project = _make_project("Work", protected=False)
     mock_repo.get.return_value = mock_project
     mock_repo.update.return_value = mock_project
 
@@ -105,8 +106,8 @@ async def test_update_project_no_name_skips_inbox_check(service, mock_repo):
 
 @pytest.mark.asyncio
 async def test_delete_inbox_project_raises_value_error(service, mock_repo):
-    """Deleting the inbox project must raise ValueError."""
-    mock_repo.get.return_value = _make_project("inbox")
+    """Deleting a protected project must raise ValueError."""
+    mock_repo.get.return_value = _make_project("inbox", protected=True)
 
     with pytest.raises(ValueError, match="Cannot delete"):
         await service.delete_project("proj-inbox")
@@ -116,8 +117,8 @@ async def test_delete_inbox_project_raises_value_error(service, mock_repo):
 
 @pytest.mark.asyncio
 async def test_delete_inbox_project_case_insensitive(service, mock_repo):
-    """inbox check is case-insensitive: 'INBOX' also raises."""
-    mock_repo.get.return_value = _make_project("INBOX")
+    """protected flag drives the check regardless of name casing."""
+    mock_repo.get.return_value = _make_project("INBOX", protected=True)
 
     with pytest.raises(ValueError):
         await service.delete_project("proj-inbox")
@@ -125,8 +126,8 @@ async def test_delete_inbox_project_case_insensitive(service, mock_repo):
 
 @pytest.mark.asyncio
 async def test_delete_non_inbox_project_succeeds(service, mock_repo):
-    """Deleting a non-inbox project should call repo.delete and return True."""
-    mock_repo.get.return_value = _make_project("Shopping")
+    """Deleting a non-protected project should call repo.delete and return True."""
+    mock_repo.get.return_value = _make_project("Shopping", protected=False)
     mock_repo.delete.return_value = True
 
     result = await service.delete_project("proj-shop")
@@ -142,8 +143,8 @@ async def test_delete_non_inbox_project_succeeds(service, mock_repo):
 
 @pytest.mark.asyncio
 async def test_archive_inbox_project_raises_value_error(service, mock_repo):
-    """Archiving the inbox project must raise ValueError."""
-    mock_repo.get.return_value = _make_project("Inbox")
+    """Archiving a protected project must raise ValueError."""
+    mock_repo.get.return_value = _make_project("Inbox", protected=True)
 
     with pytest.raises(ValueError, match="Cannot archive"):
         await service.archive_project("proj-inbox")
@@ -154,7 +155,7 @@ async def test_archive_inbox_project_raises_value_error(service, mock_repo):
 @pytest.mark.asyncio
 async def test_archive_non_inbox_project_succeeds(service, mock_repo):
     """Archiving a regular project should call repo.archive."""
-    mock_project = _make_project("Archive me")
+    mock_project = _make_project("Archive me", protected=False)
     mock_repo.get.return_value = mock_project
     mock_repo.archive.return_value = mock_project
 

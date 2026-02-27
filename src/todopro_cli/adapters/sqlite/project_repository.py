@@ -11,8 +11,6 @@ from todopro_cli.adapters.sqlite.utils import generate_uuid, now_iso, row_to_dic
 from todopro_cli.models import Project, ProjectCreate, ProjectFilters, ProjectUpdate
 from todopro_cli.repositories import ProjectRepository
 
-INBOX_PROJECT_ID = "00000000-0000-0000-0000-000000000000"
-
 
 class SqliteProjectRepository(ProjectRepository):
     """SQLite implementation of project repository."""
@@ -46,30 +44,31 @@ class SqliteProjectRepository(ProjectRepository):
         return self._user_id
 
     def _ensure_inbox_project(self, user_id: str) -> None:
-        """Create the Inbox project with fixed ID if it doesn't exist, and migrate NULL project_ids."""
+        """Create the Inbox project with a random UUID if it doesn't exist, and migrate NULL project_ids."""
         now = now_iso()
-        # Ensure the Inbox project exists with the fixed all-zeros ID
+        # Check if a protected Inbox project already exists for this user
         cursor = self.connection.execute(
-            "SELECT id FROM projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1",
-            (INBOX_PROJECT_ID, user_id),
+            "SELECT id FROM projects WHERE user_id = ? AND protected = 1 AND deleted_at IS NULL LIMIT 1",
+            (user_id,),
         )
-        if cursor.fetchone() is None:
-            # Check for an old Inbox with a random ID and remove it if present
-            self.connection.execute(
-                "DELETE FROM projects WHERE user_id = ? AND LOWER(name) = 'inbox' AND id != ?",
-                (user_id, INBOX_PROJECT_ID),
-            )
+        row = cursor.fetchone()
+        if row is None:
+            inbox_id = generate_uuid()
             self.connection.execute(
                 """INSERT OR IGNORE INTO projects (id, name, color, is_favorite, is_archived,
-                       user_id, created_at, updated_at, version, display_order)
-                   VALUES (?, 'Inbox', '#4a90d9', 0, 0, ?, ?, ?, 1, 0)""",
-                (INBOX_PROJECT_ID, user_id, now, now),
+                       protected, user_id, created_at, updated_at, version, display_order)
+                   VALUES (?, 'Inbox', '#4a90d9', 0, 0, 1, ?, ?, ?, 1, 0)""",
+                (inbox_id, user_id, now, now),
             )
             self.connection.commit()
+            inbox_id_for_migration = inbox_id
+        else:
+            inbox_id_for_migration = row[0]
+
         # Migrate tasks with NULL project_id to Inbox
         self.connection.execute(
             "UPDATE tasks SET project_id = ? WHERE user_id = ? AND project_id IS NULL AND deleted_at IS NULL",
-            (INBOX_PROJECT_ID, user_id),
+            (inbox_id_for_migration, user_id),
         )
         self.connection.commit()
 

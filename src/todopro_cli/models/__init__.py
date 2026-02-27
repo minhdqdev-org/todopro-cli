@@ -16,6 +16,10 @@ from .core import (
     ProjectCreate,
     ProjectFilters,
     ProjectUpdate,
+    Section,
+    SectionCreate,
+    SectionFilters,
+    SectionUpdate,
     Task,
     TaskCreate,
     TaskFilters,
@@ -34,6 +38,11 @@ __all__ = [
     "ProjectCreate",
     "ProjectUpdate",
     "ProjectFilters",
+    # Section models
+    "Section",
+    "SectionCreate",
+    "SectionUpdate",
+    "SectionFilters",
     # Label models
     "Label",
     "LabelCreate",

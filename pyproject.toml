@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "todopro-cli"
-version = "1.0.1"
+version = "1.0.0"
 description = "A professional CLI for TodoPro task management system"
 readme = "README.md"
 requires-python = ">=3.12"

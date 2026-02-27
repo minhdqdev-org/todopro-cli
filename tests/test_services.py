@@ -298,6 +298,13 @@ class TestProjectService:
             created_at=datetime.now(),
             updated_at=datetime.now(),
         )
+        mock_project_repo.get.return_value = Project(
+            id="123",
+            name="Project",
+            protected=False,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+        )
         mock_project_repo.archive.return_value = mock_project
 
         service = ProjectService(mock_project_repo)

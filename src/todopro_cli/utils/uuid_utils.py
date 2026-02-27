@@ -131,49 +131,63 @@ async def resolve_task_uuid(
 async def resolve_project_uuid(
     short_or_full_id: str, repository: ProjectRepository, min_length: int = 8
 ) -> str:
-    """Resolve a short or full UUID to a full UUID for projects.
+    """Resolve a short UUID, full UUID, or project name to a full UUID.
+
+    Tries in order: full UUID → UUID prefix → case-insensitive name match.
 
     Args:
-        short_or_full_id: Either full UUID or prefix (min 8 chars)
+        short_or_full_id: Full UUID, UUID prefix (min 8 chars), or project name
         repository: ProjectRepository instance
-        min_length: Minimum length for short UUIDs (default 8)
+        min_length: Minimum length for UUID prefix matching (default 8)
 
     Returns:
         Full UUID string
 
     Raises:
-        ValueError: If ID is too short, not found, or ambiguous
+        ValueError: If not found or ambiguous
     """
-    short_or_full_id = short_or_full_id.lower().strip()
+    short_or_full_id_stripped = short_or_full_id.strip()
+    normalized = short_or_full_id_stripped.lower()
 
-    if is_full_uuid(short_or_full_id):
-        project = await repository.get(short_or_full_id)
+    # Full UUID — look up by id directly
+    if is_full_uuid(normalized):
+        project = await repository.get(normalized)
         if project is None:
-            raise ValueError(f"Project not found: {short_or_full_id}")
-        return short_or_full_id
+            raise ValueError(f"Project not found: {short_or_full_id_stripped}")
+        return normalized
 
-    if len(short_or_full_id) < min_length:
-        raise ValueError(
-            f"ID must be at least {min_length} characters. "
-            f"Got: {short_or_full_id} ({len(short_or_full_id)} chars)"
-        )
+    # Looks like a UUID prefix (only hex digits and dashes) — try prefix search
+    uuid_prefix_re = re.compile(r"^[0-9a-f\-]+$", re.IGNORECASE)
+    if uuid_prefix_re.match(normalized) and len(normalized) >= min_length:
+        from todopro_cli.models import ProjectFilters
 
+        projects = await repository.list_all(ProjectFilters(id_prefix=normalized))
+        if len(projects) == 1:
+            return projects[0].id
+        if len(projects) > 1:
+            matches = ", ".join([shorten_uuid(p.id) for p in projects[:5]])
+            if len(projects) > 5:
+                matches += f", ... ({len(projects)} total)"
+            raise ValueError(
+                f"Ambiguous ID '{short_or_full_id_stripped}' matches {len(projects)} projects: {matches}"
+            )
+        # No UUID prefix match — fall through to name search
+
+    # Try case-insensitive name search
     from todopro_cli.models import ProjectFilters
 
-    projects = await repository.list_all(ProjectFilters(id_prefix=short_or_full_id))
-
-    if len(projects) == 0:
-        raise ValueError(f"Project not found: {short_or_full_id}")
-
-    if len(projects) > 1:
-        matches = ", ".join([shorten_uuid(p.id) for p in projects[:5]])
-        if len(projects) > 5:
-            matches += f", ... ({len(projects)} total)"
+    projects = await repository.list_all(ProjectFilters(search=short_or_full_id_stripped))
+    # Filter to exact case-insensitive name match
+    name_matches = [p for p in projects if p.name.lower() == normalized]
+    if len(name_matches) == 1:
+        return name_matches[0].id
+    if len(name_matches) > 1:
+        matches = ", ".join([p.name for p in name_matches[:5]])
         raise ValueError(
-            f"Ambiguous ID '{short_or_full_id}' matches {len(projects)} projects: {matches}"
+            f"Ambiguous name '{short_or_full_id_stripped}' matches {len(name_matches)} projects: {matches}"
         )
 
-    return projects[0].id
+    raise ValueError(f"Project not found: '{short_or_full_id_stripped}' (tried UUID, UUID prefix, and name)")
 
 
 def validate_uuid_field(value: str | None, field_name: str = "id") -> str | None:
