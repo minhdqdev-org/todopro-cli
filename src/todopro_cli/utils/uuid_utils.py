@@ -180,6 +180,24 @@ async def resolve_project_uuid(
             )
         # No UUID prefix match — fall through to name search
 
+    # Short hex string could be a UUID suffix displayed by `tp project list` (e.g. `#8`).
+    # This handles cache misses (suffix cache TTL expired) by searching all projects.
+    if uuid_prefix_re.match(normalized) and len(normalized) < min_length:
+        from todopro_cli.models import ProjectFilters
+
+        all_projects = await repository.list_all(ProjectFilters())
+        suffix_matches = [p for p in all_projects if p.id.endswith(normalized)]
+        if len(suffix_matches) == 1:
+            return suffix_matches[0].id
+        if len(suffix_matches) > 1:
+            matches = ", ".join([shorten_uuid(p.id) for p in suffix_matches[:5]])
+            if len(suffix_matches) > 5:
+                matches += f", ... ({len(suffix_matches)} total)"
+            raise ValueError(
+                f"Ambiguous ID '{short_or_full_id_stripped}' matches {len(suffix_matches)} projects: {matches}"
+            )
+        # No suffix match — fall through to name search
+
     # Try case-insensitive name search
     from todopro_cli.models import ProjectFilters
 
@@ -220,3 +238,90 @@ def validate_uuid_field(value: str | None, field_name: str = "id") -> str | None
         raise ValueError(f"Invalid UUID for {field_name}: {value}")
 
     return value.lower()
+
+
+async def resolve_label_id(label_id_or_suffix: str, label_repository) -> str:
+    """Resolve a label suffix, full UUID, or label name to a full label ID.
+
+    Tries in order: cached suffix (from ``tp label list``) → full UUID → name search.
+
+    Args:
+        label_id_or_suffix: Full UUID, suffix shown by ``tp label list``, or label name.
+            May be prefixed with ``#``.
+        label_repository: LabelRepository instance.
+
+    Returns:
+        Full UUID string.
+
+    Raises:
+        ValueError: If not found.
+    """
+    from todopro_cli.services.cache_service import get_label_suffix_mapping
+
+    stripped = label_id_or_suffix.strip().lstrip("#")
+
+    # Check cached suffix mapping first
+    suffix_mapping = get_label_suffix_mapping()
+    if stripped in suffix_mapping:
+        return suffix_mapping[stripped]
+
+    # Full UUID — direct lookup
+    if is_full_uuid(stripped):
+        return stripped
+
+    # Name search
+    try:
+        from todopro_cli.models import LabelFilters
+        labels = await label_repository.list_all(LabelFilters(search=stripped))
+    except Exception:
+        labels = await label_repository.list_all()
+        labels = [lbl for lbl in labels if lbl.name.lower() == stripped.lower()]
+
+    name_matches = [lbl for lbl in labels if lbl.name.lower() == stripped.lower()]
+    if len(name_matches) == 1:
+        return name_matches[0].id
+    if len(name_matches) > 1:
+        matches = ", ".join(lbl.name for lbl in name_matches[:5])
+        raise ValueError(f"Ambiguous label name '{stripped}' matches: {matches}")
+
+    raise ValueError(f"Label not found: '{stripped}' (tried suffix cache, UUID, and name)")
+
+
+async def resolve_section_id(
+    section_id_or_suffix: str,
+    section_repository,
+    project_id: str | None = None,
+) -> str:
+    """Resolve a section suffix or full UUID to a full section ID.
+
+    Tries in order: cached suffix (from ``tp section list``) → full UUID.
+
+    Args:
+        section_id_or_suffix: Full UUID or suffix shown by ``tp section list``.
+            May be prefixed with ``#``.
+        section_repository: SectionRepository instance.
+        project_id: Optional project scope for the lookup (unused currently but
+            kept for future DB-level filtering).
+
+    Returns:
+        Full UUID string.
+
+    Raises:
+        ValueError: If not found.
+    """
+    from todopro_cli.services.cache_service import get_section_suffix_mapping
+
+    stripped = section_id_or_suffix.strip().lstrip("#")
+
+    # Check cached suffix mapping first
+    suffix_mapping = get_section_suffix_mapping()
+    if stripped in suffix_mapping:
+        return suffix_mapping[stripped]
+
+    # Full UUID — accept as-is
+    if is_full_uuid(stripped):
+        return stripped
+
+    raise ValueError(
+        f"Section not found: '{stripped}' — run 'tp section list <project>' to populate suffix cache"
+    )

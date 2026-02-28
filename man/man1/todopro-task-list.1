@@ -1,0 +1,36 @@
+.TH "TODOPRO TASK LIST" "1" "2026-02-27" "1.0.0" "todopro task list Manual"
+.SH NAME
+todopro\-task\-list \- List tasks.
+.SH SYNOPSIS
+.B todopro task list
+[OPTIONS]
+.SH DESCRIPTION
+List tasks.
+.SH OPTIONS
+.TP
+\fB\-\-status\fP TEXT
+Filter by status
+.TP
+\fB\-\-project\fP TEXT
+Filter by project ID
+.TP
+\fB\-\-priority\fP INTEGER
+Filter by priority
+.TP
+\fB\-\-search\fP TEXT
+Search tasks
+.TP
+\fB\-\-limit\fP INTEGER
+Limit results  [default: 250]
+.TP
+\fB\-\-offset\fP INTEGER
+Pagination offset  [default: 0]
+.TP
+\fB\-o,\fP \-\-output TEXT
+Output format  [default: pretty]
+.TP
+\fB\-\-json\fP
+Output as JSON (alias for --output json)
+.TP
+\fB\-\-compact\fP
+Compact output

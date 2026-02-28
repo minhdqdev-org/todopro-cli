@@ -1,0 +1,32 @@
+.TH "TODOPRO TASK MIGRATE" "1" "2026-02-27" "1.0.0" "todopro task migrate Manual"
+.SH NAME
+todopro\-task\-migrate \- Migrate all tasks from one project to...
+.SH SYNOPSIS
+.B todopro task migrate
+[OPTIONS]
+.SH DESCRIPTION
+Migrate all tasks from one project to another.
+.PP
+Resolves projects by name, UUID, or UUID prefix. Active tasks are moved
+by default; pass --include-completed to also migrate completed tasks.
+.PP
+Examples:
+    todopro tasks migrate --from "Inbox" --to "Work"
+    todopro tasks migrate --from inbox-uuid --to work-uuid --yes
+    todopro tasks migrate --from "Old Project" --to "New Project" --dry-run
+.SH OPTIONS
+.TP
+\fB\-\-from\fP TEXT
+Source project name or ID  [required]
+.TP
+\fB\-\-to\fP TEXT
+Destination project name or ID  [required]
+.TP
+\fB\-y,\fP \-\-yes
+Skip confirmation prompt
+.TP
+\fB\-\-dry\-run\fP
+Preview without moving tasks
+.TP
+\fB\-\-include\-completed\fP
+Also migrate completed tasks

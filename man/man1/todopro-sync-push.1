@@ -1,0 +1,29 @@
+.TH "TODOPRO SYNC PUSH" "1" "2026-02-27" "1.0.0" "todopro sync push Manual"
+.SH NAME
+todopro\-sync\-push \- Push data from local to remote storage.
+.SH SYNOPSIS
+.B todopro sync push
+[OPTIONS]
+.SH DESCRIPTION
+Push data from local to remote storage.
+.PP
+Exports tasks, projects, labels, and contexts from the current local context
+to a remote context.
+.PP
+Examples:
+    todopro sync push --context=company-cloud
+    todopro sync push --context=backup --dry-run
+    todopro sync push --context=work --full
+.SH OPTIONS
+.TP
+\fB\-c,\fP \-\-context TEXT
+Remote context to push to (defaults to current if remote)
+.TP
+\fB\-\-dry\-run\fP
+Preview changes without applying them
+.TP
+\fB\-\-full\fP
+Perform full sync, ignoring last sync timestamp
+.TP
+\fB\-\-strategy\fP [local\-wins|remote\-wins]
+Conflict resolution strategy  [default: local-wins]

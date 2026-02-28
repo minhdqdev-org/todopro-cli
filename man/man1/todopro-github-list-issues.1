@@ -1,0 +1,21 @@
+.TH "TODOPRO GITHUB LIST-ISSUES" "1" "2026-02-27" "1.0.0" "todopro github list-issues Manual"
+.SH NAME
+todopro\-github\-list-issues \- List GitHub Issues in a repository.
+.SH SYNOPSIS
+.B todopro github list-issues
+[OPTIONS]
+.SH DESCRIPTION
+List GitHub Issues in a repository.
+.SH OPTIONS
+.TP
+\fB\-\-repo\fP TEXT
+GitHub repository (owner/repo)  [required]
+.TP
+\fB\-\-token\fP TEXT
+GitHub personal access token
+.TP
+\fB\-\-state\fP TEXT
+Issue state (open/closed/all)  [default: open]
+.TP
+\fB\-\-limit\fP INTEGER
+Max issues to display  [default: 20]

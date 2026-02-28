@@ -1,0 +1,38 @@
+.TH "TODOPRO EDIT" "1" "2026-02-27" "1.0.0" "todopro edit Manual"
+.SH NAME
+todopro\-edit \- Edit a task interactively or via flags.
+.SH SYNOPSIS
+.B todopro edit
+[OPTIONS] TASK_ID
+.SH DESCRIPTION
+Edit a task interactively or via flags.
+.PP
+If no flags are given, launches an interactive prompt showing current
+values so you can edit each field in turn (press Enter to keep).
+.PP
+Examples:
+  tp edit 3f --content "New title" --due tomorrow
+  tp edit 3f --priority 3
+  tp edit 3f          # interactive
+.SH OPTIONS
+.TP
+\fB\-c,\fP \-\-content TEXT
+New task content
+.TP
+\fB\-\-description\fP TEXT
+New description
+.TP
+\fB\-d,\fP \-\-due TEXT
+New due date (e.g. 'tomorrow', '2026-03-01 14:00')
+.TP
+\fB\-p,\fP \-\-priority INTEGER
+New priority (1=low, 2=medium, 3=high, 4=urgent)
+.TP
+\fB\-\-project\fP TEXT
+New project (name or ID, fuzzy search supported)
+.TP
+\fB\-o,\fP \-\-output TEXT
+Output format  [default: pretty]
+.TP
+\fB\-\-json\fP
+Output as JSON (alias for --output json)

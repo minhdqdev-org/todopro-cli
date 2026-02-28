@@ -1,0 +1,24 @@
+.TH "TODOPRO TEMPLATE CREATE" "1" "2026-02-27" "1.0.0" "todopro template create Manual"
+.SH NAME
+todopro\-template\-create \- Create a new task template.
+.SH SYNOPSIS
+.B todopro template create
+[OPTIONS] NAME
+.SH DESCRIPTION
+Create a new task template.
+.SH OPTIONS
+.TP
+\fB\-c,\fP \-\-content TEXT
+Task content/title  [required]
+.TP
+\fB\-d,\fP \-\-description TEXT
+Task description
+.TP
+\fB\-p,\fP \-\-priority INTEGER RANGE
+Priority (1-4)  [default: 4; 1<=x<=4]
+.TP
+\fB\-l,\fP \-\-label TEXT
+Label names (repeatable)
+.TP
+\fB\-\-recur\fP TEXT
+Recurrence pattern (daily/weekly/monthly/weekdays/bi-weekly)

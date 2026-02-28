@@ -22,6 +22,7 @@ def login(
     email: str | None = typer.Option(None, "--email", help="Email address"),
     password: str | None = typer.Option(None, "--password", help="Password"),
     endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    save_profile: bool = typer.Option(False, "--save-profile", help="Save as default profile"),
 ) -> None:
     """Login to TodoPro."""
     try:
@@ -76,10 +77,13 @@ def login(
                 # Get user profile
                 user = await auth_api.get_profile()
 
-                format_success(
+                msg = (
                     f"Logged in as {user.get('email', 'unknown')} "
                     f"(context: {context_name})"
                 )
+                if save_profile:
+                    msg += " — saved as default"
+                format_success(msg)
 
             finally:
                 await client.close()

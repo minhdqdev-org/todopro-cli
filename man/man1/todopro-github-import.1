@@ -1,0 +1,30 @@
+.TH "TODOPRO GITHUB IMPORT" "1" "2026-02-27" "1.0.0" "todopro github import Manual"
+.SH NAME
+todopro\-github\-import \- Import GitHub Issues as TodoPro tasks.
+.SH SYNOPSIS
+.B todopro github import
+[OPTIONS]
+.SH DESCRIPTION
+Import GitHub Issues as TodoPro tasks.
+.SH OPTIONS
+.TP
+\fB\-\-repo\fP TEXT
+GitHub repository (owner/repo)  [required]
+.TP
+\fB\-\-token\fP TEXT
+GitHub personal access token
+.TP
+\fB\-\-state\fP TEXT
+Issue state (open/closed/all)  [default: open]
+.TP
+\fB\-\-limit\fP INTEGER
+Max issues to import  [default: 20]
+.TP
+\fB\-\-label\fP TEXT
+Label to apply to imported tasks  [default: github]
+.TP
+\fB\-\-profile\fP TEXT
+TodoPro profile to use  [default: default]
+.TP
+\fB\-\-dry\-run\fP
+Preview without importing

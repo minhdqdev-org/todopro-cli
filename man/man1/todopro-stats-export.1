@@ -1,0 +1,27 @@
+.TH "TODOPRO STATS EXPORT" "1" "2026-02-27" "1.0.0" "todopro stats export Manual"
+.SH NAME
+todopro\-stats\-export \- Export focus session data.
+.SH SYNOPSIS
+.B todopro stats export
+[OPTIONS]
+.SH DESCRIPTION
+Export focus session data.
+.SH OPTIONS
+.TP
+\fB\-\-format\fP TEXT
+Export format (csv, json)  [default: json]
+.TP
+\fB\-\-output\fP PATH
+Output file (default: stdout)
+.TP
+\fB\-\-from\fP TEXT
+Start date (YYYY-MM-DD)
+.TP
+\fB\-\-to\fP TEXT
+End date (YYYY-MM-DD)
+.TP
+\fB\-\-context\fP TEXT
+Filter by context/project
+.TP
+\fB\-\-completed\-only\fP
+Export only completed sessions

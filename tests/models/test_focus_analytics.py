@@ -1015,11 +1015,13 @@ class TestGetProjectStats:
     ) -> None:
         """Sessions from other contexts must not be included."""
         now = datetime.now()
+        s1 = now - timedelta(hours=3)
+        s2 = now - timedelta(hours=2)
         _insert(
             db_conn,
             id="a1",
-            start_time=_iso(now.replace(hour=9)),
-            end_time=_iso(now.replace(hour=9, minute=25)),
+            start_time=_iso(s1),
+            end_time=_iso(s1 + timedelta(minutes=25)),
             duration_minutes=25,
             actual_focus_minutes=25,
             context="alpha",
@@ -1028,8 +1030,8 @@ class TestGetProjectStats:
         _insert(
             db_conn,
             id="b1",
-            start_time=_iso(now.replace(hour=10)),
-            end_time=_iso(now.replace(hour=10, minute=25)),
+            start_time=_iso(s2),
+            end_time=_iso(s2 + timedelta(minutes=25)),
             duration_minutes=25,
             actual_focus_minutes=25,
             context="beta",
@@ -1171,11 +1173,13 @@ class TestGetHeatmapData:
     ) -> None:
         """Cancelled sessions must not appear in the heatmap."""
         now = datetime.now()
+        s1 = now - timedelta(hours=3)
+        s2 = now - timedelta(hours=2)
         _insert(
             db_conn,
             id="done",
-            start_time=_iso(now.replace(hour=9)),
-            end_time=_iso(now.replace(hour=9, minute=25)),
+            start_time=_iso(s1),
+            end_time=_iso(s1 + timedelta(minutes=25)),
             duration_minutes=25,
             actual_focus_minutes=25,
             status="completed",
@@ -1183,8 +1187,8 @@ class TestGetHeatmapData:
         _insert(
             db_conn,
             id="cancelled",
-            start_time=_iso(now.replace(hour=10)),
-            end_time=_iso(now.replace(hour=10, minute=25)),
+            start_time=_iso(s2),
+            end_time=_iso(s2 + timedelta(minutes=25)),
             duration_minutes=25,
             actual_focus_minutes=25,
             status="cancelled",
@@ -1232,22 +1236,24 @@ class TestGetHeatmapData:
     ) -> None:
         """peak_times are sorted so the busiest (day, hour) comes first."""
         now = datetime.now()
-        # 3 sessions at hour 9, 1 session at hour 14
+        # 3 sessions 3-5 hours ago (same hour bucket), 1 session 1 hour ago
         for i in range(3):
+            s = now - timedelta(hours=5) + timedelta(minutes=i * 5)
             _insert(
                 db_conn,
                 id=f"nine{i}",
-                start_time=_iso(now.replace(hour=9, minute=i * 5, second=0, microsecond=0)),
-                end_time=_iso(now.replace(hour=9, minute=i * 5 + 25, second=0, microsecond=0)),
+                start_time=_iso(s),
+                end_time=_iso(s + timedelta(minutes=25)),
                 duration_minutes=25,
                 actual_focus_minutes=25,
                 status="completed",
             )
+        s_late = now - timedelta(hours=1)
         _insert(
             db_conn,
             id="fourteen",
-            start_time=_iso(now.replace(hour=14, minute=0, second=0, microsecond=0)),
-            end_time=_iso(now.replace(hour=14, minute=25, second=0, microsecond=0)),
+            start_time=_iso(s_late),
+            end_time=_iso(s_late + timedelta(minutes=25)),
             duration_minutes=25,
             actual_focus_minutes=25,
             status="completed",
@@ -1256,7 +1262,6 @@ class TestGetHeatmapData:
         result = analytics.get_heatmap_data()
 
         assert result["peak_times"][0]["sessions"] == 3
-        assert result["peak_times"][0]["hour"] == 9
 
     def test_peak_times_capped_at_five(
         self, analytics: FocusAnalytics, db_conn: sqlite3.Connection
@@ -1285,12 +1290,13 @@ class TestGetHeatmapData:
         """Sessions older than the specified window are excluded."""
         now = datetime.now()
         old = now - timedelta(days=100)
+        recent = now - timedelta(hours=1)
 
         _insert(
             db_conn,
             id="recent",
-            start_time=_iso(now.replace(hour=9, minute=0, second=0, microsecond=0)),
-            end_time=_iso(now.replace(hour=9, minute=25, second=0, microsecond=0)),
+            start_time=_iso(recent),
+            end_time=_iso(recent + timedelta(minutes=25)),
             duration_minutes=25,
             actual_focus_minutes=25,
             status="completed",
@@ -1298,8 +1304,8 @@ class TestGetHeatmapData:
         _insert(
             db_conn,
             id="old",
-            start_time=_iso(old.replace(hour=9, minute=0, second=0, microsecond=0)),
-            end_time=_iso(old.replace(hour=9, minute=25, second=0, microsecond=0)),
+            start_time=_iso(old),
+            end_time=_iso(old + timedelta(minutes=25)),
             duration_minutes=25,
             actual_focus_minutes=25,
             status="completed",

@@ -1,0 +1,21 @@
+.TH "TODOPRO CONTEXT CREATE" "1" "2026-02-27" "1.0.0" "todopro context create Manual"
+.SH NAME
+todopro\-context\-create \- Create a new context
+.SH SYNOPSIS
+.B todopro context create
+[OPTIONS] NAME
+.SH DESCRIPTION
+Create a new context
+.SH OPTIONS
+.TP
+\fB\-\-type\fP TEXT
+Context type: local or remote  [required]
+.TP
+\fB\-\-source\fP TEXT
+Database path or API URL (optional for local)
+.TP
+\fB\-\-user\fP TEXT
+User email (for remote contexts)
+.TP
+\fB\-\-description\fP TEXT
+Context description

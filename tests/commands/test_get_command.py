@@ -45,59 +45,6 @@ def mock_project():
     )
 
 
-@pytest.mark.skip(
-    reason="Tests for old architecture, needs rewrite for new Strategy pattern"
-)
-class TestGetTask:
-    """Tests for 'todopro get task' command."""
-
-    @patch("todopro_cli.commands.get_command.resolve_task_id")
-    @patch("todopro_cli.commands.get_command.get_repository_factory")
-    @patch("todopro_cli.commands.utils.require_auth")
-    def test_get_task_success(self, mock_auth, mock_factory, mock_resolve, mock_task):
-        """Test getting a task successfully with new verb-first pattern."""
-        mock_resolve.return_value = AsyncMock(return_value="task-123")()
-
-        mock_repo = MagicMock()
-        mock_factory.return_value.get_task_repository.return_value = mock_repo
-
-        service_mock = MagicMock()
-        service_mock.get_task = AsyncMock(return_value=mock_task)
-
-        with patch(
-            "todopro_cli.commands.get_command.TaskService", return_value=service_mock
-        ):
-            result = runner.invoke(app, ["task", "123"])
-
-            # Verify command structure
-            assert result.exit_code in [0, 1]
-
-
-@pytest.mark.skip(
-    reason="Tests for old architecture, needs rewrite for new Strategy pattern"
-)
-class TestGetProject:
-    """Tests for 'todopro get project' command."""
-
-    @patch("todopro_cli.commands.get_command.get_repository_factory")
-    @patch("todopro_cli.commands.utils.require_auth")
-    def test_get_project_success(self, mock_auth, mock_factory, mock_project):
-        """Test getting a project successfully."""
-        mock_repo = MagicMock()
-        mock_factory.return_value.get_project_repository.return_value = mock_repo
-
-        service_mock = MagicMock()
-        service_mock.get_project = AsyncMock(return_value=mock_project)
-
-        with patch(
-            "todopro_cli.commands.get_command.ProjectService", return_value=service_mock
-        ):
-            result = runner.invoke(app, ["project", "Test"])
-
-            # Verify command structure
-            assert result.exit_code in [0, 1]
-
-
 class TestGetCommandStructure:
     """Tests for overall get command structure."""
 

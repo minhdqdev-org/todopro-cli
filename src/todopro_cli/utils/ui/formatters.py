@@ -283,6 +283,8 @@ def format_pretty(
             format_projects_pretty(data["projects"], compact)
         elif "labels" in data:
             format_labels_pretty(data["labels"], compact)
+        elif "sections" in data:
+            format_sections_pretty(data["sections"])
         else:
             # Single item
             format_single_item_pretty(data)
@@ -465,20 +467,79 @@ def format_labels_pretty(labels: list[dict], compact: bool = False) -> None:
     console.print(header)
     console.print()
 
+    # Calculate unique suffixes and persist for later resolution
+    all_label_ids = [lbl["id"] for lbl in labels if lbl.get("id")]
+    suffix_map = calculate_unique_suffixes(all_label_ids)
+
+    from todopro_cli.services.cache_service import save_label_suffix_mapping
+
+    save_label_suffix_mapping(
+        {lid[-length:]: lid for lid, length in suffix_map.items() if length > 0}
+    )
+
     for label in labels:
         name = label.get("name", "Untitled")
         color = label.get("color") or ""
         label_id = label.get("id", "")
-        short_id = label_id[:8] if label_id else "?"
+
+        # Unique suffix
+        if label_id and label_id in suffix_map:
+            length = suffix_map[label_id]
+            id_suffix = label_id[-length:] if length > 0 else label_id[-6:]
+        else:
+            id_suffix = label_id[-6:] if label_id else "?"
 
         line = Text()
         swatch = "●" if color else "○"
         line.append(f"  {swatch} ", style=color if color else "dim")
         line.append(name, style="bold")
         if not compact:
-            line.append(f"  {short_id}", style="dim")
+            line.append(f"  #{id_suffix}", style="dim")
             if color:
                 line.append(f"  {color}", style="dim")
+        console.print(line)
+
+    console.print()
+
+
+def format_sections_pretty(sections: list[dict]) -> None:
+    """Format sections in pretty format with ID suffixes."""
+    if not sections:
+        console.print("[yellow]No sections found[/yellow]")
+        return
+
+    header = Text()
+    header.append("📑 Sections ", style="bold cyan")
+    header.append(f"({len(sections)})", style="dim")
+    console.print(header)
+    console.print()
+
+    # Calculate unique suffixes and persist for later resolution
+    all_section_ids = [s["id"] for s in sections if s.get("id")]
+    suffix_map = calculate_unique_suffixes(all_section_ids)
+
+    from todopro_cli.services.cache_service import save_section_suffix_mapping
+
+    save_section_suffix_mapping(
+        {sid[-length:]: sid for sid, length in suffix_map.items() if length > 0}
+    )
+
+    for section in sections:
+        name = section.get("name", "Untitled")
+        section_id = section.get("id", "")
+        order = section.get("display_order", 0)
+
+        if section_id and section_id in suffix_map:
+            length = suffix_map[section_id]
+            id_suffix = section_id[-length:] if length > 0 else section_id[-6:]
+        else:
+            id_suffix = section_id[-6:] if section_id else "?"
+
+        line = Text()
+        line.append("  📑 ", style="")
+        line.append(name, style="bold")
+        line.append(f"  #{id_suffix}", style="dim")
+        line.append(f"  order:{order}", style="dim")
         console.print(line)
 
     console.print()
@@ -507,9 +568,7 @@ def format_projects_pretty(projects: list[dict], compact: bool = False) -> None:
     from todopro_cli.services.cache_service import save_project_suffix_mapping
 
     suffix_to_id = {
-        pid[-length:]: pid
-        for pid, length in suffix_map.items()
-        if length > 0
+        pid[-length:]: pid for pid, length in suffix_map.items() if length > 0
     }
     save_project_suffix_mapping(suffix_to_id)
 
@@ -572,10 +631,10 @@ def format_project_item(
         line = Text()
         line.append(f"{indent}{icon} ", style="")
         line.append(name, style="bold")
-        if color and color != "#808080":
-            line.append(f"  {color}", style="dim")
+        # if color and color != "#808080":
+        #     line.append(f"  {color}", style="dim")
         if id_suffix:
-            line.append(f"  #{id_suffix}", style="dim")
+            line.append(f" #{id_suffix}", style="dim")
         console.print(line)
 
         # Stats line
@@ -611,7 +670,7 @@ def format_project_item(
             meta.append((f"Due: {due_str}", "cyan"))
         elif project.get("updated_at"):
             updated_str = format_relative_time(project["updated_at"])
-            meta.append((f"Last updated: {updated_str}", "dim"))
+            meta.append((f"\u23f1 {updated_str}", "dim"))
 
         # Overdue tasks warning
         if project.get("overdue_count", 0) > 0:

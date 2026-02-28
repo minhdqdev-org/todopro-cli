@@ -1,0 +1,46 @@
+.TH "TODOPRO RAMBLE" "1" "2026-02-27" "1.0.0" "todopro ramble Manual"
+.SH NAME
+todopro\-ramble \- Ramble — voice-to-tasks
+.SH SYNOPSIS
+.B todopro ramble
+[OPTIONS] COMMAND [ARGS]...
+.SH DESCRIPTION
+Ramble — voice-to-tasks
+.SH OPTIONS
+.TP
+\fB\-d,\fP \-\-duration INTEGER
+Recording duration in seconds  [default: 30]
+.TP
+\fB\-\-stt\fP TEXT
+STT provider (whisper/gemini/deepgram)  [default: whisper]
+.TP
+\fB\-\-llm\fP TEXT
+LLM provider (gemini/openai)  [default: gemini]
+.TP
+\fB\-\-project\fP TEXT
+Default project for tasks
+.TP
+\fB\-\-dry\-run\fP
+Show parsed tasks without creating
+.TP
+\fB\-l,\fP \-\-language TEXT
+Language code (auto/en/vi/...)  [default: auto]
+.TP
+\fB\-\-stream\fP
+Streaming mode (premium, cloud context required)
+.TP
+\fB\-\-text\fP TEXT
+Use text transcript instead of microphone (no mic required)
+.SH COMMANDS
+.PP
+\fBhistory\fP
+  Show Ramble session history.
+  See \fBtodopro ramble-history(1)\fP for full documentation on the \fBhistory\fP command.
+.PP
+\fBconfig\fP
+  Show or update Ramble configuration.
+  See \fBtodopro ramble-config(1)\fP for full documentation on the \fBconfig\fP command.
+.PP
+\fBusage\fP
+  Show Ramble usage stats for today.
+  See \fBtodopro ramble-usage(1)\fP for full documentation on the \fBusage\fP command.

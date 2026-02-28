@@ -1,0 +1,15 @@
+.TH "TODOPRO ENCRYPTION ROTATE-KEY" "1" "2026-02-27" "1.0.0" "todopro encryption rotate-key Manual"
+.SH NAME
+todopro\-encryption\-rotate-key \- Rotate encryption key (advanced feature).
+.SH SYNOPSIS
+.B todopro encryption rotate-key
+[OPTIONS]
+.SH DESCRIPTION
+Rotate encryption key (advanced feature).
+.PP
+This will:
+1. Generate a new master key
+2. Download all encrypted data
+3. Re-encrypt with new key
+4. Upload re-encrypted data
+5. Display new recovery phrase

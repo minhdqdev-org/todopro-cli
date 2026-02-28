@@ -53,9 +53,6 @@ async def test_get_headers_without_auth(mock_config_manager):
         assert "Authorization" not in headers
 
 
-@pytest.mark.skip(
-    reason="Auth header test is complex due to context/config caching. Auth is tested in integration tests."
-)
 @pytest.mark.asyncio
 async def test_get_headers_with_auth(mock_config_manager):
     """Test getting headers with authentication."""
@@ -72,9 +69,8 @@ async def test_get_headers_with_auth(mock_config_manager):
         "test_token", "test_refresh_token", context_name="test"
     )
 
-    # Patch get_config_service since get_context_manager calls it
     with patch(
-        "todopro_cli.services.context_manager.get_config_service",
+        "todopro_cli.services.api.client.get_config_service",
         return_value=mock_config_manager,
     ):
         client = APIClient()

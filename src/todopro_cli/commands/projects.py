@@ -100,8 +100,14 @@ async def delete_project(
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:
     """Delete a project."""
+
+    project_service = get_project_service()
+    project_id = await resolve_project_uuid(project_id, project_service.repository)
+
+    project = await project_service.get_project(project_id)
+
     if not yes and not typer.confirm(
-        f"Are you sure you want to delete project {project_id}?"
+        f"Are you sure you want to delete project '{project.name}'?"
     ):
         format_error("Cancelled")
         raise typer.Exit(0)

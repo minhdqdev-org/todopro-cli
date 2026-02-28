@@ -1,0 +1,21 @@
+.TH "TODOPRO DATA PURGE" "1" "2026-02-27" "1.0.0" "todopro data purge Manual"
+.SH NAME
+todopro\-data\-purge \- Delete ALL your data (tasks, projects,...
+.SH SYNOPSIS
+.B todopro data purge
+[OPTIONS]
+.SH DESCRIPTION
+Delete ALL your data (tasks, projects, labels, contexts, encryption keys).
+.PP
+⚠️  WARNING: This action CANNOT be undone!
+.PP
+You should export your data first:
+    todopro data export --output backup.json
+.PP
+Examples:
+    todopro data purge --dry-run  # Preview only
+    todopro data purge             # Actually delete
+.SH OPTIONS
+.TP
+\fB\-\-dry\-run\fP
+Preview what would be deleted without actually deleting

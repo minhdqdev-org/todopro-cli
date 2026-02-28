@@ -11,6 +11,8 @@ CACHE_DIR = Path(user_cache_dir("todopro"))
 PROCESSING_CACHE_FILE = CACHE_DIR / "processing_tasks.json"
 SUFFIX_MAPPING_FILE = CACHE_DIR / "suffix_mapping.json"
 PROJECT_SUFFIX_MAPPING_FILE = CACHE_DIR / "project_suffix_mapping.json"
+LABEL_SUFFIX_MAPPING_FILE = CACHE_DIR / "label_suffix_mapping.json"
+SECTION_SUFFIX_MAPPING_FILE = CACHE_DIR / "section_suffix_mapping.json"
 CACHE_TTL = 30  # 30 seconds
 SUFFIX_MAPPING_TTL = 300  # 5 minutes for suffix mappings
 
@@ -182,36 +184,49 @@ def get_suffix_mapping() -> dict[str, str]:
 
 
 def save_project_suffix_mapping(suffix_map: dict[str, str]) -> None:
-    """Save suffix to full project ID mapping.
-
-    Args:
-        suffix_map: Dict mapping suffix -> full_project_id
-    """
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    data = {
-        "timestamp": time.time(),
-        "mapping": suffix_map,
-    }
-    PROJECT_SUFFIX_MAPPING_FILE.write_text(json.dumps(data, indent=2))
+    """Save suffix to full project ID mapping."""
+    _save_suffix_file(PROJECT_SUFFIX_MAPPING_FILE, suffix_map)
 
 
 def get_project_suffix_mapping() -> dict[str, str]:
-    """Get cached suffix to project ID mapping.
+    """Get cached suffix to project ID mapping (empty if expired/missing)."""
+    return _load_suffix_file(PROJECT_SUFFIX_MAPPING_FILE)
 
-    Returns:
-        Dict mapping suffix -> full_project_id, or empty dict if expired/missing
-    """
-    if not PROJECT_SUFFIX_MAPPING_FILE.exists():
+
+def _save_suffix_file(path: Path, suffix_map: dict[str, str]) -> None:
+    """Generic helper: persist a suffix→full_id mapping to a JSON cache file."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"timestamp": time.time(), "mapping": suffix_map}, indent=2))
+
+
+def _load_suffix_file(path: Path) -> dict[str, str]:
+    """Generic helper: load a suffix mapping from a JSON cache file."""
+    if not path.exists():
         return {}
-
     try:
-        data = json.loads(PROJECT_SUFFIX_MAPPING_FILE.read_text())
-        timestamp = data.get("timestamp", 0)
-        mapping = data.get("mapping", {})
-
-        if time.time() - timestamp > SUFFIX_MAPPING_TTL:
+        data = json.loads(path.read_text())
+        if time.time() - data.get("timestamp", 0) > SUFFIX_MAPPING_TTL:
             return {}
-
-        return mapping
+        return data.get("mapping", {})
     except Exception:
         return {}
+
+
+def save_label_suffix_mapping(suffix_map: dict[str, str]) -> None:
+    """Save suffix → full label ID mapping."""
+    _save_suffix_file(LABEL_SUFFIX_MAPPING_FILE, suffix_map)
+
+
+def get_label_suffix_mapping() -> dict[str, str]:
+    """Get cached suffix → label ID mapping (empty if expired/missing)."""
+    return _load_suffix_file(LABEL_SUFFIX_MAPPING_FILE)
+
+
+def save_section_suffix_mapping(suffix_map: dict[str, str]) -> None:
+    """Save suffix → full section ID mapping."""
+    _save_suffix_file(SECTION_SUFFIX_MAPPING_FILE, suffix_map)
+
+
+def get_section_suffix_mapping() -> dict[str, str]:
+    """Get cached suffix → section ID mapping (empty if expired/missing)."""
+    return _load_suffix_file(SECTION_SUFFIX_MAPPING_FILE)

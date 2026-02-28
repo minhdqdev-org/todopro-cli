@@ -64,13 +64,15 @@ TodoPro is a **CLI-first task manager** for power users, developers, and privacy
 - ✅ Zero-knowledge architecture
 - ✅ Client-side encryption
 
+**Voice & AI:**
+
+- ✅ **Ramble** — voice-to-tasks (speak naturally, tasks appear automatically)
+- ✅ **Quick Add** — natural language task creation with NLP date parsing
+
 ### 🚀 Coming Soon (Post-MVP1)
 
 - ⏳ Recurring tasks
 - ⏳ Subtasks & dependencies
-- ⏳ Mobile apps (iOS/Android)
-- ⏳ Web interface
-- ⏳ Team collaboration
 - ⏳ Calendar integrations
 
 ## Installation
@@ -214,6 +216,20 @@ todopro data export --compress  # Gzip compressed
 todopro data import backup.json
 ```
 
+### 🎙️ Ramble (Voice-to-Tasks)
+
+```bash
+# Speak naturally — tasks are created automatically
+todopro ramble                              # Batch mode (30s default)
+todopro ramble --duration=60               # Custom duration
+todopro ramble --stream                    # Streaming mode (premium)
+todopro ramble --project=work              # Send tasks to specific project
+todopro ramble --dry-run                   # Preview parsed tasks without creating
+todopro ramble --text "Buy milk tomorrow"  # Text mode (no mic)
+todopro ramble history                     # Last 10 sessions
+todopro ramble config                      # Show/set Ramble configuration
+```
+
 ### Encryption
 
 ```bash
@@ -280,40 +296,34 @@ echo "✅ Pomodoro complete!"
 
 ---
 
-# Switch to local vault
+### Contexts (Offline / Cloud)
 
+```bash
+# Switch to local vault
 todopro use context my-vault
 
 # Now all commands work offline!
-
 todopro add "Work on the plane without WiFi"
 todopro list tasks
 
 # Pull tasks from cloud to local vault
-
 todopro pull
 
 # Make changes locally...
-
 todopro add "Another offline task"
 
 # Push changes back to cloud
-
 todopro push
 
 # Switch back to cloud
-
 todopro use context default-remote
 
 # List all contexts
-
 todopro list contexts
 
 # Check sync status
-
 todopro sync-status
-
-````
+```
 
 ### Additional Commands
 
@@ -386,7 +396,7 @@ echo $?                                        # Check exit code (0=success)
 # login/logout/signup only apply in remote context
 todopro login      # remote context only
 todopro logout     # remote context only
-````
+```
 
 ## Development
 
@@ -449,9 +459,9 @@ This project uses automated GitHub Actions workflows for testing and releasing.
   - [README](../docs/specs/README.md) - Specification index and roadmap
   - [01: Repository Abstraction](../docs/specs/01-repository-abstraction.md) - Hexagonal architecture
   - [03: Context Switching](../docs/specs/03-context-switching.md) - Multi-environment support
-  - [10-14: Architecture Stabilization](../docs/specs/README.md#-architecture-stabilization-specs-10-15--new) - **Recent refactoring (2025-02-18)**
+  - [10-14: Architecture Stabilization](../docs/specs/README.md#-architecture-stabilization-specs-10-15--new) - **Recent refactoring (2026-02-18)**
 
-### Recent Architecture Improvements (Feb 2025)
+### Recent Architecture Improvements (Feb 2026)
 
 The CLI recently underwent a major architecture stabilization effort (Specs 10-14):
 

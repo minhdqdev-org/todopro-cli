@@ -7,6 +7,7 @@ from todopro_cli.services.label_service import LabelService
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_error, format_output, format_success
+from todopro_cli.utils.uuid_utils import resolve_label_id
 
 from .decorators import command_wrapper
 app = typer.Typer(cls=SuggestingGroup, help="Label management commands")
@@ -41,7 +42,7 @@ async def list_labels(
 @app.command("get")
 @command_wrapper
 async def get_label(
-    label_id: str = typer.Argument(..., help="Label ID"),
+    label_id: str = typer.Argument(..., help="Label ID or suffix (from 'tp label list')"),
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Get label details."""
@@ -49,7 +50,8 @@ async def get_label(
     label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
-    label = await label_service.get_label(label_id)
+    resolved_id = await resolve_label_id(label_id, label_repo)
+    label = await label_service.get_label(resolved_id)
     format_output(label.model_dump(), output)
 
 
@@ -73,7 +75,7 @@ async def create_label(
 @app.command("update")
 @command_wrapper
 async def update_label(
-    label_id: str = typer.Argument(..., help="Label ID"),
+    label_id: str = typer.Argument(..., help="Label ID or suffix (from 'tp label list')"),
     name: str | None = typer.Option(None, "--name", help="Label name"),
     color: str | None = typer.Option(None, "--color", help="Label color"),
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
@@ -87,15 +89,16 @@ async def update_label(
     label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
-    label = await label_service.update_label(label_id, name=name, color=color)
-    format_success(f"Label updated: {label_id}")
+    resolved_id = await resolve_label_id(label_id, label_repo)
+    label = await label_service.update_label(resolved_id, name=name, color=color)
+    format_success(f"Label updated: {resolved_id}")
     format_output(label.model_dump(), output)
 
 
 @app.command("delete")
 @command_wrapper
 async def delete_label(
-    label_id: str = typer.Argument(..., help="Label ID"),
+    label_id: str = typer.Argument(..., help="Label ID or suffix (from 'tp label list')"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:
     """Delete a label."""
@@ -109,5 +112,6 @@ async def delete_label(
     label_repo = storage_strategy_context.label_repository
     label_service = LabelService(label_repo)
 
-    await label_service.delete_label(label_id)
-    format_success(f"Label deleted: {label_id}")
+    resolved_id = await resolve_label_id(label_id, label_repo)
+    await label_service.delete_label(resolved_id)
+    format_success(f"Label deleted: {resolved_id}")

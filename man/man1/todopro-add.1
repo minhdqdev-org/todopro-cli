@@ -1,0 +1,33 @@
+.TH "TODOPRO ADD" "1" "2026-02-27" "1.0.0" "todopro add Manual"
+.SH NAME
+todopro\-add \- Quick add a task using natural language.
+.SH SYNOPSIS
+.B todopro add
+[OPTIONS] [TEXT]
+.SH DESCRIPTION
+Quick add a task using natural language.
+.PP
+Examples:
+  todopro add "Review PR tomorrow at 2pm #Work p1 @urgent"
+  todopro add "Buy groceries every Friday @Shopping"
+  todopro add "Team standup every monday at 9am #Work"
+.PP
+Syntax:
+  #ProjectName - Assign to project
+  @label - Add label
+  p1-p4 or !!1-!!4 - Set priority (p1/!!1=urgent, p4/!!4=low)
+  Natural dates - tomorrow, next monday, at 3pm
+  Recurrence - every day/week/monday, etc.
+.PP
+Note: Natural language parsing requires cloud context.
+For local context, creates a simple task with the text as content.
+.SH OPTIONS
+.TP
+\fB\-p,\fP \-\-project TEXT
+Project name or ID (overrides #project in text)
+.TP
+\fB\-o,\fP \-\-output TEXT
+Output format (pretty/json/table)  [default: pretty]
+.TP
+\fB\-\-json\fP
+Output as JSON (alias for --output json)

@@ -1,0 +1,30 @@
+.TH "TODOPRO IMPORT TODOIST" "1" "2026-02-27" "1.0.0" "todopro import todoist Manual"
+.SH NAME
+todopro\-import\-todoist \- Import tasks, projects, and labels from...
+.SH SYNOPSIS
+.B todopro import todoist
+[OPTIONS]
+.SH DESCRIPTION
+Import tasks, projects, and labels from Todoist using the v1 API.
+.PP
+Requires a Todoist personal API token. Set TODOIST_API_KEY in your
+environment or pass it with --api-key.
+.PP
+Examples:
+    todopro import todoist --api-key YOUR_TOKEN
+    TODOIST_API_KEY=YOUR_TOKEN todopro import todoist
+    todopro import todoist --dry-run --api-key YOUR_TOKEN
+    todopro import todoist --project-prefix "" --max-tasks 200
+.SH OPTIONS
+.TP
+\fB\-k,\fP \-\-api\-key TEXT
+Todoist personal API token (or set TODOIST_API_KEY env var)  [env var: TODOIST_API_KEY]
+.TP
+\fB\-\-project\-prefix\fP TEXT
+Prefix added to every imported project name to avoid conflicts  [default: [Todoist]]
+.TP
+\fB\-\-max\-tasks\fP INTEGER RANGE
+Maximum tasks to import per project  [default: 500; x>=1]
+.TP
+\fB\-\-dry\-run\fP
+Fetch and count data without writing anything

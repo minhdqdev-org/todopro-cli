@@ -66,6 +66,22 @@ ci: install lint test-cov  ## Full CI pipeline (install + lint + test with cover
 
 # ── Build & Release ───────────────────────────────────────────────────────────
 
+.PHONY: generate-man
+generate-man:  ## Generate man pages from the CLI app definition
+	PYTHONPATH=src uv run scripts/generate_man.py
+	@echo "Man pages written to man/man1/"
+
+.PHONY: install-man
+install-man: generate-man  ## Generate and install man pages (requires sudo)
+	@install -d $(DESTDIR)/usr/share/man/man1
+	@for f in man/man1/*.1; do \
+		install -m 644 "$$f" $(DESTDIR)/usr/share/man/man1/; \
+		gzip -f "$(DESTDIR)/usr/share/man/man1/$$(basename $$f)"; \
+	done
+	@ln -sf todopro.1.gz $(DESTDIR)/usr/share/man/man1/tp.1.gz
+	@mandb 2>/dev/null || true
+	@echo "Man pages installed. Run: man todopro"
+
 .PHONY: build
 build: clean  ## Build distribution packages
 	uv build

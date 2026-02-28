@@ -1,0 +1,20 @@
+.TH "TODOPRO DATA EXPORT" "1" "2026-02-27" "1.0.0" "todopro data export Manual"
+.SH NAME
+todopro\-data\-export \- Export all your data (tasks, projects,...
+.SH SYNOPSIS
+.B todopro data export
+[OPTIONS]
+.SH DESCRIPTION
+Export all your data (tasks, projects, labels, contexts) to JSON.
+.PP
+Examples:
+    todopro data export
+    todopro data export --output backup.json
+    todopro data export --compress
+.SH OPTIONS
+.TP
+\fB\-o,\fP \-\-output TEXT
+Output file path (default: todopro-export-{timestamp}.json)
+.TP
+\fB\-z,\fP \-\-compress
+Compress output with gzip

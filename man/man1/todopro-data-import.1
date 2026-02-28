@@ -1,0 +1,19 @@
+.TH "TODOPRO DATA IMPORT" "1" "2026-02-27" "1.0.0" "todopro data import Manual"
+.SH NAME
+todopro\-data\-import \- Import data from JSON file (exported via...
+.SH SYNOPSIS
+.B todopro data import
+[OPTIONS] FILE
+.SH DESCRIPTION
+Import data from JSON file (exported via 'export' command).
+.PP
+This will merge imported data with your existing data.
+Existing items with the same name will be skipped.
+.PP
+Examples:
+    todopro data import backup.json
+    todopro data import backup.json --yes
+.SH OPTIONS
+.TP
+\fB\-y,\fP \-\-yes
+Skip confirmation prompt

@@ -1,0 +1,29 @@
+.TH "TODOPRO SYNC PULL" "1" "2026-02-27" "1.0.0" "todopro sync pull Manual"
+.SH NAME
+todopro\-sync\-pull \- Pull data from remote to local storage.
+.SH SYNOPSIS
+.B todopro sync pull
+[OPTIONS]
+.SH DESCRIPTION
+Pull data from remote to local storage.
+.PP
+Imports tasks, projects, labels, and contexts from a remote context
+to the current local context.
+.PP
+Examples:
+    todopro sync pull
+    todopro sync pull --context=company-cloud --dry-run
+    todopro sync pull --full --strategy=remote-wins
+.SH OPTIONS
+.TP
+\fB\-c,\fP \-\-context TEXT
+Remote context to pull from (defaults to current if remote)
+.TP
+\fB\-\-dry\-run\fP
+Preview changes without applying them
+.TP
+\fB\-\-full\fP
+Perform full sync, ignoring last sync timestamp
+.TP
+\fB\-\-strategy\fP [local\-wins|remote\-wins]
+Conflict resolution strategy  [default: remote-wins]

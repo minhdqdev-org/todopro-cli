@@ -111,17 +111,17 @@ class SessionStateManager:
         # Set secure permissions
         self.state_file.chmod(0o600)
 
-    def load_session(self) -> SessionState:
-        """Load session state from file."""
+    def load_session(self) -> SessionState | None:
+        """Load session state from file. Returns None if file missing or invalid."""
         if not self.state_file.exists():
-            raise FileNotFoundError("No active session found")
+            return None
 
         try:
             with open(self.state_file) as f:
                 data = json.load(f)
             return SessionState.from_dict(data)
-        except (json.JSONDecodeError, TypeError, KeyError) as e:
-            raise ValueError("Invalid session state file") from e
+        except (json.JSONDecodeError, TypeError, KeyError):
+            return None
 
     def delete_session(self) -> None:
         """Delete session state file."""

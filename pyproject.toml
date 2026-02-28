@@ -55,6 +55,9 @@ tp = "todopro_cli.main:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/todopro_cli"]
 
+[tool.setuptools.data-files]
+"share/man/man1" = ["man/man1/todopro.1"]
+
 [tool.ruff]
 line-length = 88
 target-version = "py312"
@@ -121,6 +124,7 @@ addopts = "-v"
 
 [dependency-groups]
 dev = [
+    "click-man>=0.5.1",
     "mypy>=1.19.1",
     "pydeps>=3.0.2",
     "pylint-pydantic>=0.4.1",
