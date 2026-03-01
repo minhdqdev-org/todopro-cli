@@ -206,3 +206,54 @@ class TestCommandWrapper:
             pass
 
         assert my_named_function.__name__ == "my_named_function"
+
+    def test_successful_command_logs_start_and_complete(self):
+        """Successful command emits start and completed log entries."""
+        @command_wrapper(auth_required=False)
+        def logged_cmd():
+            pass
+
+        with patch("todopro_cli.commands.decorators.get_logger") as mock_get_logger:
+            mock_logger = MagicMock()
+            mock_get_logger.return_value = mock_logger
+            logged_cmd()
+
+        calls = [str(c) for c in mock_logger.info.call_args_list]
+        assert any("started" in c and "logged_cmd" in c for c in calls)
+        assert any("completed" in c and "logged_cmd" in c for c in calls)
+
+    def test_app_error_logs_failure(self):
+        """AppError causes an error log entry."""
+        @command_wrapper(auth_required=False)
+        def failing_logged_cmd():
+            raise AppError("boom")
+
+        app_test = typer.Typer()
+        app_test.command()(failing_logged_cmd)
+
+        with patch("todopro_cli.commands.decorators.get_logger") as mock_get_logger:
+            mock_logger = MagicMock()
+            mock_get_logger.return_value = mock_logger
+            with patch("todopro_cli.commands.decorators.format_error"):
+                runner.invoke(app_test, [])
+
+        calls = [str(c) for c in mock_logger.error.call_args_list]
+        assert any("failed" in c and "failing_logged_cmd" in c for c in calls)
+
+    def test_unexpected_exception_logs_traceback(self):
+        """Unexpected exception includes traceback in the error log."""
+        @command_wrapper(auth_required=False)
+        def crash_cmd():
+            raise ValueError("kaboom")
+
+        app_test = typer.Typer()
+        app_test.command()(crash_cmd)
+
+        with patch("todopro_cli.commands.decorators.get_logger") as mock_get_logger:
+            mock_logger = MagicMock()
+            mock_get_logger.return_value = mock_logger
+            with patch("todopro_cli.commands.decorators.format_error"):
+                runner.invoke(app_test, [])
+
+        calls = [str(c) for c in mock_logger.error.call_args_list]
+        assert any("kaboom" in c for c in calls)

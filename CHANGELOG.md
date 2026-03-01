@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.0.2] - 2026-03-01
+
+### 🆕 Added
+
+**Command Audit Logging:**
+- ✅ Every command invocation is now logged to `user_log_dir("todopro_cli")/todopro.log` via Python's standard `logging` module
+- ✅ Log entries include: command name, start/completion, elapsed time, and full error tracebacks on failure
+- ✅ Rotating file handler (5 MB per file, 3 backups) prevents unbounded disk usage
+- ✅ Log location follows the platform convention:
+  - Linux: `~/.local/share/todopro_cli/log/todopro.log`
+  - macOS: `~/Library/Logs/todopro_cli/todopro.log`
+  - Windows: `%LOCALAPPDATA%\todopro_cli\Logs\todopro.log`
+- ✅ New `src/todopro_cli/utils/logger.py` module (`get_logger()` singleton)
+- ✅ 7 new tests covering logger setup, singleton behaviour, message writing, and command wrapper logging
+
+---
+
 ### 🆕 Added
 
 **Todoist Import (`todopro import todoist`):**

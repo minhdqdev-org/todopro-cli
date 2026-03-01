@@ -930,6 +930,43 @@ todopro list tasks
 # - Error stack traces
 ```
 
+### Command Audit Log
+
+Every command is automatically logged to a rotating log file for auditing and troubleshooting.
+
+**Log file locations:**
+
+| Platform | Path |
+|----------|------|
+| Linux    | `~/.local/share/todopro_cli/log/todopro.log` |
+| macOS    | `~/Library/Logs/todopro_cli/todopro.log` |
+| Windows  | `%LOCALAPPDATA%\todopro_cli\Logs\todopro.log` |
+
+**View recent log entries:**
+
+```bash
+# Linux / macOS
+tail -50 ~/.local/share/todopro_cli/log/todopro.log   # Linux
+tail -50 ~/Library/Logs/todopro_cli/todopro.log        # macOS
+
+# Filter errors only
+grep ERROR ~/.local/share/todopro_cli/log/todopro.log
+
+# Follow live as commands run
+tail -f ~/.local/share/todopro_cli/log/todopro.log
+```
+
+**Log format:**
+```
+2026-03-01T10:58:08 INFO     [todopro_cli] command started: add
+2026-03-01T10:58:08 INFO     [todopro_cli] command completed: add (0.152s)
+2026-03-01T10:58:09 ERROR    [todopro_cli] command failed: sync (0.034s) - Connection refused
+    Traceback (most recent call last):
+      ...
+```
+
+The log rotates automatically at 5 MB, keeping the last 3 files (`todopro.log`, `todopro.log.1`, `todopro.log.2`).
+
 ### Collect Diagnostic Information
 
 ```bash
@@ -943,6 +980,9 @@ ls -lh ~/.local/share/todopro_cli/
 
 # Config info
 cat ~/.config/todopro_cli/config.json | jq .
+
+# Recent command logs (last 50 lines)
+tail -50 ~/.local/share/todopro_cli/log/todopro.log
 
 # Test basic commands
 todopro list tasks --format json
@@ -959,7 +999,7 @@ todopro list tasks --format json
 3. Steps to reproduce
 4. Expected vs actual behavior
 5. Full error message
-6. Debug logs (if relevant)
+6. Relevant log entries from `todopro.log` (see [Command Audit Log](#command-audit-log) above)
 
 **Example:**
 

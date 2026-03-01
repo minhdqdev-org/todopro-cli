@@ -2,12 +2,15 @@
 
 import asyncio
 import functools
+import time
+import traceback
 from collections.abc import Callable
 
 import typer
 
 from todopro_cli.services.auth_service import AuthService
 from todopro_cli.services.config_service import get_config_service
+from todopro_cli.utils.logger import get_logger
 from todopro_cli.utils.ui.formatters import format_error
 
 
@@ -49,6 +52,10 @@ def command_wrapper(_func: Callable | None = None, *, auth_required: bool = True
     def decorator(func: Callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            logger = get_logger()
+            cmd = func.__name__
+            start = time.monotonic()
+            logger.info("command started: %s", cmd)
             try:
                 # 1. Handle Auth
                 if auth_required:
@@ -56,10 +63,22 @@ def command_wrapper(_func: Callable | None = None, *, auth_required: bool = True
 
                 # 2. Run Sync or Async
                 if asyncio.iscoroutinefunction(func):
-                    return asyncio.run(func(*args, **kwargs))
-                return func(*args, **kwargs)
+                    result = asyncio.run(func(*args, **kwargs))
+                else:
+                    result = func(*args, **kwargs)
+
+                elapsed = time.monotonic() - start
+                logger.info("command completed: %s (%.3fs)", cmd, elapsed)
+                return result
 
             except AppError as e:
+                elapsed = time.monotonic() - start
+                logger.error(
+                    "command failed: %s (%.3fs) - %s",
+                    cmd,
+                    elapsed,
+                    str(e),
+                )
                 format_error(str(e))
                 raise typer.Exit(code=e.exit_code) from e
 
@@ -68,6 +87,14 @@ def command_wrapper(_func: Callable | None = None, *, auth_required: bool = True
                 raise
 
             except Exception as e:
+                elapsed = time.monotonic() - start
+                logger.error(
+                    "command failed: %s (%.3fs) - %s\n%s",
+                    cmd,
+                    elapsed,
+                    str(e),
+                    traceback.format_exc(),
+                )
                 # Generic fallback for unexpected crashes
                 format_error(f"An unexpected error occurred: {str(e)}")
                 raise typer.Exit(code=1) from e
