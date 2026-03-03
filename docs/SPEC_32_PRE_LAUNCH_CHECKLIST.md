@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-17  
 **Status:** 🔄 Ready for Execution  
-**Purpose:** Final quality gate before MVP1 launch  
+**Purpose:** Final quality gate before MVP1 launch
 
 ---
 
@@ -17,6 +17,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 ### What's Already Verified
 
 **From Previous Specs:**
+
 - ✅ **E2EE:** 50 tests passing (100%), manual testing complete (Specs 22-24, 26)
 - ✅ **Export/Import:** Local + remote tested, round-trip verified (Spec 21)
 - ✅ **Documentation:** Complete (8,000 words across 5 docs) (Spec 29)
@@ -24,6 +25,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 - ✅ **Sync:** Core functionality assessed, E2EE integration tested (Spec 28)
 
 ### Test Status
+
 - **Total:** 289/448 tests passing (64.5%)
 - **E2EE:** 50/50 tests passing (100%)
 - **E2EE Sync:** 9/9 integration tests passing (100%)
@@ -38,11 +40,13 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 1.1 Fresh Installation
 
 - [ ] **Install with uv:**
+
   ```bash
   uv tool install todopro-cli
   todopro version
   # Expected: TodoPro CLI v1.0.0
   ```
+
   - [ ] Version displays correctly
   - [ ] No errors during installation
   - [ ] Command available in PATH
@@ -52,16 +56,19 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   pip install todopro-cli
   todopro version
   ```
+
   - [ ] Installation succeeds
   - [ ] Version matches uv installation
 
 #### 1.2 First Run Experience
 
 - [ ] **No config exists yet:**
+
   ```bash
   rm -rf ~/.config/todopro_cli/  # Clean slate
   todopro list tasks
   ```
+
   - [ ] Command succeeds
   - [ ] Default config created
   - [ ] Empty task list shown
@@ -71,6 +78,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro --help
   ```
+
   - [ ] Shows 24 MVP1 commands
   - [ ] No deferred features listed (focus, timer, stats, etc.)
   - [ ] Help text is grammatically correct
@@ -82,62 +90,78 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 2.1 Task CRUD Operations
 
 - [ ] **Create task (quick add):**
+
   ```bash
   todopro add "Buy groceries"
   # Expected: Success message with task ID
   ```
+
   - [ ] Task created successfully
   - [ ] Task ID returned
   - [ ] No errors
 
 - [ ] **Create task with options:**
+
   ```bash
   todopro add "Team meeting" --due tomorrow --priority 1
   ```
+
   - [ ] Due date parsed correctly
   - [ ] Priority set to P1
   - [ ] Task created
 
 - [ ] **List tasks:**
+
   ```bash
   todopro list tasks
   ```
+
   - [ ] Shows both tasks
   - [ ] Table formatting correct
   - [ ] Due dates display correctly
 
 - [ ] **View today's tasks:**
+
   ```bash
   todopro today
   ```
+
   - [ ] Shows relevant tasks
   - [ ] Overdue highlighted (if any)
 
 - [ ] **Get task details:**
+
   ```bash
   todopro get task <task-id>
   ```
+
   - [ ] Shows full task details
   - [ ] JSON output option works: `--format json`
 
 - [ ] **Update task:**
+
   ```bash
   todopro update task <task-id> --content "Updated title"
   ```
+
   - [ ] Task updated successfully
   - [ ] Changes reflected in list
 
 - [ ] **Complete task:**
+
   ```bash
   todopro complete <task-id>
   ```
+
   - [ ] Task marked complete
   - [ ] Status shown as completed
 
 - [ ] **Reopen task:**
+
   ```bash
   todopro reopen <task-id>
   ```
+
   - [ ] Task reopened
   - [ ] Status back to active
 
@@ -145,36 +169,45 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro delete task <task-id>
   ```
+
   - [ ] Confirmation prompt shown
   - [ ] Task deleted after confirmation
 
 #### 2.2 Projects & Labels
 
 - [ ] **Create project:**
+
   ```bash
   todopro create project "Work" --description "Work tasks"
   ```
+
   - [ ] Project created
   - [ ] Shows in project list
 
 - [ ] **Create label:**
+
   ```bash
   todopro create label "urgent" --color red
   ```
+
   - [ ] Label created
   - [ ] Color displayed correctly
 
 - [ ] **Add task with project:**
+
   ```bash
   todopro add "Design review" --project Work --priority 1
   ```
+
   - [ ] Task created
   - [ ] Project association works
 
 - [ ] **List projects:**
+
   ```bash
   todopro list projects
   ```
+
   - [ ] Shows all projects
   - [ ] Task count accurate
 
@@ -182,6 +215,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro archive project <project-id>
   ```
+
   - [ ] Project archived
   - [ ] Not shown in default list
 
@@ -206,6 +240,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   ls -la ~/.local/share/todopro_cli/todopro.db
   ```
+
   - [ ] Database file exists
   - [ ] Size > 0 bytes
   - [ ] Permissions correct (readable/writable)
@@ -217,17 +252,21 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 4.1 Basic Export/Import
 
 - [ ] **Export data:**
+
   ```bash
   todopro data export --output /tmp/test-export.json
   ```
+
   - [ ] File created
   - [ ] JSON valid (check with `jq .`)
   - [ ] Contains tasks, projects, labels
 
 - [ ] **Export compressed:**
+
   ```bash
   todopro data export --compress --output /tmp/test-export.json.gz
   ```
+
   - [ ] File created
   - [ ] Size smaller than uncompressed
   - [ ] Can decompress: `zcat /tmp/test-export.json.gz | jq .`
@@ -237,6 +276,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   rm ~/.local/share/todopro_cli/todopro.db
   todopro data import /tmp/test-export.json --yes
   ```
+
   - [ ] Data restored
   - [ ] All tasks present
   - [ ] Projects and labels restored
@@ -244,25 +284,27 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 4.2 Round-Trip Verification
 
 - [ ] **Export → Delete → Import → Verify:**
+
   ```bash
   # Create test data
   todopro add "Test 1"
   todopro add "Test 2"
   todopro create project "TestProject"
-  
+
   # Export
   todopro data export --output /tmp/backup.json
-  
+
   # Delete DB
   rm ~/.local/share/todopro_cli/todopro.db
-  
+
   # Import
   todopro data import /tmp/backup.json --yes
-  
+
   # Verify
   todopro list tasks
   todopro list projects
   ```
+
   - [ ] All data matches original
 
 ---
@@ -272,18 +314,22 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 5.1 E2EE Setup
 
 - [ ] **Setup encryption:**
+
   ```bash
   todopro encryption setup
   ```
+
   - [ ] Recovery phrase displayed (24 words)
   - [ ] Warning about saving phrase shown
   - [ ] Key file created: `~/.config/todopro_cli/encryption.key`
   - [ ] Config updated: `e2ee.enabled = true`
 
 - [ ] **Check status:**
+
   ```bash
   todopro encryption status
   ```
+
   - [ ] Shows "Enabled"
   - [ ] Key location correct
   - [ ] Fingerprint shown
@@ -292,19 +338,21 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro encryption show-recovery
   ```
+
   - [ ] 24 words displayed
   - [ ] Security warning shown
 
 #### 5.2 E2EE Recovery
 
 - [ ] **Simulate key loss:**
+
   ```bash
   # Backup key first
   cp ~/.config/todopro_cli/encryption.key ~/encryption.key.backup
-  
+
   # Delete key
   rm ~/.config/todopro_cli/encryption.key
-  
+
   # Verify encryption disabled
   todopro encryption status
   # Should say: Disabled or Key not found
@@ -315,6 +363,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   todopro encryption recover
   # Enter the 24-word recovery phrase
   ```
+
   - [ ] Key restored
   - [ ] Status shows "Enabled" again
   - [ ] Can still access tasks
@@ -322,9 +371,11 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 5.3 E2EE + Tasks
 
 - [ ] **Encrypted task creation:**
+
   ```bash
   todopro add "Secret task with sensitive data"
   ```
+
   - [ ] Task created
   - [ ] No visible errors
 
@@ -332,6 +383,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro data export --output /tmp/encrypted-export.json
   ```
+
   - [ ] File shows encryption status: `"enabled": true`
   - [ ] Task content is ciphertext (not plaintext)
   - [ ] Search for "Secret" in JSON - should be encrypted
@@ -342,6 +394,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro encryption rotate-key
   ```
+
   - [ ] New recovery phrase shown (different from original)
   - [ ] Old tasks still readable
   - [ ] New tasks use new key
@@ -350,23 +403,27 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 
 ### Phase 6: Cloud Sync (If Applicable) ⏱️ 20 minutes
 
-**Note:** Requires account on https://todopro.minhdq.dev
+**Note:** Requires account on https://todopro.xyz
 
 #### 6.1 Authentication
 
 - [ ] **Sign up (if needed):**
+
   ```bash
   todopro signup
   # Enter email, password
   ```
+
   - [ ] Account created
   - [ ] Confirmation message
 
 - [ ] **Login:**
+
   ```bash
   todopro login
   # Enter credentials
   ```
+
   - [ ] Login successful
   - [ ] Token stored
 
@@ -379,17 +436,21 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 6.2 Sync Operations
 
 - [ ] **Push to cloud:**
+
   ```bash
   todopro sync push
   ```
+
   - [ ] Data uploaded
   - [ ] Success message
   - [ ] Count of synced items shown
 
 - [ ] **Sync status:**
+
   ```bash
   todopro sync status
   ```
+
   - [ ] Shows last sync time
   - [ ] Shows sync state
 
@@ -399,6 +460,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   rm ~/.local/share/todopro_cli/todopro.db
   todopro sync pull
   ```
+
   - [ ] Data downloaded
   - [ ] All tasks present
   - [ ] Projects and labels restored
@@ -406,12 +468,14 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 6.3 E2EE + Sync
 
 - [ ] **Setup E2EE before push:**
+
   ```bash
   todopro encryption setup
   # Save recovery phrase
   todopro add "Encrypted secret task"
   todopro sync push
   ```
+
   - [ ] Push successful
   - [ ] No errors
 
@@ -428,6 +492,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   todopro sync pull
   todopro list tasks
   ```
+
   - [ ] All tasks decrypted correctly
   - [ ] Can read "Encrypted secret task"
 
@@ -437,6 +502,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro sync pull --dry-run
   ```
+
   - [ ] Shows preview of changes
   - [ ] No actual changes made
   - [ ] Can run again without side effects
@@ -444,18 +510,20 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 6.5 Conflict Resolution
 
 - [ ] **Create conflict scenario:**
+
   ```bash
   # Device 1
   todopro add "Task from device 1"
   # Don't push
-  
+
   # Device 2
   todopro add "Task from device 2"
   todopro sync push
-  
+
   # Device 1
   todopro sync pull --strategy=remote-wins
   ```
+
   - [ ] Both tasks present
   - [ ] No data loss
   - [ ] Strategy respected
@@ -511,23 +579,27 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 8.1 Small Dataset (Baseline)
 
 - [ ] **10 tasks:**
+
   ```bash
   # Create 10 tasks
   for i in {1..10}; do todopro add "Task $i"; done
-  
+
   # List (time it)
   time todopro list tasks
   ```
+
   - [ ] Response time < 1 second
   - [ ] All tasks shown
 
 #### 8.2 Medium Dataset
 
 - [ ] **50 tasks:**
+
   ```bash
   for i in {1..50}; do todopro add "Task $i" --priority $((i % 4 + 1)); done
   time todopro list tasks
   ```
+
   - [ ] Response time < 2 seconds
   - [ ] UI remains responsive
 
@@ -536,15 +608,18 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   for i in {1..10}; do todopro create project "Project $i"; done
   todopro list projects
   ```
+
   - [ ] All projects shown
   - [ ] Fast response
 
 #### 8.3 Export/Import Performance
 
 - [ ] **Export 50 tasks:**
+
   ```bash
   time todopro data export --output /tmp/perf-test.json
   ```
+
   - [ ] Export time < 1 second
   - [ ] File size reasonable (< 100KB)
 
@@ -553,24 +628,27 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   rm ~/.local/share/todopro_cli/todopro.db
   time todopro data import /tmp/perf-test.json --yes
   ```
+
   - [ ] Import time < 2 seconds
   - [ ] All tasks present
 
 #### 8.4 E2EE Performance
 
 - [ ] **Encrypted operations:**
+
   ```bash
   todopro encryption setup
-  
+
   # Create encrypted tasks
   time todopro add "Encrypted task"
-  
+
   # List encrypted tasks
   time todopro list tasks
-  
+
   # Export encrypted
   time todopro data export --compress --output /tmp/encrypted.json.gz
   ```
+
   - [ ] Encryption overhead < 100ms per operation
   - [ ] Listing performance acceptable (< 2s for 50 tasks)
   - [ ] Export time reasonable (< 2s)
@@ -582,9 +660,11 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 #### 9.1 Invalid Commands
 
 - [ ] **Nonexistent command:**
+
   ```bash
   todopro focus
   ```
+
   - [ ] Error: "No such command 'focus'"
   - [ ] Suggests using `--help`
 
@@ -592,15 +672,18 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro add
   ```
+
   - [ ] Error: "Missing argument 'CONTENT'"
   - [ ] Shows usage
 
 #### 9.2 Invalid Arguments
 
 - [ ] **Invalid date:**
+
   ```bash
   todopro add "Task" --due "not-a-date"
   ```
+
   - [ ] Error message clear
   - [ ] Suggests valid formats
 
@@ -608,14 +691,17 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   ```bash
   todopro add "Task" --priority 99
   ```
+
   - [ ] Error or clamps to valid range (1-4)
 
 #### 9.3 File Errors
 
 - [ ] **Import nonexistent file:**
+
   ```bash
   todopro data import /tmp/does-not-exist.json
   ```
+
   - [ ] Error: "File not found"
   - [ ] Exit code: 5
 
@@ -624,16 +710,19 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   echo "not json" > /tmp/invalid.json
   todopro data import /tmp/invalid.json
   ```
+
   - [ ] Error: "Invalid JSON"
   - [ ] Exit code: 2
 
 #### 9.4 Database Errors
 
 - [ ] **Corrupt database:**
+
   ```bash
   echo "corrupt" > ~/.local/share/todopro_cli/todopro.db
   todopro list tasks
   ```
+
   - [ ] Error message helpful
   - [ ] Suggests recovery (import backup)
 
@@ -642,16 +731,19 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   chmod 000 ~/.local/share/todopro_cli/todopro.db
   todopro list tasks
   ```
+
   - [ ] Error: Permission denied
   - [ ] Clear message
 
 #### 9.5 Network Errors (Sync)
 
 - [ ] **Offline sync:**
+
   ```bash
   # Disconnect network
   todopro sync push
   ```
+
   - [ ] Error: Connection timeout or network error
   - [ ] Suggests checking internet
 
@@ -660,6 +752,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
   # Login with wrong password
   todopro login
   ```
+
   - [ ] Error: Invalid credentials
   - [ ] Doesn't crash
 
@@ -809,23 +902,23 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 
 ## 📝 Test Execution Log
 
-**Tester:** _______________________  
-**Date:** _______________________  
-**Environment:** _______________________  
+**Tester:** **********\_\_\_**********  
+**Date:** **********\_\_\_**********  
+**Environment:** **********\_\_\_**********  
 **Version:** TodoPro CLI v1.0.0
 
 ### Summary:
 
-- **Total Tests:** ___ / ___
-- **Passed:** ___
-- **Failed:** ___
-- **Blocked:** ___
+- **Total Tests:** **_ / _**
+- **Passed:** \_\_\_
+- **Failed:** \_\_\_
+- **Blocked:** \_\_\_
 
 ### Critical Issues Found:
 
-1. _______________________
-2. _______________________
-3. _______________________
+1. ***
+2. ***
+3. ***
 
 ### Decision:
 
@@ -833,7 +926,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 - [ ] ⛔ **NO-GO** - Fix issues first
 - [ ] ⏸️ **DEFER** - Need more testing
 
-**Sign-off:** _______________________
+**Sign-off:** **********\_\_\_**********
 
 ---
 
@@ -842,6 +935,7 @@ Verify that TodoPro MVP1 is production-ready through systematic testing of all P
 If you've completed this checklist and decided **GO**, congratulations! TodoPro MVP1 is ready for production.
 
 **Next Steps:**
+
 1. Create GitHub release (v1.0.0)
 2. Upload to PyPI
 3. Announce on social media

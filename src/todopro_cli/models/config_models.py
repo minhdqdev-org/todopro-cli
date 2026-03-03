@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 class APIConfig(BaseModel):
     """API configuration."""
 
-    endpoint: str = Field(default="https://todopro.minhdq.dev/api")
+    endpoint: str = Field(default="https://api.todopro.xyz")
     timeout: int = Field(default=30)
     retry: int = Field(default=3)
 

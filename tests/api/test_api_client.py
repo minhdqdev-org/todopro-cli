@@ -33,7 +33,7 @@ async def test_client_initialization(mock_config_manager):
         return_value=mock_config_manager,
     ):
         client = APIClient()
-        assert client.base_url == "https://todopro.minhdq.dev/api"
+        assert client.base_url == "https://api.todopro.xyz"
         assert client.timeout == 30
         assert client._client is None
 

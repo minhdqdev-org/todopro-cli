@@ -68,6 +68,7 @@ todopro add "Buy groceries" --priority 1 --due today
 ```
 
 **Output:**
+
 ```
 Success: ✓ Task created: Buy groceries
 ```
@@ -83,6 +84,7 @@ todopro list tasks
 ```
 
 **Output:**
+
 ```
 ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓
 ┃ Task               ┃ Priority ┃ Due Date ┃ Status ┃
@@ -223,11 +225,13 @@ todopro archive project "Website Redesign"
 TodoPro works offline by default. All your data is stored locally in SQLite.
 
 **Location:**
+
 - Linux: `~/.local/share/todopro_cli/todopro.db`
 - macOS: `~/Library/Application Support/todopro_cli/todopro.db`
 - Windows: `%LOCALAPPDATA%\todopro_cli\todopro.db`
 
 **Benefits:**
+
 - ✅ Works without internet
 - ✅ Fast and responsive
 - ✅ Complete privacy (data never leaves your device)
@@ -250,6 +254,7 @@ todopro sync pull   # Download remote data
 ```
 
 **When to use online mode:**
+
 - Multiple devices (laptop, desktop, phone)
 - Team collaboration (future feature)
 - Cloud backup of tasks
@@ -318,6 +323,7 @@ todopro encryption status
 ```
 
 **Output:**
+
 ```
 Encryption Status: ✅ Enabled
 Key Location: ~/.config/todopro_cli/encryption.key
@@ -334,6 +340,7 @@ todopro encryption recover
 ```
 
 **Important:**
+
 - ✅ Server never sees your plaintext data
 - ✅ All task content and descriptions are encrypted
 - ⚠️ If you lose your recovery phrase, your data is unrecoverable!
@@ -429,12 +436,14 @@ todopro data import backup.json
 ### Quick Tips
 
 1. **Use Tab Completion:**
+
    ```bash
    todopro --install-completion  # One-time setup
    todopro add <TAB>             # Auto-complete
    ```
 
 2. **Natural Language Dates:**
+
    ```bash
    todopro add "Task" --due today
    todopro add "Task" --due tomorrow
@@ -449,15 +458,17 @@ todopro data import backup.json
    - P4 = Low (nice to have)
 
 4. **JSON Output (for scripting):**
+
    ```bash
    todopro list tasks --format json | jq '.[]'
    ```
 
 5. **Bulk Operations:**
+
    ```bash
    # Complete multiple tasks
    todopro complete <id1> <id2> <id3>
-   
+
    # Delete multiple
    todopro delete task <id1> <id2>
    ```
@@ -482,6 +493,7 @@ todopro list tasks --filter=overdue
 ```
 
 Make it executable:
+
 ```bash
 chmod +x ~/bin/todopro-daily
 todopro-daily  # Run daily review
@@ -501,6 +513,7 @@ cd ~/Dropbox && ls todopro-backup-*.json.gz | head -n -4 | xargs rm -f
 ```
 
 Set up a weekly cron:
+
 ```bash
 crontab -e
 # Add: 0 9 * * 1 ~/bin/todopro-backup  # Every Monday 9am
@@ -551,7 +564,7 @@ todopro sync --help
 
 - **GitHub Issues:** https://github.com/minhdqdev/todopro/issues
 - **Discussions:** https://github.com/minhdqdev/todopro/discussions
-- **Email:** support@todopro.minhdq.dev
+- **Email:** support@todopro.xyz
 
 ---
 
@@ -560,11 +573,13 @@ todopro sync --help
 Now that you're familiar with the basics:
 
 1. ✅ **Set up E2EE** (if using online sync):
+
    ```bash
    todopro encryption setup
    ```
 
 2. ✅ **Create your project structure:**
+
    ```bash
    todopro create project "Work"
    todopro create project "Personal"
@@ -572,6 +587,7 @@ Now that you're familiar with the basics:
    ```
 
 3. ✅ **Set up labels:**
+
    ```bash
    todopro create label "urgent" --color red
    todopro create label "important" --color yellow
@@ -593,6 +609,7 @@ Now that you're familiar with the basics:
 You're all set! TodoPro is designed to be simple yet powerful. Start with basic task management and gradually explore advanced features as you need them.
 
 **Remember:**
+
 - 🖥️ Works offline by default
 - 🔐 End-to-end encrypted sync (optional)
 - 🚀 Fast and keyboard-friendly

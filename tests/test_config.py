@@ -6,7 +6,7 @@ from todopro_cli.models.config_models import AppConfig
 def test_default_config():
     """Test default configuration."""
     config = AppConfig()
-    assert config.api.endpoint == "https://todopro.minhdq.dev/api"
+    assert config.api.endpoint == "https://api.todopro.xyz"
     assert config.api.timeout == 30
     assert config.output.format == "pretty"
     assert config.cache.enabled is True
@@ -15,7 +15,7 @@ def test_default_config():
 def test_api_config():
     """Test API configuration."""
     config = AppConfig()
-    assert config.api.endpoint == "https://todopro.minhdq.dev/api"
+    assert config.api.endpoint == "https://api.todopro.xyz"
     assert config.api.timeout == 30
     assert config.api.retry == 3
 

@@ -15,7 +15,7 @@ CACHE_DIR = Path(user_cache_dir("todopro"))
 CACHE_FILE = CACHE_DIR / "update_check.json"
 
 CHECK_INTERVAL = 3600  # 1 hour in seconds
-DEFAULT_BACKEND_URL = "https://todopro.minhdq.dev/api"
+DEFAULT_BACKEND_URL = "https://api.todopro.xyz"
 
 
 def check_for_updates() -> None:

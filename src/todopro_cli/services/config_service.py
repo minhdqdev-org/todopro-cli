@@ -151,7 +151,7 @@ class ConfigService:
         cloud_context = Context(
             name="cloud",
             type="remote",
-            source="https://todopro.minhdq.dev/api",
+            source="https://api.todopro.xyz",
             description="TodoPro Cloud (requires login)",
         )
 

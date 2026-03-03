@@ -733,7 +733,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
 
 **Email:**
 
-- support@todopro.minhdq.dev
+- support@todopro.xyz
 
 ---
 
@@ -844,6 +844,6 @@ todopro add "Weekly review" --due "next monday"
 https://github.com/minhdqdev/todopro/discussions
 
 **Or email us:**
-support@todopro.minhdq.dev
+support@todopro.xyz
 
 We're here to help! 🚀

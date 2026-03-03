@@ -336,14 +336,14 @@ Error: Invalid email or password
 # Check for typos in password
 
 # If you forgot password (TODO: reset feature)
-# Contact support: support@todopro.minhdq.dev
+# Contact support: support@todopro.xyz
 ```
 
 **Check network:**
 
 ```bash
 # Test API endpoint
-curl -I https://todopro.minhdq.dev/api/health
+curl -I https://api.todopro.xyz/api/health
 
 # Should return: HTTP/2 200
 ```
@@ -405,7 +405,7 @@ Error: Connection timeout after 30 seconds
 ping -c 3 google.com
 
 # Test TodoPro API
-curl -I https://todopro.minhdq.dev/api/health
+curl -I https://api.todopro.xyz/api/health
 ```
 
 **Check firewall:**
@@ -902,7 +902,7 @@ cat ~/.config/todopro_cli/config.json | jq .
     }
   ],
   "api": {
-    "endpoint": "https://todopro.minhdq.dev/api",
+    "endpoint": "https://api.todopro.xyz/api",
     "timeout": 30
   },
   "e2ee": {
@@ -936,10 +936,10 @@ Every command is automatically logged to a rotating log file for auditing and tr
 
 **Log file locations:**
 
-| Platform | Path |
-|----------|------|
-| Linux    | `~/.local/share/todopro_cli/log/todopro.log` |
-| macOS    | `~/Library/Logs/todopro_cli/todopro.log` |
+| Platform | Path                                          |
+| -------- | --------------------------------------------- |
+| Linux    | `~/.local/share/todopro_cli/log/todopro.log`  |
+| macOS    | `~/Library/Logs/todopro_cli/todopro.log`      |
 | Windows  | `%LOCALAPPDATA%\todopro_cli\Logs\todopro.log` |
 
 **View recent log entries:**
@@ -957,6 +957,7 @@ tail -f ~/.local/share/todopro_cli/log/todopro.log
 ```
 
 **Log format:**
+
 ```
 2026-03-01T10:58:08 INFO     [todopro_cli] command started: add
 2026-03-01T10:58:08 INFO     [todopro_cli] command completed: add (0.152s)
@@ -1033,7 +1034,7 @@ Traceback (most recent call last):
 **Debug Logs:**
 ```
 
-[DEBUG] API request: POST https://todopro.minhdq.dev/api/sync
+[DEBUG] API request: POST https://api.todopro.xyz/api/sync
 [DEBUG] Timeout: 30s
 [ERROR] requests.exceptions.Timeout
 
@@ -1043,7 +1044,7 @@ Traceback (most recent call last):
 
 ### Contact Support
 
-**Email:** support@todopro.minhdq.dev  
+**Email:** support@todopro.xyz  
 **GitHub Discussions:** https://github.com/minhdqdev/todopro/discussions
 
 ---
@@ -1070,4 +1071,4 @@ Traceback (most recent call last):
 **Still stuck?** We're here to help! 🚀
 
 - **GitHub Issues:** https://github.com/minhdqdev/todopro/issues
-- **Email:** support@todopro.minhdq.dev
+- **Email:** support@todopro.xyz

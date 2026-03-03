@@ -1,6 +1,6 @@
 {
   "api": {
-    "endpoint": "https://todopro.minhdq.dev/api",
+    "endpoint": "https://api.todopro.xyz",
     "timeout": 30,
     "retry": 3
   },
