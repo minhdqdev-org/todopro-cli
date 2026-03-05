@@ -1236,9 +1236,11 @@ class TestGetHeatmapData:
     ) -> None:
         """peak_times are sorted so the busiest (day, hour) comes first."""
         now = datetime.now()
-        # 3 sessions 3-5 hours ago (same hour bucket), 1 session 1 hour ago
+        # Anchor to the start of an hour 5 hours ago to avoid hour-boundary
+        # flakiness (sessions must all land in the same hour bucket).
+        anchor = (now - timedelta(hours=5)).replace(minute=0, second=0, microsecond=0)
         for i in range(3):
-            s = now - timedelta(hours=5) + timedelta(minutes=i * 5)
+            s = anchor + timedelta(minutes=i * 5)
             _insert(
                 db_conn,
                 id=f"nine{i}",
