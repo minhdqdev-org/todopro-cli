@@ -1,4 +1,4 @@
-"""Ramble — Voice-to-tasks command."""
+"""Dictate — Voice-to-tasks command."""
 
 import asyncio
 
@@ -11,7 +11,7 @@ from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
 
 app = typer.Typer(
-    cls=SuggestingGroup, help="Ramble — voice-to-tasks", invoke_without_command=True
+    cls=SuggestingGroup, help="Dictate — voice-to-tasks", invoke_without_command=True
 )
 console = get_console()
 
@@ -20,7 +20,7 @@ def _get_base_url() -> str:
     from todopro_cli.utils.update_checker import get_backend_url
 
     base = get_backend_url().rstrip("/")
-    return f"{base}/api/ramble"
+    return f"{base}/api/dictate"
 
 
 def _get_auth_headers() -> dict:
@@ -81,7 +81,7 @@ async def _api_put(path: str, data: dict | None = None) -> dict:
 
 
 @app.callback(invoke_without_command=True)
-def ramble(
+def dictate(
     ctx: typer.Context,
     duration: int = typer.Option(
         30, "--duration", "-d", help="Recording duration in seconds"
@@ -108,7 +108,7 @@ def ramble(
         help="Use text transcript instead of microphone (no mic required)",
     ),
 ) -> None:
-    """Start a Ramble voice-to-tasks session."""
+    """Start a Dictate voice-to-tasks session."""
     if ctx.invoked_subcommand is not None:
         return
 
@@ -119,7 +119,7 @@ def ramble(
 
     # If --text provided, skip audio capture and use text directly
     if text:
-        _process_text_ramble(text, stt, llm, project, dry_run, language)
+        _process_text_dictate(text, stt, llm, project, dry_run, language)
         return
 
     # Check audio dependencies
@@ -135,7 +135,7 @@ def ramble(
 
     # Record audio
     console.print(
-        f"[bold green]🎙️ Ramble — Recording ({duration}s, batch mode)[/bold green]"
+        f"[bold green]🎙️ Dictate — Recording ({duration}s, batch mode)[/bold green]"
     )
     console.print(f"[dim]STT: {stt} | LLM: {llm}[/dim]")
     console.print("[dim]Speak naturally. Press Ctrl+C to stop early.[/dim]")
@@ -157,10 +157,10 @@ def ramble(
         raise typer.Exit(1)
 
     # Upload to backend for processing
-    _process_audio_ramble(audio_data, stt, llm, project, dry_run, language)
+    _process_audio_dictate(audio_data, stt, llm, project, dry_run, language)
 
 
-def _process_text_ramble(
+def _process_text_dictate(
     text: str, stt: str, llm: str, project: str | None, dry_run: bool, language: str
 ) -> None:
     """Process text transcript directly (no mic)."""
@@ -178,7 +178,7 @@ def _process_text_ramble(
                 "project": project or "",
             },
         )
-        _display_ramble_result(result, dry_run)
+        _display_dictate_result(result, dry_run)
 
     try:
         asyncio.run(_do())
@@ -187,7 +187,7 @@ def _process_text_ramble(
         raise typer.Exit(1)
 
 
-def _process_audio_ramble(
+def _process_audio_dictate(
     audio_data: bytes,
     stt: str,
     llm: str,
@@ -224,14 +224,14 @@ def _process_audio_ramble(
                 else {"error": f"Server error {resp.status_code}"}
             )
 
-        _display_ramble_result(result, dry_run)
+        _display_dictate_result(result, dry_run)
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
         raise typer.Exit(1)
 
 
-def _display_ramble_result(result: dict, dry_run: bool) -> None:
-    """Display the Ramble processing result."""
+def _display_dictate_result(result: dict, dry_run: bool) -> None:
+    """Display the Dictate processing result."""
     if result.get("error"):
         console.print(f"[red]Error: {result['error']}[/red]")
         raise typer.Exit(1)
@@ -268,7 +268,7 @@ def _display_ramble_result(result: dict, dry_run: bool) -> None:
 
 @app.command()
 def history() -> None:
-    """Show Ramble session history."""
+    """Show Dictate session history."""
 
     async def _do():
         data = await _api_get("/sessions/")
@@ -277,9 +277,9 @@ def history() -> None:
             raise typer.Exit(1)
         sessions = data.get("sessions", [])
         if not sessions:
-            console.print("No Ramble sessions found.")
+            console.print("No Dictate sessions found.")
             return
-        table = Table(title="Ramble Session History")
+        table = Table(title="Dictate Session History")
         table.add_column("ID", style="cyan", no_wrap=True, max_width=8)
         table.add_column("Started", style="white")
         table.add_column("Duration", style="yellow")
@@ -316,7 +316,7 @@ def history() -> None:
 
 
 @app.command("config")
-def ramble_config(
+def dictate_config(
     stt: str | None = typer.Option(None, "--stt", help="Default STT provider"),
     llm: str | None = typer.Option(None, "--llm", help="Default LLM provider"),
     silence_timeout: int | None = typer.Option(
@@ -328,7 +328,7 @@ def ramble_config(
     language: str | None = typer.Option(None, "--language", help="Default language"),
     show: bool = typer.Option(False, "--show", help="Show current config"),
 ) -> None:
-    """Show or update Ramble configuration."""
+    """Show or update Dictate configuration."""
 
     async def _do():
         if show or (
@@ -342,7 +342,7 @@ def ramble_config(
             if data.get("error"):
                 console.print(f"[red]Error: {data['error']}[/red]")
                 raise typer.Exit(1)
-            console.print("[bold]Ramble Configuration:[/bold]")
+            console.print("[bold]Dictate Configuration:[/bold]")
             for key, value in data.items():
                 if key != "error":
                     console.print(f"  {key}: {value}")
@@ -364,7 +364,7 @@ def ramble_config(
         if result.get("error"):
             console.print(f"[red]Error: {result['error']}[/red]")
             raise typer.Exit(1)
-        console.print("[green]✓ Ramble configuration saved[/green]")
+        console.print("[green]✓ Dictate configuration saved[/green]")
 
     try:
         asyncio.run(_do())
@@ -377,7 +377,7 @@ def ramble_config(
 
 @app.command()
 def usage() -> None:
-    """Show Ramble usage stats for today."""
+    """Show Dictate usage stats for today."""
 
     async def _do():
         data = await _api_get("/usage/")

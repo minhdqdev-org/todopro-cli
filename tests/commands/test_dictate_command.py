@@ -1,27 +1,27 @@
-"""Unit tests for ramble_command."""
+"""Unit tests for dictate_command."""
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from typer.testing import CliRunner
 
-from todopro_cli.commands.ramble_command import app
+from todopro_cli.commands.dictate_command import app
 
 runner = CliRunner()
 
 
 def _mock_api_get(return_value):
-    return patch("todopro_cli.commands.ramble_command._api_get", new=AsyncMock(return_value=return_value))
+    return patch("todopro_cli.commands.dictate_command._api_get", new=AsyncMock(return_value=return_value))
 
 
 def _mock_api_post(return_value):
-    return patch("todopro_cli.commands.ramble_command._api_post", new=AsyncMock(return_value=return_value))
+    return patch("todopro_cli.commands.dictate_command._api_post", new=AsyncMock(return_value=return_value))
 
 
 def _mock_api_put(return_value):
-    return patch("todopro_cli.commands.ramble_command._api_put", new=AsyncMock(return_value=return_value))
+    return patch("todopro_cli.commands.dictate_command._api_put", new=AsyncMock(return_value=return_value))
 
 
 # Help tests
-def test_ramble_help():
+def test_dictate_help():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
 
@@ -41,8 +41,8 @@ def test_usage_help():
     assert result.exit_code == 0
 
 
-# ramble --text (skips mic recording)
-def test_ramble_text_success():
+# dictate --text (skips mic recording)
+def test_dictate_text_success():
     with _mock_api_post({
         "tasks_created": 2,
         "tasks_updated": 0,
@@ -59,14 +59,14 @@ def test_ramble_text_success():
     assert "2" in result.output
 
 
-def test_ramble_text_error():
+def test_dictate_text_error():
     with _mock_api_post({"error": "LLM not configured"}):
         result = runner.invoke(app, ["--text", "some text"])
     assert result.exit_code == 1
     assert "Error" in result.output
 
 
-def test_ramble_text_dry_run():
+def test_dictate_text_dry_run():
     with _mock_api_post({
         "tasks_created": 1,
         "tasks_updated": 0,
@@ -81,9 +81,9 @@ def test_ramble_text_dry_run():
     assert "dry" in result.output.lower() or "1" in result.output
 
 
-def test_ramble_no_audio_deps():
+def test_dictate_no_audio_deps():
     """Without sounddevice, should print helpful message and exit."""
-    with patch("todopro_cli.commands.ramble_command.check_dependencies", return_value=(False, "sounddevice not installed")):
+    with patch("todopro_cli.commands.dictate_command.check_dependencies", return_value=(False, "sounddevice not installed")):
         result = runner.invoke(app, [])
     assert result.exit_code == 1
     assert "sounddevice" in result.output or "Audio" in result.output
@@ -94,7 +94,7 @@ def test_history_empty():
     with _mock_api_get({"sessions": []}):
         result = runner.invoke(app, ["history"])
     assert result.exit_code == 0
-    assert "No Ramble sessions" in result.output
+    assert "No Dictate sessions" in result.output
 
 
 def test_history_with_sessions():
@@ -185,12 +185,12 @@ def test_usage_error():
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from todopro_cli.commands.ramble_command import (
-    _display_ramble_result,
+from todopro_cli.commands.dictate_command import (
+    _display_dictate_result,
     _get_auth_headers,
     _get_base_url,
-    _process_audio_ramble,
-    _process_text_ramble,
+    _process_audio_dictate,
+    _process_text_dictate,
 )
 
 # ---------------------------------------------------------------------------
@@ -204,7 +204,7 @@ def test_get_base_url_strips_trailing_slash():
         return_value="https://api.example.com/",
     ):
         url = _get_base_url()
-    assert url == "https://api.example.com/api/ramble"
+    assert url == "https://api.example.com/api/dictate"
 
 
 def test_get_base_url_no_trailing_slash():
@@ -213,7 +213,7 @@ def test_get_base_url_no_trailing_slash():
         return_value="https://api.example.com",
     ):
         url = _get_base_url()
-    assert url == "https://api.example.com/api/ramble"
+    assert url == "https://api.example.com/api/dictate"
 
 
 # ---------------------------------------------------------------------------
@@ -305,22 +305,22 @@ def _make_httpx_mock(status: int, payload: dict):
 
 
 def test_api_get_returns_json_on_200():
-    from todopro_cli.commands.ramble_command import _api_get
+    from todopro_cli.commands.dictate_command import _api_get
 
     mock_client = _make_httpx_mock(200, {"sessions": []})
-    with patch("todopro_cli.commands.ramble_command._get_base_url", return_value="http://t"):
-        with patch("todopro_cli.commands.ramble_command._get_auth_headers", return_value={}):
+    with patch("todopro_cli.commands.dictate_command._get_base_url", return_value="http://t"):
+        with patch("todopro_cli.commands.dictate_command._get_auth_headers", return_value={}):
             with patch("httpx.AsyncClient", return_value=mock_client):
                 result = asyncio.run(_api_get("/sessions/"))
     assert result == {"sessions": []}
 
 
 def test_api_get_returns_error_dict_on_500():
-    from todopro_cli.commands.ramble_command import _api_get
+    from todopro_cli.commands.dictate_command import _api_get
 
     mock_client = _make_httpx_mock(503, {})
-    with patch("todopro_cli.commands.ramble_command._get_base_url", return_value="http://t"):
-        with patch("todopro_cli.commands.ramble_command._get_auth_headers", return_value={}):
+    with patch("todopro_cli.commands.dictate_command._get_base_url", return_value="http://t"):
+        with patch("todopro_cli.commands.dictate_command._get_auth_headers", return_value={}):
             with patch("httpx.AsyncClient", return_value=mock_client):
                 result = asyncio.run(_api_get("/sessions/"))
     assert "error" in result
@@ -328,44 +328,44 @@ def test_api_get_returns_error_dict_on_500():
 
 
 def test_api_post_returns_json_on_200():
-    from todopro_cli.commands.ramble_command import _api_post
+    from todopro_cli.commands.dictate_command import _api_post
 
     mock_client = _make_httpx_mock(200, {"tasks_created": 3})
-    with patch("todopro_cli.commands.ramble_command._get_base_url", return_value="http://t"):
-        with patch("todopro_cli.commands.ramble_command._get_auth_headers", return_value={}):
+    with patch("todopro_cli.commands.dictate_command._get_base_url", return_value="http://t"):
+        with patch("todopro_cli.commands.dictate_command._get_auth_headers", return_value={}):
             with patch("httpx.AsyncClient", return_value=mock_client):
                 result = asyncio.run(_api_post("/batch/", {"transcript": "hello"}))
     assert result == {"tasks_created": 3}
 
 
 def test_api_post_returns_error_on_500():
-    from todopro_cli.commands.ramble_command import _api_post
+    from todopro_cli.commands.dictate_command import _api_post
 
     mock_client = _make_httpx_mock(500, {})
-    with patch("todopro_cli.commands.ramble_command._get_base_url", return_value="http://t"):
-        with patch("todopro_cli.commands.ramble_command._get_auth_headers", return_value={}):
+    with patch("todopro_cli.commands.dictate_command._get_base_url", return_value="http://t"):
+        with patch("todopro_cli.commands.dictate_command._get_auth_headers", return_value={}):
             with patch("httpx.AsyncClient", return_value=mock_client):
                 result = asyncio.run(_api_post("/batch/"))
     assert "error" in result
 
 
 def test_api_put_returns_json_on_200():
-    from todopro_cli.commands.ramble_command import _api_put
+    from todopro_cli.commands.dictate_command import _api_put
 
     mock_client = _make_httpx_mock(200, {"status": "saved"})
-    with patch("todopro_cli.commands.ramble_command._get_base_url", return_value="http://t"):
-        with patch("todopro_cli.commands.ramble_command._get_auth_headers", return_value={}):
+    with patch("todopro_cli.commands.dictate_command._get_base_url", return_value="http://t"):
+        with patch("todopro_cli.commands.dictate_command._get_auth_headers", return_value={}):
             with patch("httpx.AsyncClient", return_value=mock_client):
                 result = asyncio.run(_api_put("/config/", {"key": "val"}))
     assert result == {"status": "saved"}
 
 
 def test_api_put_returns_error_on_500():
-    from todopro_cli.commands.ramble_command import _api_put
+    from todopro_cli.commands.dictate_command import _api_put
 
     mock_client = _make_httpx_mock(500, {})
-    with patch("todopro_cli.commands.ramble_command._get_base_url", return_value="http://t"):
-        with patch("todopro_cli.commands.ramble_command._get_auth_headers", return_value={}):
+    with patch("todopro_cli.commands.dictate_command._get_base_url", return_value="http://t"):
+        with patch("todopro_cli.commands.dictate_command._get_auth_headers", return_value={}):
             with patch("httpx.AsyncClient", return_value=mock_client):
                 result = asyncio.run(_api_put("/config/"))
     assert "error" in result
@@ -376,10 +376,10 @@ def test_api_put_returns_error_on_500():
 # ---------------------------------------------------------------------------
 
 
-def test_ramble_stream_flag_prints_warning():
+def test_dictate_stream_flag_prints_warning():
     """--stream shows a streaming-mode warning before attempting audio check."""
     with patch(
-        "todopro_cli.commands.ramble_command.check_dependencies",
+        "todopro_cli.commands.dictate_command.check_dependencies",
         return_value=(False, "sounddevice missing"),
     ):
         result = runner.invoke(app, ["--stream"])
@@ -391,7 +391,7 @@ def test_ramble_stream_flag_prints_warning():
 # ---------------------------------------------------------------------------
 
 
-def test_ramble_audio_success_path():
+def test_dictate_audio_success_path():
     """When deps OK and audio recorded, upload is attempted."""
     fake_audio = b"\x00\x01\x02\x03"
     mock_resp = MagicMock()
@@ -406,7 +406,7 @@ def test_ramble_audio_success_path():
     }
 
     with patch(
-        "todopro_cli.commands.ramble_command.check_dependencies",
+        "todopro_cli.commands.dictate_command.check_dependencies",
         return_value=(True, ""),
     ):
         with patch(
@@ -414,11 +414,11 @@ def test_ramble_audio_success_path():
             return_value=fake_audio,
         ):
             with patch(
-                "todopro_cli.commands.ramble_command._get_base_url",
+                "todopro_cli.commands.dictate_command._get_base_url",
                 return_value="http://test",
             ):
                 with patch(
-                    "todopro_cli.commands.ramble_command._get_auth_headers",
+                    "todopro_cli.commands.dictate_command._get_auth_headers",
                     return_value={},
                 ):
                     mock_httpx_client = MagicMock()
@@ -432,10 +432,10 @@ def test_ramble_audio_success_path():
     assert result.exit_code == 0
 
 
-def test_ramble_audio_keyboard_interrupt():
+def test_dictate_audio_keyboard_interrupt():
     """KeyboardInterrupt during recording → empty audio → exit 1."""
     with patch(
-        "todopro_cli.commands.ramble_command.check_dependencies",
+        "todopro_cli.commands.dictate_command.check_dependencies",
         return_value=(True, ""),
     ):
         with patch(
@@ -446,10 +446,10 @@ def test_ramble_audio_keyboard_interrupt():
     assert result.exit_code == 1
 
 
-def test_ramble_audio_record_exception():
+def test_dictate_audio_record_exception():
     """Exception from record_audio → exit code 1."""
     with patch(
-        "todopro_cli.commands.ramble_command.check_dependencies",
+        "todopro_cli.commands.dictate_command.check_dependencies",
         return_value=(True, ""),
     ):
         with patch(
@@ -460,10 +460,10 @@ def test_ramble_audio_record_exception():
     assert result.exit_code == 1
 
 
-def test_ramble_audio_empty_bytes_exits():
+def test_dictate_audio_empty_bytes_exits():
     """Empty bytes from record_audio → 'No audio recorded' exit 1."""
     with patch(
-        "todopro_cli.commands.ramble_command.check_dependencies",
+        "todopro_cli.commands.dictate_command.check_dependencies",
         return_value=(True, ""),
     ):
         with patch(
@@ -476,11 +476,11 @@ def test_ramble_audio_empty_bytes_exits():
 
 
 # ---------------------------------------------------------------------------
-# _process_audio_ramble (lines 199-230)
+# _process_audio_dictate (lines 199-230)
 # ---------------------------------------------------------------------------
 
 
-def test_process_audio_ramble_success():
+def test_process_audio_dictate_success():
     mock_resp = MagicMock()
     mock_resp.status_code = 200
     mock_resp.json.return_value = {
@@ -492,10 +492,10 @@ def test_process_audio_ramble_success():
         "errors": [],
     }
     with patch(
-        "todopro_cli.commands.ramble_command._get_base_url", return_value="http://test"
+        "todopro_cli.commands.dictate_command._get_base_url", return_value="http://test"
     ):
         with patch(
-            "todopro_cli.commands.ramble_command._get_auth_headers", return_value={}
+            "todopro_cli.commands.dictate_command._get_auth_headers", return_value={}
         ):
             mock_client = MagicMock()
             mock_client.__enter__ = MagicMock(return_value=mock_client)
@@ -503,10 +503,10 @@ def test_process_audio_ramble_success():
             mock_client.post.return_value = mock_resp
             with patch("httpx.Client", return_value=mock_client):
                 # Should run without raising
-                _process_audio_ramble(b"audio_data", "whisper", "gemini", None, False, "en")
+                _process_audio_dictate(b"audio_data", "whisper", "gemini", None, False, "en")
 
 
-def test_process_audio_ramble_with_project():
+def test_process_audio_dictate_with_project():
     """project option is included in POST data."""
     mock_resp = MagicMock()
     mock_resp.status_code = 200
@@ -515,17 +515,17 @@ def test_process_audio_ramble_with_project():
         "task_results": [], "transcript": "", "errors": [],
     }
     with patch(
-        "todopro_cli.commands.ramble_command._get_base_url", return_value="http://test"
+        "todopro_cli.commands.dictate_command._get_base_url", return_value="http://test"
     ):
         with patch(
-            "todopro_cli.commands.ramble_command._get_auth_headers", return_value={}
+            "todopro_cli.commands.dictate_command._get_auth_headers", return_value={}
         ):
             mock_client = MagicMock()
             mock_client.__enter__ = MagicMock(return_value=mock_client)
             mock_client.__exit__ = MagicMock(return_value=False)
             mock_client.post.return_value = mock_resp
             with patch("httpx.Client", return_value=mock_client):
-                _process_audio_ramble(b"audio", "whisper", "gemini", "my-project", False, "en")
+                _process_audio_dictate(b"audio", "whisper", "gemini", "my-project", False, "en")
     call_kwargs = mock_client.post.call_args
     assert call_kwargs is not None
     data_sent = call_kwargs[1].get("data", call_kwargs[0][1] if len(call_kwargs[0]) > 1 else {})
@@ -533,16 +533,16 @@ def test_process_audio_ramble_with_project():
     assert mock_client.post.called
 
 
-def test_process_audio_ramble_server_error_exits():
+def test_process_audio_dictate_server_error_exits():
     """Server error in audio upload path exits the CLI with code 1."""
     mock_resp = MagicMock()
     mock_resp.status_code = 503
     mock_resp.json.return_value = {}
     with patch(
-        "todopro_cli.commands.ramble_command._get_base_url", return_value="http://test"
+        "todopro_cli.commands.dictate_command._get_base_url", return_value="http://test"
     ):
         with patch(
-            "todopro_cli.commands.ramble_command._get_auth_headers", return_value={}
+            "todopro_cli.commands.dictate_command._get_auth_headers", return_value={}
         ):
             mock_client = MagicMock()
             mock_client.__enter__ = MagicMock(return_value=mock_client)
@@ -551,18 +551,18 @@ def test_process_audio_ramble_server_error_exits():
             with patch("httpx.Client", return_value=mock_client):
                 import typer as _typer
                 with pytest.raises(_typer.Exit):
-                    _process_audio_ramble(
+                    _process_audio_dictate(
                         b"audio", "whisper", "gemini", None, False, "en"
                     )
 
 
-def test_process_audio_ramble_exception_exits():
+def test_process_audio_dictate_exception_exits():
     """Network exception in audio upload path exits with code 1."""
     with patch(
-        "todopro_cli.commands.ramble_command._get_base_url", return_value="http://test"
+        "todopro_cli.commands.dictate_command._get_base_url", return_value="http://test"
     ):
         with patch(
-            "todopro_cli.commands.ramble_command._get_auth_headers", return_value={}
+            "todopro_cli.commands.dictate_command._get_auth_headers", return_value={}
         ):
             mock_client = MagicMock()
             mock_client.__enter__ = MagicMock(return_value=mock_client)
@@ -571,17 +571,17 @@ def test_process_audio_ramble_exception_exits():
             with patch("httpx.Client", return_value=mock_client):
                 import typer as _typer
                 with pytest.raises(_typer.Exit):
-                    _process_audio_ramble(
+                    _process_audio_dictate(
                         b"audio", "whisper", "gemini", None, False, "en"
                     )
 
 
 # ---------------------------------------------------------------------------
-# _display_ramble_result — errors list (line 266)
+# _display_dictate_result — errors list (line 266)
 # ---------------------------------------------------------------------------
 
 
-def test_display_ramble_result_shows_errors():
+def test_display_dictate_result_shows_errors():
     """Errors in result are printed with warning prefix."""
     with _mock_api_post({
         "tasks_created": 0,
@@ -597,7 +597,7 @@ def test_display_ramble_result_shows_errors():
     assert "Duplicate task B" in result.output
 
 
-def test_display_ramble_result_long_transcript_truncated():
+def test_display_dictate_result_long_transcript_truncated():
     """Transcripts over 200 chars are truncated with ellipsis."""
     long_transcript = "word " * 60  # 300 chars
     with _mock_api_post({
@@ -621,7 +621,7 @@ def test_display_ramble_result_long_transcript_truncated():
 def test_history_exception_handler():
     """Generic exception from _api_get is caught and re-raised as Exit(1)."""
     with patch(
-        "todopro_cli.commands.ramble_command._api_get",
+        "todopro_cli.commands.dictate_command._api_get",
         new=AsyncMock(side_effect=Exception("network error")),
     ):
         result = runner.invoke(app, ["history"])
@@ -630,7 +630,7 @@ def test_history_exception_handler():
 
 
 # ---------------------------------------------------------------------------
-# ramble config — additional branches (lines 343-344, 355, 359, 361, 373-375)
+# dictate config — additional branches (lines 343-344, 355, 359, 361, 373-375)
 # ---------------------------------------------------------------------------
 
 
@@ -666,7 +666,7 @@ def test_config_update_language():
 def test_config_exception_handler():
     """Generic exception inside config _do() is caught → exit 1."""
     with patch(
-        "todopro_cli.commands.ramble_command._api_put",
+        "todopro_cli.commands.dictate_command._api_put",
         new=AsyncMock(side_effect=Exception("timeout")),
     ):
         result = runner.invoke(app, ["config", "--stt", "whisper"])
@@ -682,7 +682,7 @@ def test_config_exception_handler():
 def test_usage_exception_handler():
     """Generic exception inside usage _do() is caught → exit 1."""
     with patch(
-        "todopro_cli.commands.ramble_command._api_get",
+        "todopro_cli.commands.dictate_command._api_get",
         new=AsyncMock(side_effect=Exception("server gone")),
     ):
         result = runner.invoke(app, ["usage"])

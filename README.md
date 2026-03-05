@@ -66,7 +66,7 @@ TodoPro is a **CLI-first task manager** for power users, developers, and privacy
 
 **Voice & AI:**
 
-- ✅ **Ramble** — voice-to-tasks (speak naturally, tasks appear automatically)
+- ✅ **Dictate** — voice-to-tasks (speak naturally, tasks appear automatically)
 - ✅ **Quick Add** — natural language task creation with NLP date parsing
 
 ### 🚀 Coming Soon (Post-MVP1)
@@ -216,18 +216,18 @@ todopro data export --compress  # Gzip compressed
 todopro data import backup.json
 ```
 
-### 🎙️ Ramble (Voice-to-Tasks)
+### 🎙️ Dictate (Voice-to-Tasks)
 
 ```bash
 # Speak naturally — tasks are created automatically
-todopro ramble                              # Batch mode (30s default)
-todopro ramble --duration=60               # Custom duration
-todopro ramble --stream                    # Streaming mode (premium)
-todopro ramble --project=work              # Send tasks to specific project
-todopro ramble --dry-run                   # Preview parsed tasks without creating
-todopro ramble --text "Buy milk tomorrow"  # Text mode (no mic)
-todopro ramble history                     # Last 10 sessions
-todopro ramble config                      # Show/set Ramble configuration
+todopro dictate                              # Batch mode (30s default)
+todopro dictate --duration=60               # Custom duration
+todopro dictate --stream                    # Streaming mode (premium)
+todopro dictate --project=work              # Send tasks to specific project
+todopro dictate --dry-run                   # Preview parsed tasks without creating
+todopro dictate --text "Buy milk tomorrow"  # Text mode (no mic)
+todopro dictate history                     # Last 10 sessions
+todopro dictate config                      # Show/set Dictate configuration
 ```
 
 ### Encryption

@@ -1,4 +1,4 @@
-"""Microphone audio recorder for CLI Ramble."""
+"""Microphone audio recorder for CLI Dictate."""
 
 SOUNDDEVICE_AVAILABLE = False
 NUMPY_AVAILABLE = False

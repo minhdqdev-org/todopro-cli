@@ -60,14 +60,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [4.0.0] - 2026-02-24 (MVP4 Release — Ramble)
+## [4.0.0] - 2026-02-24 (MVP4 Release — Dictate)
 
-**Ramble: voice-to-tasks is here.** 🎙️
+**Dictate: voice-to-tasks is here.** 🎙️
 
 ### 🆕 Added
 
-**Ramble (Voice-to-Tasks):**
-- ✅ `todopro ramble` — new top-level command for voice-driven task capture
+**Dictate (Voice-to-Tasks):**
+- ✅ `todopro dictate` — new top-level command for voice-driven task capture
 - ✅ `--text TEXT` flag — text mode (bypass microphone for testing or SSH use)
 - ✅ `--duration N` flag — batch record for N seconds
 - ✅ `--project NAME` flag — default project for created tasks
@@ -75,9 +75,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ `--stt PROVIDER` flag — choose STT provider (whisper/gemini/deepgram)
 - ✅ `--llm PROVIDER` flag — choose LLM provider (gemini/openai)
 - ✅ `--language CODE` flag — language hint for STT
-- ✅ `todopro ramble history` — view past Ramble session history
-- ✅ `todopro ramble usage` — view daily usage stats and limits
-- ✅ `todopro ramble config` — view and update Ramble configuration
+- ✅ `todopro dictate history` — view past Dictate session history
+- ✅ `todopro dictate usage` — view daily usage stats and limits
+- ✅ `todopro dictate config` — view and update Dictate configuration
 
 **Audio Services:**
 - ✅ `services/audio/recorder.py` — microphone capture (requires `sounddevice`/`numpy`)

@@ -22,7 +22,7 @@ from .commands.goals import app as goals_app
 from .commands.import_command import app as import_app
 from .commands.labels import app as labels_app
 from .commands.projects import app as projects_app
-from .commands.ramble_command import app as ramble_app
+from .commands.dictate_command import app as dictate_app
 from .commands.reopen_command import app as reopen_app
 from .commands.reschedule_command import app as reschedule_command_app
 from .commands.sections import app as sections_app
@@ -56,7 +56,7 @@ app.add_typer(reschedule_command_app, name="", help="Reschedule tasks to today")
 app.add_typer(edit_command_app, name="", help="Edit a task interactively or via flags")
 app.add_typer(today_command_app, name="", help="View today's tasks in interactive mode")
 app.add_typer(reopen_app, name="", help="Reopen a completed task")
-app.add_typer(ramble_app, name="ramble", help="Ramble — voice-to-tasks")
+app.add_typer(dictate_app, name="dictate", help="Dictate — voice-to-tasks")
 
 # ── Resource groups ───────────────────────────────────────────────────────────
 app.add_typer(auth_app, name="auth", help="Authentication — login, logout, signup")
