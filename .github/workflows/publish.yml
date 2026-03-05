@@ -6,6 +6,7 @@ on:
       - 'v*' # Triggers on v1.0, v0.1.1, etc.
     branches:
       - main
+      - develop
 
 permissions:
   contents: write
@@ -23,6 +24,8 @@ jobs:
         run: uv sync
       - name: Run Tests
         run: uv run pytest
+        env:
+          NO_COLOR: "1"
 
   build-dist:
     needs: test
