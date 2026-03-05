@@ -5,6 +5,38 @@ Provides infrastructure to isolate tests from real filesystem/API state.
 
 from __future__ import annotations
 
+import os
+import re
+
+# ---------------------------------------------------------------------------
+# Strip ANSI escape codes from CliRunner output
+# ---------------------------------------------------------------------------
+# GitHub Actions sets FORCE_COLOR=1, which causes typer/rich to inject ANSI
+# escape sequences into help-text output (e.g. '--type' becomes
+# '-\x1b[1;36m-type\x1b[0m').  This breaks plain-string assertions.
+# Monkey-patching CliRunner.invoke here strips ANSI from every result so all
+# existing test files (which define `runner = CliRunner()` at module level)
+# benefit automatically without modification.
+
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+
+from typer.testing import CliRunner as _CliRunner
+
+_orig_invoke = _CliRunner.invoke
+
+
+def _clean_invoke(self, *args, **kwargs):
+    result = _orig_invoke(self, *args, **kwargs)
+    # Strip ANSI codes by patching the underlying bytes so the read-only
+    # `output` property returns clean text. Needed because GitHub Actions
+    # sets FORCE_COLOR=1, causing typer/rich to inject ANSI sequences.
+    clean = _ANSI_ESCAPE.sub("", result.output)
+    result.stdout_bytes = clean.encode(self.charset)
+    return result
+
+
+_CliRunner.invoke = _clean_invoke
+
 from unittest.mock import MagicMock, patch
 
 import pytest
