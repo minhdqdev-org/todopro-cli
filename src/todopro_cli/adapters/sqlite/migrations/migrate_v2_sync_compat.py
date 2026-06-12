@@ -292,7 +292,6 @@ def run_migration(connection):
         # Start transaction
         cursor.execute("BEGIN TRANSACTION")
 
-        print("Creating new table schemas (v2)...")
 
         # Create new tables
         cursor.execute(CREATE_LABELS_TABLE_V2)
@@ -301,30 +300,18 @@ def run_migration(connection):
         cursor.execute(CREATE_REMINDERS_TABLE_V2)
         cursor.execute(CREATE_FILTERS_TABLE_V2)
 
-        print("Migrating data from v1 to v2...")
 
         # Migrate data
         cursor.execute(MIGRATE_LABELS)
-        labels_migrated = cursor.rowcount
-        print(f"  ✓ Migrated {labels_migrated} labels")
 
         cursor.execute(MIGRATE_CONTEXTS)
-        contexts_migrated = cursor.rowcount
-        print(f"  ✓ Migrated {contexts_migrated} contexts")
 
         cursor.execute(MIGRATE_TASKS)
-        tasks_migrated = cursor.rowcount
-        print(f"  ✓ Migrated {tasks_migrated} tasks")
 
         cursor.execute(MIGRATE_REMINDERS)
-        reminders_migrated = cursor.rowcount
-        print(f"  ✓ Migrated {reminders_migrated} reminders")
 
         cursor.execute(MIGRATE_FILTERS)
-        filters_migrated = cursor.rowcount
-        print(f"  ✓ Migrated {filters_migrated} filters")
 
-        print("Creating indexes...")
 
         # Create indexes
         for idx in CREATE_LABELS_INDEXES_V2:
@@ -334,7 +321,6 @@ def run_migration(connection):
         for idx in CREATE_TASKS_INDEXES_V2:
             cursor.execute(idx)
 
-        print("Dropping old tables...")
 
         # Drop old tables (FK constraints handled by CASCADE)
         cursor.execute("DROP TABLE IF EXISTS task_labels")
@@ -345,7 +331,6 @@ def run_migration(connection):
         cursor.execute("DROP TABLE IF EXISTS labels")
         cursor.execute("DROP TABLE IF EXISTS contexts")
 
-        print("Renaming new tables...")
 
         # Rename new tables to original names
         cursor.execute("ALTER TABLE labels_v2 RENAME TO labels")
@@ -354,7 +339,6 @@ def run_migration(connection):
         cursor.execute("ALTER TABLE reminders_v2 RENAME TO reminders")
         cursor.execute("ALTER TABLE filters_v2 RENAME TO filters")
 
-        print("Recreating junction tables...")
 
         # Recreate junction tables with correct FKs
         cursor.execute("""
@@ -377,7 +361,6 @@ def run_migration(connection):
             )
         """)
 
-        print("Updating schema version...")
 
         # Update schema version
         cursor.execute(
@@ -388,16 +371,10 @@ def run_migration(connection):
         # Commit transaction
         connection.commit()
 
-        print(f"\n✅ Migration to schema v{MIGRATION_VERSION} completed successfully!")
-        print(
-            f"   Labels: {labels_migrated}, Contexts: {contexts_migrated}, Tasks: {tasks_migrated}"
-        )
-        print(f"   Reminders: {reminders_migrated}, Filters: {filters_migrated}")
 
         return True
 
-    except Exception as e:
-        print(f"\n❌ Migration failed: {e}")
+    except Exception:
         connection.rollback()
         return False
 
@@ -420,9 +397,6 @@ def verify_migration(connection):
         version = cursor.fetchone()[0]
 
         if version != MIGRATION_VERSION:
-            print(
-                f"❌ Schema version mismatch: expected {MIGRATION_VERSION}, got {version}"
-            )
             return False
 
         # Check new columns exist
@@ -443,14 +417,11 @@ def verify_migration(connection):
 
             for col in columns:
                 if col not in table_columns:
-                    print(f"❌ Column {table}.{col} not found")
                     return False
 
-        print("✅ Migration verification passed")
         return True
 
-    except Exception as e:
-        print(f"❌ Verification failed: {e}")
+    except Exception:
         return False
 
 
@@ -488,7 +459,6 @@ def rollback_migration(connection):
     try:
         cursor.execute("BEGIN TRANSACTION")
 
-        print("WARNING: Rolling back to schema v1. New field data will be lost!")
 
         # Create v1 tables with temp names
         cursor.execute(CREATE_LABELS_TABLE.replace("labels", "labels_v1"))
@@ -559,10 +529,8 @@ def rollback_migration(connection):
 
         connection.commit()
 
-        print("✅ Rollback to schema v1 completed")
         return True
 
-    except Exception as e:
-        print(f"❌ Rollback failed: {e}")
+    except Exception:
         connection.rollback()
         return False

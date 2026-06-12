@@ -29,13 +29,13 @@ def share_project(
         client = get_client()
         api = CollaborationAPI(client)
         try:
-            result = await api.share_project(project_id, email, permission)
+            await api.share_project(project_id, email, permission)
             console.print(
                 f"[green]✓[/green] Project shared with {email} as {permission}"
             )
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
         finally:
             await client.close()
 
@@ -55,7 +55,7 @@ def list_collaborators(
             collaborators = await api.get_collaborators(project_id)
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
         finally:
             await client.close()
 
@@ -85,7 +85,7 @@ def list_collaborators(
 def unshare_project(
     project_id: str = typer.Argument(..., help="Project ID"),
     user_id: str | None = typer.Option(None, "--user-id", help="User ID to remove"),
-    email: str | None = typer.Option(
+    _email: str | None = typer.Option(
         None, "--email", "-e", help="Email of user to remove (user-id required)"
     ),
 ) -> None:
@@ -104,7 +104,7 @@ def unshare_project(
             console.print(f"[green]✓[/green] {user_id} removed from project")
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
         finally:
             await client.close()
 
@@ -133,7 +133,7 @@ def leave_project(
             console.print(f"[green]✓[/green] Left project {project_id}")
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
         finally:
             await client.close()
 

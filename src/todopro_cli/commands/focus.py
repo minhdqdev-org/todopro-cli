@@ -547,12 +547,12 @@ def auto_cycle(
         # Run timer
         display = TimerDisplay(console)
 
-        def on_pause():
+        def on_pause(session=session):
             session.status = "paused"
             session.pause_time = datetime.now().astimezone().isoformat()
             state_manager.save(session)
 
-        def on_resume():
+        def on_resume(session=session):
             if session.pause_time:
                 pause_dt = datetime.fromisoformat(
                     session.pause_time.replace("Z", "+00:00")
@@ -569,11 +569,11 @@ def auto_cycle(
             session.pause_time = None
             state_manager.save(session)
 
-        def on_stop():
+        def on_stop(session=session):
             session.status = "cancelled"
             state_manager.save(session)
 
-        def on_complete():
+        def on_complete(session=session):
             session.status = "completed"
             state_manager.save(session)
 
@@ -595,46 +595,44 @@ def auto_cycle(
             state_manager.delete()
 
             # Check if we should continue
-            if cycle_state.current_phase == "focus":
-                # Ask if task is done
-                if Confirm.ask(
-                    f"\nDid you complete the task '{current_task_title}'?",
-                    default=False,
-                ):
-                    # Mark task complete using TaskService
+            if cycle_state.current_phase == "focus" and Confirm.ask(
+                f"\nDid you complete the task '{current_task_title}'?",
+                default=False,
+            ):
+                # Mark task complete using TaskService
+                try:
+                    run_async(task_service.complete_task(current_task_id))
+                    console.print("[green]✓ Task marked as completed[/green]")
+
+                    # Get next task
                     try:
-                        run_async(task_service.complete_task(current_task_id))
-                        console.print("[green]✓ Task marked as completed[/green]")
-
-                        # Get next task
-                        try:
-                            raw_tasks = run_async(
-                                task_service.list_tasks(status="active")
-                            )
-                            tasks_dicts = [
-                                {
-                                    "id": t.id,
-                                    "title": t.content,
-                                    "priority": t.priority,
-                                    "due_date": t.due_date,
-                                    "labels": t.labels,
-                                    "estimated_minutes": getattr(
-                                        t, "estimated_minutes", 25
-                                    ),
-                                }
-                                for t in raw_tasks
-                            ]
-                        except Exception:
-                            tasks_dicts = []
-                        engine = _get_suggestion_engine()
-                        suggestions = engine.suggest_tasks(tasks=tasks_dicts, limit=1)
-
-                        if suggestions:
-                            current_task_id = suggestions[0]["task"]["id"]
-                            current_task_title = suggestions[0]["task"]["title"]
-                            console.print(f"[dim]Next task: {current_task_title}[/dim]")
+                        raw_tasks = run_async(
+                            task_service.list_tasks(status="active")
+                        )
+                        tasks_dicts = [
+                            {
+                                "id": t.id,
+                                "title": t.content,
+                                "priority": t.priority,
+                                "due_date": t.due_date,
+                                "labels": t.labels,
+                                "estimated_minutes": getattr(
+                                    t, "estimated_minutes", 25
+                                ),
+                            }
+                            for t in raw_tasks
+                        ]
                     except Exception:
-                        pass
+                        tasks_dicts = []
+                    engine = _get_suggestion_engine()
+                    suggestions = engine.suggest_tasks(tasks=tasks_dicts, limit=1)
+
+                    if suggestions:
+                        current_task_id = suggestions[0]["task"]["id"]
+                        current_task_title = suggestions[0]["task"]["title"]
+                        console.print(f"[dim]Next task: {current_task_title}[/dim]")
+                except Exception:
+                    pass
 
             # Advance cycle
             cycle_state.advance(config)

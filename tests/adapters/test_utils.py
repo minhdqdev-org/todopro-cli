@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import math
 import sqlite3
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 

@@ -95,6 +95,8 @@ todopro version
 ```bash
 git clone https://github.com/minhdqdev-org/todopro-cli.git
 cd todopro-cli
+mise install
+mise run install
 uv pip install -e .
 ```
 

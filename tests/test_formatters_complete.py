@@ -10,28 +10,28 @@ from todopro_cli.utils.ui.formatters import format_pretty, format_table
 def test_format_table_with_simple_list():
     """Test formatting a simple list (not dict)."""
     data = ["item1", "item2", "item3"]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_table(data)
 
 
 def test_format_table_with_string():
     """Test formatting a string."""
     data = "simple string"
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_table(data)
 
 
 def test_format_pretty_with_string():
     """Test pretty format with a string."""
     data = "simple string"
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty(data)
 
 
 def test_format_pretty_with_non_dict_list():
     """Test pretty format with non-dict list items."""
     data = ["item1", "item2"]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty(data)
 
 
@@ -46,7 +46,7 @@ def test_format_task_item_compact_completed():
         "priority": 2,
         "labels": [],
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         from todopro_cli.utils.ui.formatters import format_task_item
 
         format_task_item(task, compact=True)
@@ -63,7 +63,7 @@ def test_format_task_item_compact_with_overdue():
         "priority": 2,
         "labels": ["work", "urgent", "critical"],
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         from todopro_cli.utils.ui.formatters import format_task_item
 
         format_task_item(task, compact=True)
@@ -80,7 +80,7 @@ def test_format_task_item_without_project_name():
         "labels": [],
         "created_at": (now - timedelta(hours=2)).isoformat(),
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         from todopro_cli.utils.ui.formatters import format_task_item
 
         format_task_item(task, compact=False)
@@ -97,7 +97,7 @@ def test_format_project_item_with_updated_at():
         "is_archived": False,
         "updated_at": (now - timedelta(hours=3)).isoformat(),
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         from todopro_cli.utils.ui.formatters import format_project_item
 
         format_project_item(project, compact=False)
@@ -112,7 +112,7 @@ def test_format_project_item_without_color():
         "is_favorite": False,
         "is_archived": False,
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         from todopro_cli.utils.ui.formatters import format_project_item
 
         format_project_item(project, compact=False)
@@ -125,7 +125,7 @@ def test_format_project_item_compact_without_color():
         "name": "Project",
         "color": "#808080",
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         from todopro_cli.utils.ui.formatters import format_project_item
 
         format_project_item(project, compact=True)

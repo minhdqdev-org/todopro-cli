@@ -2,6 +2,7 @@
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_info, format_success
@@ -32,7 +33,7 @@ async def purge_data() -> None:
         raise typer.Exit(0)
 
     storage_strategy_context = get_storage_strategy_context()
-    data_service = DataService(factory)
+    data_service = DataService(storage_strategy_context)  # noqa: F821
 
     await data_service.purge_all()
     format_success("All data has been deleted")

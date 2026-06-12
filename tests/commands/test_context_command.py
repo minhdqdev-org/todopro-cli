@@ -6,14 +6,13 @@ patch(...) to inject it into the module namespace.
 
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
-from todopro_cli.commands.context import app, _get_user_info_sync
-from todopro_cli.models.config_models import Context
+from todopro_cli.commands.context import _get_user_info_sync, app
+from todopro_cli.models.config_models import AppConfig, Context
 
 runner = CliRunner()
 
@@ -166,6 +165,19 @@ class TestListContexts:
             result = runner.invoke(app, ["list"])
         assert result.exit_code == 0
         assert "/custom/path/mydb.db" in result.output
+
+    def test_list_supports_current_context_name_config(self):
+        """Real AppConfig objects should work after the field rename."""
+        ctx = _make_ctx("default", "local", "/tmp/default.db")
+        svc = MagicMock()
+        svc.list_contexts.return_value = [ctx]
+        svc.config = AppConfig(current_context_name="default", contexts=[ctx])
+
+        with _patch_svc(svc):
+            result = runner.invoke(app, ["list"])
+
+        assert result.exit_code == 0
+        assert "*" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -508,8 +520,8 @@ def _make_mock_ctx(name="main", ctx_type="local", source="/tmp/main.db", **kwarg
     ctx.type = ctx_type
     ctx.source = source
     ctx.description = kwargs.get("description", "")
-    ctx.user = kwargs.get("user", None)
-    ctx.workspace_id = kwargs.get("workspace_id", None)
+    ctx.user = kwargs.get("user")
+    ctx.workspace_id = kwargs.get("workspace_id")
     # Encryption: disabled by default (falsy)
     ctx.encryption = None
     return ctx
@@ -901,9 +913,8 @@ class TestGetUserInfoSync:
         ), patch(
             "todopro_cli.commands.context.AuthAPI",
             return_value=mock_auth_api,
-        ):
-            with pytest.raises(Exception, match="API error"):
-                _get_user_info_sync()
+        ), pytest.raises(Exception, match="API error"):
+            _get_user_info_sync()
 
         # close() must be called in the finally block even when get_profile raises
         mock_client.close.assert_awaited_once()

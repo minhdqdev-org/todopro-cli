@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 from datetime import datetime
-from types import ModuleType
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from todopro_cli.utils.nlp_parser import LocalNLPParser, parse_natural_language
-
 
 # ---------------------------------------------------------------------------
 # Helper
@@ -314,15 +309,17 @@ class TestDateparserIntegration:
         parser = _make_parser()
         # "next monday" won't be caught by simple parse's exact "next week" check
         # but dateparser should handle it
-        with patch("todopro_cli.utils.nlp_parser.HAS_DATEPARSER", True):
-            with patch("todopro_cli.utils.nlp_parser.dateparser") as mock_dp:
-                mock_dp.parse.return_value = datetime(2025, 1, 15)
-                # Force simple parse to return None by using a string that
-                # simple parse won't handle
-                result = parser._parse_date("in 2 weeks")
-                # Either simple_parse handled it or dateparser was called
-                # Just confirm no exception raised
-                assert result is not None or result is None
+        with (
+            patch("todopro_cli.utils.nlp_parser.HAS_DATEPARSER", True),
+            patch("todopro_cli.utils.nlp_parser.dateparser") as mock_dp,
+        ):
+            mock_dp.parse.return_value = datetime(2025, 1, 15)
+            # Force simple parse to return None by using a string that
+            # simple parse won't handle
+            result = parser._parse_date("in 2 weeks")
+            # Either simple_parse handled it or dateparser was called
+            # Just confirm no exception raised
+            assert result is not None or result is None
 
     def test_dateparser_not_called_when_disabled(self):
         """When HAS_DATEPARSER=False, dateparser is never used."""

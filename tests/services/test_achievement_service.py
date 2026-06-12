@@ -14,8 +14,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from todopro_cli.services.achievement_service import AchievementService, get_achievement_service
-
+from todopro_cli.services.achievement_service import (
+    AchievementService,
+    get_achievement_service,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures

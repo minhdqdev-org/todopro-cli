@@ -30,7 +30,7 @@ def add_comment(
             console.print(f"[green]✓[/green] Comment added (ID: {comment['id']})")
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
         finally:
             await client.close()
 
@@ -50,7 +50,7 @@ def list_comments(
             comments = await api.get_comments(task_id)
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
         finally:
             await client.close()
 
@@ -103,7 +103,7 @@ def delete_comment(
             console.print(f"[green]✓[/green] Comment {comment_id} deleted.")
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
         finally:
             await client.close()
 

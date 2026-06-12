@@ -47,9 +47,11 @@ class TestRequireAuth:
         ctx.type = "remote"
         config_svc.config.get_current_context.return_value = ctx
 
-        with patch("todopro_cli.commands.decorators.get_config_service", return_value=config_svc):
-            with patch("todopro_cli.commands.decorators.AuthService.is_authenticated", return_value=True):
-                _require_auth()  # Should not raise
+        with (
+            patch("todopro_cli.commands.decorators.get_config_service", return_value=config_svc),
+            patch("todopro_cli.commands.decorators.AuthService.is_authenticated", return_value=True),
+        ):
+            _require_auth()  # Should not raise
 
     def test_remote_context_not_authenticated_raises_exit(self):
         """Remote context with no auth → format_error + Exit(1)."""
@@ -58,22 +60,26 @@ class TestRequireAuth:
         ctx.type = "remote"
         config_svc.config.get_current_context.return_value = ctx
 
-        with patch("todopro_cli.commands.decorators.get_config_service", return_value=config_svc):
-            with patch("todopro_cli.commands.decorators.AuthService.is_authenticated", return_value=False):
-                with patch("todopro_cli.commands.decorators.format_error"):
-                    with pytest.raises(typer.Exit):
-                        _require_auth()
+        with (
+            patch("todopro_cli.commands.decorators.get_config_service", return_value=config_svc),
+            patch("todopro_cli.commands.decorators.AuthService.is_authenticated", return_value=False),
+            patch("todopro_cli.commands.decorators.format_error"),
+            pytest.raises(typer.Exit),
+        ):
+            _require_auth()
 
     def test_none_current_context_falls_through_to_auth_check(self):
         """None current_context → condition is falsy → falls to auth check."""
         config_svc = MagicMock()
         config_svc.config.get_current_context.return_value = None
 
-        with patch("todopro_cli.commands.decorators.get_config_service", return_value=config_svc):
-            with patch("todopro_cli.commands.decorators.AuthService.is_authenticated", return_value=False):
-                with patch("todopro_cli.commands.decorators.format_error"):
-                    with pytest.raises(typer.Exit):
-                        _require_auth()
+        with (
+            patch("todopro_cli.commands.decorators.get_config_service", return_value=config_svc),
+            patch("todopro_cli.commands.decorators.AuthService.is_authenticated", return_value=False),
+            patch("todopro_cli.commands.decorators.format_error"),
+            pytest.raises(typer.Exit),
+        ):
+            _require_auth()
 
 
 class TestAppError:

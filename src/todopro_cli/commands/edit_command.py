@@ -7,6 +7,7 @@ import difflib
 import typer
 from rich.table import Table
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.task_helpers import resolve_task_id
@@ -50,7 +51,7 @@ async def _resolve_project_name(project_input: str, strategy) -> str:
     fuzzy_names = difflib.get_close_matches(project_input, names, n=5, cutoff=0.4)
     candidates = list(
         dict.fromkeys(
-            [p for p in prefix_matches]
+            list(prefix_matches)
             + [p for p in all_projects if p.name in fuzzy_names]
         )
     )
@@ -141,7 +142,7 @@ async def edit_command(
         output = "json"
 
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     resolved_id = await resolve_task_id(task_service, task_id)
@@ -160,7 +161,7 @@ async def edit_command(
         new_priority = priority
         new_project: str | None = None
         if project is not None:
-            new_project = await _resolve_project_name(project, strategy)
+            new_project = await _resolve_project_name(project, storage_strategy_context)
     else:
         # Look up current project name for display
         project_repo = storage_strategy_context.project_repository
@@ -209,7 +210,7 @@ async def edit_command(
 
         new_project = None
         if raw_project is not None:
-            new_project = await _resolve_project_name(raw_project, strategy)
+            new_project = await _resolve_project_name(raw_project, storage_strategy_context)
 
         new_priority: int | None = None
         if raw_priority is not None:

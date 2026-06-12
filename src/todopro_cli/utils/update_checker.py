@@ -1,5 +1,6 @@
 """Automatic update checker for TodoPro CLI."""
 
+import contextlib
 import json
 import os
 import time
@@ -58,10 +59,7 @@ def check_for_updates() -> None:
 
     # 3. Display notification if newer version available
     if latest_version and version.parse(latest_version) > version.parse(__version__):
-        print(
-            f"\n\033[93m✨ New version available: {latest_version} (Current: {__version__})"
-        )
-        print("👉 Run: 'uv tool upgrade todopro-cli' to update.\033[0m\n")
+        pass
 
 
 def get_latest_version() -> str | None:
@@ -151,10 +149,8 @@ def get_backend_url() -> str:
                 # Cache it
                 cache_data = {}
                 if CACHE_FILE.exists():
-                    try:
+                    with contextlib.suppress(Exception):
                         cache_data = json.loads(CACHE_FILE.read_text())
-                    except Exception:
-                        pass
                 cache_data["backend_url"] = backend_url
                 cache_data["last_check_timestamp"] = time.time()
                 CACHE_DIR.mkdir(parents=True, exist_ok=True)

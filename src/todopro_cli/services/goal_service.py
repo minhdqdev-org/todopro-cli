@@ -8,13 +8,6 @@ class GoldService:
         pass
 
     def reset_goals(self):
-        defaults = {
-            "daily_sessions": 8,
-            "daily_minutes": 200,
-            "weekly_sessions": 40,
-            "weekly_minutes": 1000,
-            "streak_target": 30,
-        }
         get_config_service().save_config()
 
 

@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
 from todopro_cli.utils.recurrence import (
-    RECURRENCE_PATTERNS,
     VALID_PATTERNS,
     describe_rrule,
     resolve_rrule,

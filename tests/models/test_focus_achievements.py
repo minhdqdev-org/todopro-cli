@@ -13,8 +13,7 @@ Coverage strategy
 
 from __future__ import annotations
 
-from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -24,7 +23,6 @@ from todopro_cli.models.focus.achievements import (
     AchievementCreate,
     AchievementTracker,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -44,7 +42,7 @@ def mock_analytics(mocker):
 
 
 @pytest.fixture()
-def tracker(mock_analytics) -> AchievementTracker:
+def tracker(_mock_analytics) -> AchievementTracker:
     """AchievementTracker with analytics mocked and state injected."""
     t = AchievementTracker()
     # Inject the dict that check_achievements / _check_requirement rely on
@@ -138,11 +136,11 @@ class TestAchievementsConstant:
 
 
 class TestAchievementTrackerInit:
-    def test_init_creates_instance(self, mock_analytics):
+    def test_init_creates_instance(self, _mock_analytics):
         t = AchievementTracker()
         assert t is not None
 
-    def test_init_creates_analytics_attribute(self, mock_analytics):
+    def test_init_creates_analytics_attribute(self, _mock_analytics):
         t = AchievementTracker()
         assert hasattr(t, "analytics")
 
@@ -512,9 +510,8 @@ class TestAchievementCreate:
 # ---------------------------------------------------------------------------
 
 
-import sqlite3 as _sqlite3
-import tempfile
-import os as _os
+import os as _os  # noqa: E402
+import sqlite3 as _sqlite3  # noqa: E402
 
 
 def _create_pomodoro_db(tmp_path_str: str) -> str:
@@ -573,7 +570,7 @@ def db_path(tmp_path, mocker):
 
 
 @pytest.fixture()
-def db_tracker(mock_analytics) -> AchievementTracker:
+def db_tracker(_mock_analytics) -> AchievementTracker:
     """AchievementTracker suitable for testing DB methods."""
     t = AchievementTracker()
     t.config = MagicMock()
@@ -582,7 +579,7 @@ def db_tracker(mock_analytics) -> AchievementTracker:
 
 
 class TestGetTotalSessions:
-    def test_returns_zero_when_empty(self, db_path, db_tracker):
+    def test_returns_zero_when_empty(self, _db_path, db_tracker):
         assert db_tracker._get_total_sessions() == 0
 
     def test_counts_completed_sessions(self, db_path, db_tracker):
@@ -596,7 +593,7 @@ class TestGetTotalSessions:
 
 
 class TestGetTotalHours:
-    def test_returns_zero_when_empty(self, db_path, db_tracker):
+    def test_returns_zero_when_empty(self, _db_path, db_tracker):
         assert db_tracker._get_total_hours() == pytest.approx(0.0)
 
     def test_sums_actual_focus_minutes(self, db_path, db_tracker):
@@ -606,7 +603,7 @@ class TestGetTotalHours:
 
 
 class TestGetMaxDailySessions:
-    def test_returns_zero_when_empty(self, db_path, db_tracker):
+    def test_returns_zero_when_empty(self, _db_path, db_tracker):
         assert db_tracker._get_max_daily_sessions() == 0
 
     def test_finds_max_across_days(self, db_path, db_tracker):
@@ -619,7 +616,7 @@ class TestGetMaxDailySessions:
 
 
 class TestGetMaxDailyHours:
-    def test_returns_zero_when_empty(self, db_path, db_tracker):
+    def test_returns_zero_when_empty(self, _db_path, db_tracker):
         assert db_tracker._get_max_daily_hours() == pytest.approx(0.0)
 
     def test_finds_max_day(self, db_path, db_tracker):
@@ -629,7 +626,7 @@ class TestGetMaxDailyHours:
 
 
 class TestGetPerfectSessionCount:
-    def test_returns_zero_when_empty(self, db_path, db_tracker):
+    def test_returns_zero_when_empty(self, _db_path, db_tracker):
         assert db_tracker._get_perfect_session_count() == 0
 
     def test_counts_sessions_where_actual_ge_duration(self, db_path, db_tracker):
@@ -640,7 +637,7 @@ class TestGetPerfectSessionCount:
 
 
 class TestGetHighEfficiencyCount:
-    def test_returns_zero_when_empty(self, db_path, db_tracker):
+    def test_returns_zero_when_empty(self, _db_path, db_tracker):
         assert db_tracker._get_high_efficiency_count() == 0
 
     def test_counts_sessions_at_95_percent_efficiency(self, db_path, db_tracker):
@@ -650,7 +647,7 @@ class TestGetHighEfficiencyCount:
 
 
 class TestHasEarlySession:
-    def test_returns_false_when_empty(self, db_path, db_tracker):
+    def test_returns_false_when_empty(self, _db_path, db_tracker):
         assert db_tracker._has_early_session(6) is False
 
     def test_returns_true_when_session_before_hour(self, db_path, db_tracker):
@@ -663,7 +660,7 @@ class TestHasEarlySession:
 
 
 class TestHasLateSession:
-    def test_returns_false_when_empty(self, db_path, db_tracker):
+    def test_returns_false_when_empty(self, _db_path, db_tracker):
         assert db_tracker._has_late_session(22) is False
 
     def test_returns_true_when_session_at_or_after_hour(self, db_path, db_tracker):
@@ -676,7 +673,7 @@ class TestHasLateSession:
 
 
 class TestGetMaxWeekendSessions:
-    def test_returns_zero_when_empty(self, db_path, db_tracker):
+    def test_returns_zero_when_empty(self, _db_path, db_tracker):
         assert db_tracker._get_max_weekend_sessions() == 0
 
     def test_returns_zero_when_only_weekday_sessions(self, db_path, db_tracker):

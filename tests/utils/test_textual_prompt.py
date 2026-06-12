@@ -8,20 +8,15 @@ from __future__ import annotations
 
 import asyncio
 import json
-import time
 from datetime import datetime
-from io import StringIO
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
 
 from todopro_cli.utils.ui.textual_prompt import (
     HighlightedInput,
     TaskSuggester,
     load_cache,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -330,8 +325,6 @@ class TestLoadCache:
     """Tests for the load_cache() helper function."""
 
     def _make_storage_ctx(self, projects=None, labels=None):
-        from todopro_cli.models import Project, Label
-        from datetime import datetime
 
         p_list = projects or []
         l_list = labels or []
@@ -359,15 +352,14 @@ class TestLoadCache:
         with patch(
             "todopro_cli.utils.ui.textual_prompt.get_storage_strategy_context",
             side_effect=RuntimeError("DB not available"),
-        ):
-            with patch(
-                "todopro_cli.utils.ui.textual_prompt.get_config_service",
-            ) as mock_gcs:
-                # Provide a mock data_dir that points nowhere real
-                mock_svc = MagicMock()
-                mock_svc.data_dir = Path("/tmp/nonexistent_todopro_test_cache_dir_xxx")
-                mock_gcs.return_value = mock_svc
-                projects, labels = load_cache()
+        ), patch(
+            "todopro_cli.utils.ui.textual_prompt.get_config_service",
+        ) as mock_gcs:
+            # Provide a mock data_dir that points nowhere real
+            mock_svc = MagicMock()
+            mock_svc.data_dir = Path("/tmp/nonexistent_todopro_test_cache_dir_xxx")
+            mock_gcs.return_value = mock_svc
+            projects, labels = load_cache()
         assert projects == []
         assert labels == []
 
@@ -413,12 +405,14 @@ class TestLoadCache:
             labels=fresh_labels,
         )
 
-        with patch("todopro_cli.utils.ui.textual_prompt.get_config_service", return_value=mock_svc):
-            with patch(
+        with (
+            patch("todopro_cli.utils.ui.textual_prompt.get_config_service", return_value=mock_svc),
+            patch(
                 "todopro_cli.utils.ui.textual_prompt.get_storage_strategy_context",
                 return_value=storage_ctx,
-            ):
-                projects, labels = load_cache()
+            ),
+        ):
+            projects, labels = load_cache()
 
         assert "NewProject" in projects
         assert "new-label" in labels
@@ -435,12 +429,14 @@ class TestLoadCache:
             labels=fresh_labels,
         )
 
-        with patch("todopro_cli.utils.ui.textual_prompt.get_config_service", return_value=mock_svc):
-            with patch(
+        with (
+            patch("todopro_cli.utils.ui.textual_prompt.get_config_service", return_value=mock_svc),
+            patch(
                 "todopro_cli.utils.ui.textual_prompt.get_storage_strategy_context",
                 return_value=storage_ctx,
-            ):
-                load_cache()
+            ),
+        ):
+            load_cache()
 
         cache_file = tmp_path / "quick_add_cache.json"
         assert cache_file.exists()
@@ -453,12 +449,11 @@ class TestLoadCache:
         with patch(
             "todopro_cli.utils.ui.textual_prompt.get_storage_strategy_context",
             side_effect=Exception("fail"),
-        ):
-            with patch("todopro_cli.utils.ui.textual_prompt.get_config_service") as mock_gcs:
-                mock_svc = MagicMock()
-                mock_svc.data_dir = Path("/tmp/nonexistent_dir_xyz")
-                mock_gcs.return_value = mock_svc
-                result = load_cache()
+        ), patch("todopro_cli.utils.ui.textual_prompt.get_config_service") as mock_gcs:
+            mock_svc = MagicMock()
+            mock_svc.data_dir = Path("/tmp/nonexistent_dir_xyz")
+            mock_gcs.return_value = mock_svc
+            result = load_cache()
         assert isinstance(result, tuple)
         assert len(result) == 2
         assert isinstance(result[0], list)
@@ -507,7 +502,6 @@ class TestHighlightedInputInit:
     def test_projects_and_labels_initially_empty_on_fresh_instance(self):
         """Projects and labels start empty before data loading."""
         # Build directly via __init__ path (not our helper)
-        from textual.widgets import Input as TInput
 
         # We only test the structure via the helper which bypasses __init__
         inp = _make_input(projects=[], labels=[])
@@ -633,7 +627,7 @@ class TestQuickAddAppHandlers:
         mock_task_input.get_suggestions.return_value = ["#Inbox", "#Work"]
         mock_suggestions_widget = MagicMock()
 
-        def mock_query_one(selector, cls=None):
+        def mock_query_one(selector, _cls=None):
             if selector == "#task-input":
                 return mock_task_input
             if selector == "#suggestions":
@@ -659,7 +653,7 @@ class TestQuickAddAppHandlers:
         mock_task_input.get_suggestions.return_value = []
         mock_suggestions_widget = MagicMock()
 
-        def mock_query_one(selector, cls=None):
+        def mock_query_one(selector, _cls=None):
             if selector == "#task-input":
                 return mock_task_input
             if selector == "#suggestions":
@@ -681,7 +675,7 @@ class TestQuickAddAppHandlers:
         mock_task_input.get_suggestions.return_value = ["#Inbox", "#Work", "#Personal"]
         mock_suggestions_widget = MagicMock()
 
-        def mock_query_one(selector, cls=None):
+        def mock_query_one(selector, _cls=None):
             if selector == "#task-input":
                 return mock_task_input
             if selector == "#suggestions":
@@ -709,15 +703,19 @@ class TestGetInteractiveInput:
     def test_creates_app_with_correct_project(self):
         from unittest.mock import patch as _patch
 
-        from todopro_cli.utils.ui.textual_prompt import QuickAddApp, get_interactive_input
+        from todopro_cli.utils.ui.textual_prompt import (
+            get_interactive_input,
+        )
 
-        with _patch("todopro_cli.utils.ui.textual_prompt.load_cache",
-                    return_value=(["Inbox"], ["urgent"])):
-            with _patch("todopro_cli.utils.ui.textual_prompt.QuickAddApp") as MockApp:
-                mock_instance = MagicMock()
-                mock_instance.result = None
-                MockApp.return_value = mock_instance
-                get_interactive_input("MyProject")
+        with (
+            _patch("todopro_cli.utils.ui.textual_prompt.load_cache",
+                    return_value=(["Inbox"], ["urgent"])),
+            _patch("todopro_cli.utils.ui.textual_prompt.QuickAddApp") as MockApp,
+        ):
+            mock_instance = MagicMock()
+            mock_instance.result = None
+            MockApp.return_value = mock_instance
+            get_interactive_input("MyProject")
 
         MockApp.assert_called_once_with(default_project="MyProject")
         mock_instance.run.assert_called_once()
@@ -725,14 +723,18 @@ class TestGetInteractiveInput:
     def test_default_project_is_inbox(self):
         from unittest.mock import patch as _patch
 
-        from todopro_cli.utils.ui.textual_prompt import QuickAddApp, get_interactive_input
+        from todopro_cli.utils.ui.textual_prompt import (
+            get_interactive_input,
+        )
 
-        with _patch("todopro_cli.utils.ui.textual_prompt.load_cache",
-                    return_value=([], [])):
-            with _patch("todopro_cli.utils.ui.textual_prompt.QuickAddApp") as MockApp:
-                mock_instance = MagicMock()
-                mock_instance.result = None
-                MockApp.return_value = mock_instance
-                get_interactive_input()
+        with (
+            _patch("todopro_cli.utils.ui.textual_prompt.load_cache",
+                    return_value=([], [])),
+            _patch("todopro_cli.utils.ui.textual_prompt.QuickAddApp") as MockApp,
+        ):
+            mock_instance = MagicMock()
+            mock_instance.result = None
+            MockApp.return_value = mock_instance
+            get_interactive_input()
 
         MockApp.assert_called_once_with(default_project="Inbox")

@@ -90,7 +90,7 @@ class TestTaskCommandSuccess:
     """Functional tests for the happy path."""
 
     @patch("todopro_cli.commands.task_command.resolve_task_id")
-    def test_get_task_by_suffix(self, mock_resolve, mock_task_service, mock_task):
+    def test_get_task_by_suffix(self, mock_resolve, mock_task_service, _mock_task):
         """tp task <suffix> should resolve and display the task."""
         mock_resolve.return_value = AsyncMock(return_value="task-abc123")()
 
@@ -100,7 +100,7 @@ class TestTaskCommandSuccess:
         mock_task_service.get_task.assert_called_once()
 
     @patch("todopro_cli.commands.task_command.resolve_task_id")
-    def test_get_task_by_full_id(self, mock_resolve, mock_task_service, mock_task):
+    def test_get_task_by_full_id(self, mock_resolve, _mock_task_service, _mock_task):
         """tp task <full-id> should work with a full UUID-style ID."""
         mock_resolve.return_value = AsyncMock(return_value="task-abc123")()
 
@@ -109,10 +109,24 @@ class TestTaskCommandSuccess:
         assert result.exit_code == 0
 
     @patch("todopro_cli.commands.task_command.resolve_task_id")
-    def test_output_json_flag(self, mock_resolve, mock_task_service, mock_task):
+    def test_output_json_flag(self, mock_resolve, _mock_task_service, _mock_task):
         """tp task <id> --output json should pass json format."""
         mock_resolve.return_value = AsyncMock(return_value="task-abc123")()
 
         result = runner.invoke(app, ["abc123", "--output", "json"])
 
         assert result.exit_code == 0
+
+    @patch("todopro_cli.commands.task_command.resolve_task_id")
+    def test_markdown_content_is_rendered(self, mock_resolve, mock_task_service, mock_task):
+        """Task content should render inline Markdown without raw asterisks."""
+        mock_resolve.return_value = AsyncMock(return_value="task-abc123")()
+        mock_task_service.get_task.return_value = mock_task.model_copy(
+            update={"content": "Check out **AI Jason on YouTube**"}
+        )
+
+        result = runner.invoke(app, ["abc123"])
+
+        assert result.exit_code == 0
+        assert "AI Jason on YouTube" in result.output
+        assert "**AI Jason on YouTube**" not in result.output

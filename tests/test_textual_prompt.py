@@ -4,10 +4,7 @@ import asyncio
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from todopro_cli.models import Label, Project
-
 
 MOCK_PROJECTS = [
     Project(
@@ -146,11 +143,10 @@ class TestOnMountDataLoading:
         storage_ctx = _make_storage_context()
 
         async def simulate_on_mount_body():
-            import todopro_cli.utils.ui.textual_prompt as module
             projects_data = await storage_ctx.project_repository.list_all(ProjectFilters())
             labels_data = await storage_ctx.label_repository.list_all()
             projects = [p.name for p in projects_data] if projects_data else []
-            labels = [l.name for l in labels_data] if labels_data else []
+            labels = [lbl.name for lbl in labels_data] if labels_data else []
             return projects, labels
 
         with patch(
@@ -167,7 +163,10 @@ class TestOnMountDataLoading:
     def test_project_list_all_requires_filters_param(self):
         """SqliteProjectRepository.list_all() must accept a 'filters' parameter."""
         import inspect
-        from todopro_cli.adapters.sqlite.project_repository import SqliteProjectRepository
+
+        from todopro_cli.adapters.sqlite.project_repository import (
+            SqliteProjectRepository,
+        )
 
         sig = inspect.signature(SqliteProjectRepository.list_all)
         assert "filters" in sig.parameters, (

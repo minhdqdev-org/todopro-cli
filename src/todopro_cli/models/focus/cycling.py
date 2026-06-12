@@ -33,14 +33,13 @@ class CycleState:
             # After focus, check if it's time for long break
             if self.session_in_cycle >= config.sessions_before_long_break:
                 return "long_break"
-            else:
-                return "short_break"
+            return "short_break"
 
-        elif self.current_phase == "short_break":
+        if self.current_phase == "short_break":
             # After short break, always go to focus
             return "focus"
 
-        elif self.current_phase == "long_break":
+        if self.current_phase == "long_break":
             # After long break, start new cycle
             return "focus"
 
@@ -68,19 +67,18 @@ class CycleState:
         """Get duration in minutes for current phase."""
         if self.current_phase == "focus":
             return config.focus_duration
-        elif self.current_phase == "short_break":
+        if self.current_phase == "short_break":
             return config.short_break
-        else:  # long_break
-            return config.long_break
+        # long_break
+        return config.long_break
 
     def get_emoji(self) -> str:
         """Get emoji for current phase."""
         if self.current_phase == "focus":
             return "🍅"
-        elif self.current_phase == "short_break":
+        if self.current_phase == "short_break":
             return "☕"
-        else:
-            return "🌴"
+        return "🌴"
 
     def get_progress_dots(self, config: PomodoroConfig) -> str:
         """Get progress dots showing cycle position."""

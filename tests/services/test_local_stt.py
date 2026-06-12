@@ -15,7 +15,6 @@ import pytest
 
 import todopro_cli.services.audio.local_stt as stt
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -85,9 +84,11 @@ def test_check_whisper_available():
 
 def test_transcribe_audio_raises_when_not_available():
     """Raises RuntimeError immediately when WHISPER_AVAILABLE is False."""
-    with _WhisperFlag(available=False):
-        with pytest.raises(RuntimeError, match="faster-whisper not installed"):
-            stt.transcribe_audio(b"fake audio data")
+    with (
+        _WhisperFlag(available=False),
+        pytest.raises(RuntimeError, match="faster-whisper not installed"),
+    ):
+        stt.transcribe_audio(b"fake audio data")
 
 
 # ---------------------------------------------------------------------------

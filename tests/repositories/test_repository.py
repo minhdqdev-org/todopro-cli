@@ -32,7 +32,6 @@ from todopro_cli.repositories.repository import (
     TaskRepository,
 )
 
-
 # ---------------------------------------------------------------------------
 # Concrete pass-through implementations
 # ---------------------------------------------------------------------------

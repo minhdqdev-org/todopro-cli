@@ -25,10 +25,10 @@ class TestGetSuffixMapping:
             "todopro_cli.services.cache_service.get_suffix_mapping",
             return_value={},
         ):
-            from todopro_cli.utils import task_cache
-
             # Force reimport to avoid cached module
             import importlib
+
+            from todopro_cli.utils import task_cache
 
             importlib.reload(task_cache)
             result = task_cache.get_suffix_mapping()
@@ -58,8 +58,9 @@ class TestGetBackgroundCache:
             "todopro_cli.services.cache_service.get_background_cache",
             return_value=fake_cache,
         ):
-            from todopro_cli.utils import task_cache
             import importlib
+
+            from todopro_cli.utils import task_cache
 
             importlib.reload(task_cache)
             result = task_cache.get_background_cache()

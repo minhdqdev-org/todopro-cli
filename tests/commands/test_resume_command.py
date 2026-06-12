@@ -5,7 +5,6 @@ Tests `todopro resume focus` which delegates to focus.py's resume_focus().
 
 from unittest.mock import patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.resume_command import app
@@ -35,12 +34,12 @@ class TestResumeFocus:
         """Test that resume focus calls the underlying focus.resume_focus implementation."""
         with patch("todopro_cli.commands.focus.resume_focus") as mock_impl:
             mock_impl.return_value = None
-            result = runner.invoke(app, [])
+            runner.invoke(app, [])
             mock_impl.assert_called_once()
 
     def test_resume_focus_with_output_option(self):
         """Test resume focus accepts output format option."""
         with patch("todopro_cli.commands.focus.resume_focus") as mock_impl:
             mock_impl.return_value = None
-            result = runner.invoke(app, ["--output", "json"])
+            runner.invoke(app, ["--output", "json"])
             mock_impl.assert_called_once()

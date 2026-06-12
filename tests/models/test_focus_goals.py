@@ -20,7 +20,6 @@ import pytest
 from todopro_cli.models.config_models import AppConfig
 from todopro_cli.models.focus.goals import GoalsManager
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -51,7 +50,7 @@ def mock_analytics(mocker):
 
 
 @pytest.fixture()
-def goals_manager(mock_analytics) -> GoalsManager:
+def goals_manager(_mock_analytics) -> GoalsManager:
     """GoalsManager backed by a fresh AppConfig and a no-op save."""
     config = AppConfig()
     return GoalsManager(config=config, save_config=lambda: None)
@@ -94,7 +93,7 @@ class TestGetGoals:
     def test_default_streak_target(self, goals_manager):
         assert goals_manager.get_goals()["streak_target"] == 30
 
-    def test_returns_custom_goals_when_set(self, mock_analytics):
+    def test_returns_custom_goals_when_set(self, _mock_analytics):
         custom = {
             "daily_sessions": 4,
             "daily_minutes": 100,
@@ -107,7 +106,7 @@ class TestGetGoals:
         gm = GoalsManager(config=config, save_config=lambda: None)
         assert gm.get_goals() == custom
 
-    def test_returns_defaults_when_focus_goals_is_none(self, mock_analytics):
+    def test_returns_defaults_when_focus_goals_is_none(self, _mock_analytics):
         config = AppConfig()
         config.focus_goals = None
         gm = GoalsManager(config=config, save_config=lambda: None)
@@ -146,20 +145,20 @@ class TestSetGoal:
             goals_manager.set_goal("bad_key", 5)
         assert "daily_sessions" in str(exc_info.value)
 
-    def test_save_config_is_called_on_valid_set(self, mock_analytics):
+    def test_save_config_is_called_on_valid_set(self, _mock_analytics):
         save_mock = MagicMock()
         gm = GoalsManager(config=AppConfig(), save_config=save_mock)
         gm.set_goal("daily_sessions", 5)
         save_mock.assert_called_once()
 
-    def test_save_config_not_called_on_invalid_set(self, mock_analytics):
+    def test_save_config_not_called_on_invalid_set(self, _mock_analytics):
         save_mock = MagicMock()
         gm = GoalsManager(config=AppConfig(), save_config=save_mock)
         with pytest.raises(ValueError):
             gm.set_goal("bad_key", 5)
         save_mock.assert_not_called()
 
-    def test_initialises_focus_goals_when_none(self, mock_analytics):
+    def test_initialises_focus_goals_when_none(self, _mock_analytics):
         """If config.focus_goals is None, set_goal populates it with defaults first."""
         config = AppConfig()
         config.focus_goals = None

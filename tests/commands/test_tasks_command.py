@@ -19,10 +19,12 @@ runner = CliRunner()
 @pytest.fixture
 def config_service():
     """Fixture for ConfigService with temporary directory."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        with patch("platformdirs.user_config_dir", return_value=tmpdir):
-            with patch("platformdirs.user_data_dir", return_value=tmpdir):
-                yield ConfigService()
+    with (
+        tempfile.TemporaryDirectory() as tmpdir,
+        patch("platformdirs.user_config_dir", return_value=tmpdir),
+        patch("platformdirs.user_data_dir", return_value=tmpdir),
+    ):
+        yield ConfigService()
 
 
 @pytest.fixture
@@ -88,6 +90,8 @@ class TestListCommand:
 
         assert result.exit_code == 0
         mock_task_service.list_tasks.assert_called_once()
+        call_kwargs = mock_task_service.list_tasks.call_args.kwargs
+        assert call_kwargs["status"] == "active"
 
     @patch("todopro_cli.commands.tasks_command.get_background_cache")
     def test_list_with_filters(self, mock_cache, mock_task_service, mock_task):
@@ -102,6 +106,18 @@ class TestListCommand:
         call_kwargs = mock_task_service.list_tasks.call_args.kwargs
         assert call_kwargs["status"] == "active"
         assert call_kwargs["priority"] == 1
+
+    @patch("todopro_cli.commands.tasks_command.get_background_cache")
+    def test_list_show_completed_flag(self, mock_cache, mock_task_service, mock_task):
+        """--show-completed should request all tasks instead of active-only."""
+        mock_task_service.list_tasks.return_value = [mock_task]
+        mock_cache.return_value.get_completing_tasks.return_value = []
+
+        result = runner.invoke(app, ["list", "--show-completed"])
+
+        assert result.exit_code == 0
+        call_kwargs = mock_task_service.list_tasks.call_args.kwargs
+        assert call_kwargs["status"] == "all"
 
 
 class TestGetCommand:
@@ -276,12 +292,12 @@ class TestStartCommand:
         mock_impl.assert_called_once()
 
     def test_start_with_duration(self):
-        with patch("todopro_cli.commands.focus.start_focus") as mock_impl:
+        with patch("todopro_cli.commands.focus.start_focus"):
             result = runner.invoke(app, ["start", "task-123", "--duration", "30"])
         assert result.exit_code == 0
 
     def test_start_with_template(self):
-        with patch("todopro_cli.commands.focus.start_focus") as mock_impl:
+        with patch("todopro_cli.commands.focus.start_focus"):
             result = runner.invoke(app, ["start", "task-123", "--template", "deep"])
         assert result.exit_code == 0
 
@@ -371,7 +387,7 @@ class TestNextTaskCommand:
         mock_task_service.list_tasks.return_value = [mock_task]
         with patch(
             "todopro_cli.utils.ui.formatters.format_next_task"
-        ) as mock_fmt:
+        ):
             result = runner.invoke(app, ["next"])
         assert result.exit_code == 0
 
@@ -407,7 +423,6 @@ class TestRescheduleWithConfirmation:
     """Lines 236-255: reschedule bulk overdue with user confirmation."""
 
     def _make_overdue_task(self, task_id="task-overdue"):
-        from datetime import date
         task = MagicMock()
         task.id = task_id
         task.content = "Overdue task"
@@ -450,7 +465,6 @@ class TestRescheduleAutoDate:
     @patch("todopro_cli.commands.tasks_command.resolve_task_id")
     def test_reschedule_single_no_date_uses_today(self, mock_resolve, mock_task_service):
         """When no --date given, defaults to today's date."""
-        from unittest.mock import AsyncMock
         mock_resolve.return_value = "task-123"
         mock_task = MagicMock()
         mock_task.content = "Short task"
@@ -465,7 +479,6 @@ class TestRescheduleContentTruncation:
     @patch("todopro_cli.commands.tasks_command.resolve_task_id")
     def test_reschedule_long_content_truncated(self, mock_resolve, mock_task_service):
         """Content > 60 chars is truncated to 57 chars + '...'."""
-        from unittest.mock import AsyncMock
         mock_resolve.return_value = "task-123"
         long_content = "This is a very long task content that definitely exceeds sixty characters in total"
         mock_task = MagicMock()
@@ -534,7 +547,7 @@ class TestMigrateCommand:
             patch("todopro_cli.commands.tasks_command.TaskService", return_value=svc),
             patch(
                 "todopro_cli.commands.tasks_command.resolve_project_uuid",
-                side_effect=lambda name, repo: "src-id" if name == "Inbox" else "tgt-id",
+                side_effect=lambda name, _repo: "src-id" if name == "Inbox" else "tgt-id",
             ),
         ):
             result = runner.invoke(app, ["migrate"] + args)

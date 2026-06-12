@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
 
 def run_in_background(
-    func=None,  # Deprecated, kept for compatibility
+    _func=None,  # Deprecated, kept for compatibility
     command: str = "",
     context: dict[str, Any] | None = None,
     max_retries: int = 3,

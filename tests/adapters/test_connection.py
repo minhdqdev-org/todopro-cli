@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-import time
-from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -13,7 +11,6 @@ from todopro_cli.adapters.sqlite.connection import (
     DatabaseConnection,
     get_connection,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers – reset singleton state between tests
@@ -137,7 +134,6 @@ class TestCloseConnection:
         DatabaseConnection.get_connection(db_path=str(db_file))
         instance = DatabaseConnection()
         # Force the commit to raise
-        original_conn = instance._connection
         bad_conn = MagicMock(spec=sqlite3.Connection)
         bad_conn.commit.side_effect = Exception("commit error")
         instance._connection = bad_conn
@@ -192,7 +188,7 @@ class TestExecuteWithRetry:
         row = cursor.fetchone()
         assert row[0] == 7
 
-    def test_retries_on_locked_db_and_eventually_raises(self, tmp_path):
+    def test_retries_on_locked_db_and_eventually_raises(self, _tmp_path):
         locked_error = sqlite3.OperationalError("database is locked")
 
         # Use a MagicMock connection since sqlite3.Connection.execute is read-only
@@ -223,7 +219,7 @@ class TestExecuteWithRetry:
 
         mock_conn = MagicMock(spec=sqlite3.Connection)
 
-        def flaky_execute(sql, params=None):
+        def flaky_execute(_sql, _params=None):
             nonlocal call_count
             call_count += 1
             if call_count <= 1:
@@ -250,7 +246,7 @@ class TestModuleLevelGetConnection:
         conn = get_connection(db_path=str(db_file))
         assert isinstance(conn, sqlite3.Connection)
 
-    def test_execute_with_retry_max_retries_zero(self, tmp_path):
+    def test_execute_with_retry_max_retries_zero(self, _tmp_path):
         """max_retries=0 triggers the dead-code safety raise on line 176."""
         mock_conn = MagicMock(spec=sqlite3.Connection)
         with pytest.raises(sqlite3.OperationalError, match="Max retries exceeded"):

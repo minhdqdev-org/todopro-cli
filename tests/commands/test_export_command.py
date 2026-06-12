@@ -77,9 +77,11 @@ class TestExportDataCommand:
         fake_module.DataService = MockDataService
         ctx_patch, factory_patch, strategy_patch = _patch_export_context()
 
-        with patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}):
-            with ctx_patch, factory_patch, strategy_patch:
-                result = runner.invoke(app, ["data", "output.json"])
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}),
+            ctx_patch, factory_patch, strategy_patch,
+        ):
+            result = runner.invoke(app, ["data", "output.json"])
         assert result.exit_code == 0
         mock_data_service.export_data.assert_awaited_once_with(
             "output.json", compress=False
@@ -93,9 +95,11 @@ class TestExportDataCommand:
         fake_module.DataService = MockDataService
         ctx_patch, factory_patch, strategy_patch = _patch_export_context()
 
-        with patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}):
-            with ctx_patch, factory_patch, strategy_patch:
-                result = runner.invoke(app, ["data", "output.json.gz", "--compress"])
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}),
+            ctx_patch, factory_patch, strategy_patch,
+        ):
+            result = runner.invoke(app, ["data", "output.json.gz", "--compress"])
         assert result.exit_code == 0
         mock_data_service.export_data.assert_awaited_once_with(
             "output.json.gz", compress=True
@@ -108,9 +112,11 @@ class TestExportDataCommand:
         fake_module.DataService = MagicMock(return_value=mock_data_service)
         ctx_patch, factory_patch, strategy_patch = _patch_export_context()
 
-        with patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}):
-            with ctx_patch, factory_patch, strategy_patch:
-                result = runner.invoke(app, ["data", "out.json"])
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}),
+            ctx_patch, factory_patch, strategy_patch,
+        ):
+            result = runner.invoke(app, ["data", "out.json"])
         assert "out.json" in result.output or "exported" in result.output.lower()
 
     def test_export_data_service_error_exits_nonzero(self):
@@ -120,13 +126,11 @@ class TestExportDataCommand:
         fake_module.DataService = MagicMock(return_value=mock_data_service)
         ctx_patch, factory_patch, strategy_patch = _patch_export_context()
 
-        with patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}):
-            with ctx_patch, factory_patch, strategy_patch:
-                result = runner.invoke(app, ["data", "out.json"])
-        assert result.exit_code != 0
-
-    def test_export_data_missing_file_arg_exits_nonzero(self):
-        result = runner.invoke(app, ["data"])
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}),
+            ctx_patch, factory_patch, strategy_patch,
+        ):
+            result = runner.invoke(app, ["data", "out.json"])
         assert result.exit_code != 0
 
     def test_export_data_missing_file_arg_exits_nonzero(self):
@@ -142,18 +146,20 @@ class TestExportStatsCommand:
         fake_focus_module = MagicMock()
         fake_focus_module.FocusService = MagicMock(return_value=mock_focus_service)
 
-        with patch.dict("sys.modules", {"todopro_cli.services.focus_service": fake_focus_module}):
-            with patch(
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.focus_service": fake_focus_module}),
+            patch(
                 "todopro_cli.commands.export_command.get_storage_strategy_context",
                 return_value=MagicMock(),
                 create=True,
-            ):
-                with patch(
-                    "todopro_cli.commands.export_command.factory",
-                    mock_factory,
-                    create=True,
-                ):
-                    result = runner.invoke(app, ["stats", "stats.json"])
+            ),
+            patch(
+                "todopro_cli.commands.export_command.factory",
+                mock_factory,
+                create=True,
+            ),
+        ):
+            result = runner.invoke(app, ["stats", "stats.json"])
         assert result.exit_code == 0
         mock_focus_service.export_stats.assert_awaited_once_with("stats.json")
 
@@ -163,18 +169,20 @@ class TestExportStatsCommand:
         fake_focus_module = MagicMock()
         fake_focus_module.FocusService = MagicMock(return_value=mock_focus_service)
 
-        with patch.dict("sys.modules", {"todopro_cli.services.focus_service": fake_focus_module}):
-            with patch(
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.focus_service": fake_focus_module}),
+            patch(
                 "todopro_cli.commands.export_command.get_storage_strategy_context",
                 return_value=MagicMock(),
                 create=True,
-            ):
-                with patch(
-                    "todopro_cli.commands.export_command.factory",
-                    MagicMock(),
-                    create=True,
-                ):
-                    result = runner.invoke(app, ["stats", "stats.json"])
+            ),
+            patch(
+                "todopro_cli.commands.export_command.factory",
+                MagicMock(),
+                create=True,
+            ),
+        ):
+            result = runner.invoke(app, ["stats", "stats.json"])
         assert result.exit_code != 0
 
     def test_export_stats_missing_file_arg_exits_nonzero(self):
@@ -190,23 +198,25 @@ class TestExportAnalyticsCommand:
         fake_analytics_module = MagicMock()
         fake_analytics_module.AnalyticsService = MagicMock(return_value=mock_analytics_service)
 
-        with patch.dict("sys.modules", {"todopro_cli.services.analytics_service": fake_analytics_module}):
-            with patch(
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.analytics_service": fake_analytics_module}),
+            patch(
                 "todopro_cli.commands.export_command.get_storage_strategy_context",
                 return_value=MagicMock(),
                 create=True,
-            ):
-                with patch(
-                    "todopro_cli.commands.export_command.factory",
-                    MagicMock(),
-                    create=True,
-                ):
-                    with patch(
-                        "todopro_cli.commands.export_command.strategy_context",
-                        mock_strategy_ctx,
-                        create=True,
-                    ):
-                        result = runner.invoke(app, ["analytics", "analytics.json"])
+            ),
+            patch(
+                "todopro_cli.commands.export_command.factory",
+                MagicMock(),
+                create=True,
+            ),
+            patch(
+                "todopro_cli.commands.export_command.strategy_context",
+                mock_strategy_ctx,
+                create=True,
+            ),
+        ):
+            result = runner.invoke(app, ["analytics", "analytics.json"])
         assert result.exit_code == 0
         mock_analytics_service.export_analytics.assert_awaited_once_with(
             "analytics.json"
@@ -220,23 +230,25 @@ class TestExportAnalyticsCommand:
         fake_analytics_module = MagicMock()
         fake_analytics_module.AnalyticsService = MagicMock(return_value=mock_analytics_service)
 
-        with patch.dict("sys.modules", {"todopro_cli.services.analytics_service": fake_analytics_module}):
-            with patch(
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.analytics_service": fake_analytics_module}),
+            patch(
                 "todopro_cli.commands.export_command.get_storage_strategy_context",
                 return_value=MagicMock(),
                 create=True,
-            ):
-                with patch(
-                    "todopro_cli.commands.export_command.factory",
-                    MagicMock(),
-                    create=True,
-                ):
-                    with patch(
-                        "todopro_cli.commands.export_command.strategy_context",
-                        MagicMock(),
-                        create=True,
-                    ):
-                        result = runner.invoke(app, ["analytics", "analytics.json"])
+            ),
+            patch(
+                "todopro_cli.commands.export_command.factory",
+                MagicMock(),
+                create=True,
+            ),
+            patch(
+                "todopro_cli.commands.export_command.strategy_context",
+                MagicMock(),
+                create=True,
+            ),
+        ):
+            result = runner.invoke(app, ["analytics", "analytics.json"])
         assert result.exit_code != 0
 
     def test_export_analytics_missing_file_arg_exits_nonzero(self):

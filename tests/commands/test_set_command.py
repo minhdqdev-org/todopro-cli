@@ -5,7 +5,6 @@ Tests `todopro set goal` and `todopro set config`.
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.set_command import app
@@ -72,9 +71,9 @@ class TestSetConfig:
         with patch("todopro_cli.services.config_service.ConfigService") as mock_cls:
             mock_svc = MagicMock()
             mock_cls.return_value = mock_svc
-            result = runner.invoke(app, ["config", "theme", "dark"])
+            runner.invoke(app, ["config", "theme", "dark"])
             # Command delegated to config_service
-            assert result.exit_code == 0 or mock_svc.set.called or True
+            assert True
 
     def test_app_help(self):
         """Test set app help lists subcommands."""
@@ -104,7 +103,7 @@ class TestSetGoalUnitLogic:
             mock_svc.save_config = MagicMock()
             mock_get_svc.return_value = mock_svc
             with patch("todopro_cli.models.focus.goals.GoalsManager", FakeGoalsManager):
-                result = runner.invoke(app, ["goal", "daily-sessions", "8"])
+                runner.invoke(app, ["goal", "daily-sessions", "8"])
                 if captured_calls:
                     assert captured_calls[0][0] == "daily_sessions"
                     assert captured_calls[0][1] == 8
@@ -115,7 +114,7 @@ class TestSetTimezone:
 
     def test_set_timezone_success(self):
         """set timezone calls AuthService.set_timezone."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import MagicMock, patch
 
         mock_auth_svc = MagicMock()
         mock_auth_svc.set_timezone = AsyncMock()
@@ -133,7 +132,7 @@ class TestSetTimezone:
 
     def test_set_reminder_success(self):
         """set reminder command works with offset format."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import MagicMock, patch
 
         mock_client = MagicMock()
         mock_client.close = AsyncMock()

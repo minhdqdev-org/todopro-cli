@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -10,7 +10,6 @@ from todopro_cli.models.storage_strategy import (
     StorageStrategy,
     StorageStrategyContext,
 )
-
 
 # ---------------------------------------------------------------------------
 # Concrete mock strategy for testing the abstract interface
@@ -163,12 +162,6 @@ class TestLocalStorageStrategy:
 class TestRemoteStorageStrategy:
     def test_storage_type_is_remote(self):
         from todopro_cli.models.storage_strategy import RemoteStorageStrategy
-        from todopro_cli.adapters.rest_api import (
-            RestApiLabelRepository,
-            RestApiLocationContextRepository,
-            RestApiProjectRepository,
-            RestApiTaskRepository,
-        )
 
         strategy = RemoteStorageStrategy()
         assert strategy.storage_type == "remote"

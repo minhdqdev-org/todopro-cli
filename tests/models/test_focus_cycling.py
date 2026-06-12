@@ -7,10 +7,7 @@ get_progress_dots, to_dict/from_dict round-trip.
 
 from __future__ import annotations
 
-import pytest
-
 from todopro_cli.models.focus.cycling import CycleState, PomodoroConfig
-
 
 # ---------------------------------------------------------------------------
 # PomodoroConfig

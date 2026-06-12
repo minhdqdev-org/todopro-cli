@@ -15,8 +15,9 @@ from pathlib import Path
 repo_root = Path(__file__).parent.parent
 sys.path.insert(0, str(repo_root / "src"))
 
-from click_man.core import write_man_pages
-from todopro_cli.main import app
+from click_man.core import write_man_pages  # noqa: E402
+
+from todopro_cli.main import app  # noqa: E402
 
 
 def main() -> None:
@@ -47,9 +48,8 @@ def main() -> None:
 
     generated = output_dir / "todopro.1"
     if generated.exists():
-        print(f"Man page written to: {generated}")
+        pass
     else:
-        print("Warning: expected output file not found.", file=sys.stderr)
         sys.exit(1)
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from todopro_cli.models import Section, SectionCreate, SectionFilters, SectionUpdate
+from todopro_cli.models import Section, SectionCreate, SectionUpdate
 from todopro_cli.repositories.repository import SectionRepository
 
 

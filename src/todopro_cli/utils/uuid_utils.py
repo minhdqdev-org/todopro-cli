@@ -289,8 +289,8 @@ async def resolve_label_id(label_id_or_suffix: str, label_repository) -> str:
 
 async def resolve_section_id(
     section_id_or_suffix: str,
-    section_repository,
-    project_id: str | None = None,
+    _section_repository,
+    _project_id: str | None = None,
 ) -> str:
     """Resolve a section suffix or full UUID to a full section ID.
 

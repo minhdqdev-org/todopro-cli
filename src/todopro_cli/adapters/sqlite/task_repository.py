@@ -104,6 +104,10 @@ class SqliteTaskRepository(TaskRepository):
             query += " AND t.id LIKE ?"
             params.append(f"{filters.id_prefix}%")
 
+        if filters.id_suffix:
+            query += " AND t.id LIKE ?"
+            params.append(f"%{filters.id_suffix}")
+
         if filters.status == "active":
             query += " AND t.is_completed = 0"
         elif filters.status == "completed":

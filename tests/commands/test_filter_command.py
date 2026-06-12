@@ -2,7 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.apply_command import app as apply_app
@@ -38,11 +37,10 @@ class TestApplyFilter:
         mock_api.apply_filter = AsyncMock(return_value=tasks)
         with patch(
             "todopro_cli.commands.apply_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.apply_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.apply_command.FiltersAPI", return_value=mock_api
-            ):
-                result = apply_runner.invoke(apply_app, ["urgent"])
+            result = apply_runner.invoke(apply_app, ["urgent"])
         assert result.exit_code == 0
         mock_api.apply_filter.assert_awaited_once_with("f-uuid-1")
 
@@ -57,11 +55,10 @@ class TestApplyFilter:
         mock_api.apply_filter = AsyncMock(return_value=tasks)
         with patch(
             "todopro_cli.commands.apply_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.apply_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.apply_command.FiltersAPI", return_value=mock_api
-            ):
-                result = apply_runner.invoke(apply_app, [uuid])
+            result = apply_runner.invoke(apply_app, [uuid])
         assert result.exit_code == 0
         mock_api.find_filter_by_name.assert_not_awaited()
         mock_api.apply_filter.assert_awaited_once_with(uuid)
@@ -75,11 +72,10 @@ class TestApplyFilter:
         mock_api.apply_filter = AsyncMock()
         with patch(
             "todopro_cli.commands.apply_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.apply_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.apply_command.FiltersAPI", return_value=mock_api
-            ):
-                result = apply_runner.invoke(apply_app, ["nonexistent"])
+            result = apply_runner.invoke(apply_app, ["nonexistent"])
         assert result.exit_code != 0
         assert "not found" in result.stdout.lower() or "nonexistent" in result.stdout
 
@@ -94,11 +90,10 @@ class TestApplyFilter:
         mock_api.apply_filter = AsyncMock(return_value=[])
         with patch(
             "todopro_cli.commands.apply_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.apply_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.apply_command.FiltersAPI", return_value=mock_api
-            ):
-                apply_runner.invoke(apply_app, ["x"])
+            apply_runner.invoke(apply_app, ["x"])
         mock_client.close.assert_awaited_once()
 
 
@@ -123,11 +118,10 @@ class TestDeleteFilter:
         mock_api.delete_filter = AsyncMock(return_value=None)
         with patch(
             "todopro_cli.commands.delete_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.delete_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.delete_command.FiltersAPI", return_value=mock_api
-            ):
-                result = delete_runner.invoke(delete_app, ["filter", uuid, "--force"])
+            result = delete_runner.invoke(delete_app, ["filter", uuid, "--force"])
         assert result.exit_code == 0
         mock_api.delete_filter.assert_awaited_once_with(uuid)
 
@@ -141,13 +135,12 @@ class TestDeleteFilter:
         mock_api.delete_filter = AsyncMock(return_value=None)
         with patch(
             "todopro_cli.commands.delete_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.delete_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.delete_command.FiltersAPI", return_value=mock_api
-            ):
-                result = delete_runner.invoke(
-                    delete_app, ["filter", "myfilter", "--force"]
-                )
+            result = delete_runner.invoke(
+                delete_app, ["filter", "myfilter", "--force"]
+            )
         assert result.exit_code == 0
         mock_api.find_filter_by_name.assert_awaited_once_with("myfilter")
         mock_api.delete_filter.assert_awaited_once_with("f-resolved")
@@ -161,13 +154,12 @@ class TestDeleteFilter:
         mock_api.delete_filter = AsyncMock()
         with patch(
             "todopro_cli.commands.delete_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.delete_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.delete_command.FiltersAPI", return_value=mock_api
-            ):
-                result = delete_runner.invoke(
-                    delete_app, ["filter", "ghost", "--force"]
-                )
+            result = delete_runner.invoke(
+                delete_app, ["filter", "ghost", "--force"]
+            )
         assert result.exit_code != 0
 
     def test_delete_filter_confirm_no_cancels(self):
@@ -179,11 +171,10 @@ class TestDeleteFilter:
         mock_api.delete_filter = AsyncMock()
         with patch(
             "todopro_cli.commands.delete_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.delete_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.delete_command.FiltersAPI", return_value=mock_api
-            ):
-                result = delete_runner.invoke(delete_app, ["filter", uuid], input="n\n")
+            delete_runner.invoke(delete_app, ["filter", uuid], input="n\n")
         mock_api.delete_filter.assert_not_awaited()
 
 
@@ -211,11 +202,10 @@ class TestListFilters:
         mock_api.list_filters = AsyncMock(return_value=sample_filters)
         with patch(
             "todopro_cli.commands.list_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.list_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.list_command.FiltersAPI", return_value=mock_api
-            ):
-                result = list_runner.invoke(list_app, ["filters"])
+            result = list_runner.invoke(list_app, ["filters"])
         assert result.exit_code == 0
         mock_api.list_filters.assert_awaited_once()
 
@@ -227,11 +217,10 @@ class TestListFilters:
         mock_api.list_filters = AsyncMock(return_value=[])
         with patch(
             "todopro_cli.commands.list_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.list_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.list_command.FiltersAPI", return_value=mock_api
-            ):
-                result = list_runner.invoke(list_app, ["filters"])
+            result = list_runner.invoke(list_app, ["filters"])
         assert result.exit_code == 0
 
     def test_list_filter_singular_alias(self):
@@ -242,9 +231,8 @@ class TestListFilters:
         mock_api.list_filters = AsyncMock(return_value=[])
         with patch(
             "todopro_cli.commands.list_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.list_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.list_command.FiltersAPI", return_value=mock_api
-            ):
-                result = list_runner.invoke(list_app, ["filter"])
+            result = list_runner.invoke(list_app, ["filter"])
         assert result.exit_code == 0

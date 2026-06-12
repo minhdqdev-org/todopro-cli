@@ -1,14 +1,14 @@
 """Pydantic models for integration API responses."""
 from __future__ import annotations
-from typing import Optional
+
 from pydantic import BaseModel
 
 
 class GitHubStatus(BaseModel):
     connected: bool
-    username: Optional[str] = None
-    scopes: Optional[str] = None
-    connected_at: Optional[str] = None
+    username: str | None = None
+    scopes: str | None = None
+    connected_at: str | None = None
 
 
 class GitHubDeviceAuth(BaseModel):
@@ -21,7 +21,7 @@ class GitHubDeviceAuth(BaseModel):
 
 class GitHubProject(BaseModel):
     id: str
-    number: Optional[int] = None
+    number: int | None = None
     title: str
 
 
@@ -35,9 +35,9 @@ class ProjectLink(BaseModel):
 
 class GoogleStatus(BaseModel):
     connected: bool
-    email: Optional[str] = None
-    scopes: Optional[str] = None
-    connected_at: Optional[str] = None
+    email: str | None = None
+    scopes: str | None = None
+    connected_at: str | None = None
 
 
 class GoogleAuthUrl(BaseModel):
@@ -47,8 +47,8 @@ class GoogleAuthUrl(BaseModel):
 class GoogleCalendar(BaseModel):
     id: str
     summary: str
-    timeZone: Optional[str] = None
-    primary: Optional[bool] = False
+    timeZone: str | None = None
+    primary: bool | None = False
 
 
 class SyncStats(BaseModel):
@@ -58,5 +58,5 @@ class SyncStats(BaseModel):
 
 
 class SyncState(BaseModel):
-    last_synced_at: Optional[str] = None
+    last_synced_at: str | None = None
     stats: dict = {}

@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from todopro_cli.models.config_models import AppConfig
 from todopro_cli.models.focus.templates import DEFAULT_TEMPLATES, TemplateManager
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

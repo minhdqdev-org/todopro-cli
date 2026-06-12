@@ -2,6 +2,7 @@
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_output
@@ -21,7 +22,7 @@ async def show_stats_today(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     stats = await service.get_today_stats()
@@ -37,7 +38,7 @@ async def show_stats_week(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     stats = await service.get_week_stats()
@@ -53,7 +54,7 @@ async def show_stats_month(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     stats = await service.get_month_stats()
@@ -69,7 +70,7 @@ async def show_streak(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     streak = await service.get_streak()
@@ -85,7 +86,7 @@ async def show_score(
     from todopro_cli.services.analytics_service import AnalyticsService
 
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     service = AnalyticsService(task_repo)
 
     score = await service.get_score()
@@ -101,7 +102,7 @@ async def show_goals(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     goals = await service.get_goals()
@@ -117,7 +118,7 @@ async def show_analytics(
     from todopro_cli.services.analytics_service import AnalyticsService
 
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     service = AnalyticsService(task_repo)
 
     analytics = await service.get_analytics()
@@ -133,7 +134,7 @@ async def show_streaks(
     from todopro_cli.services.analytics_service import AnalyticsService
 
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     service = AnalyticsService(task_repo)
 
     streaks = await service.get_streaks()
@@ -149,7 +150,7 @@ async def show_heatmap(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     heatmap = await service.get_heatmap()
@@ -165,7 +166,7 @@ async def show_quality(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     quality = await service.get_quality_metrics()
@@ -208,7 +209,7 @@ async def show_timer_history(
     from todopro_cli.services.timer_service import TimerService
 
     storage_strategy_context = get_storage_strategy_context()
-    timer_repo = factory.get_timer_repository()
+    timer_repo = storage_strategy_context.timer_repository  # noqa: F821
     service = TimerService(timer_repo)
 
     history = await service.get_history(limit=limit)
@@ -224,7 +225,7 @@ async def show_timer_stats(
     from todopro_cli.services.timer_service import TimerService
 
     storage_strategy_context = get_storage_strategy_context()
-    timer_repo = factory.get_timer_repository()
+    timer_repo = storage_strategy_context.timer_repository  # noqa: F821
     service = TimerService(timer_repo)
 
     stats = await service.get_stats()
@@ -241,7 +242,7 @@ async def show_project_stats(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     stats = await service.get_project_stats(project_id)
@@ -257,7 +258,7 @@ async def show_achievement_stats(
     from todopro_cli.services.achievement_service import AchievementService
 
     storage_strategy_context = get_storage_strategy_context()
-    repo = factory.get_achievement_repository()
+    repo = storage_strategy_context.achievement_repository
     service = AchievementService(repo)
 
     stats = await service.get_stats()

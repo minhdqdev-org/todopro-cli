@@ -42,7 +42,7 @@ async def set_goal(
         help="Goal type: daily-sessions, daily-minutes, weekly-sessions, weekly-minutes, streak-target",
     ),
     target: int = typer.Argument(..., help="Target value"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    _output: str = typer.Option("table", "--_output", "-o", help="Output format"),
 ) -> None:
     """Set a focus goal."""
     from todopro_cli.models.focus.goals import GoalsManager
@@ -111,7 +111,7 @@ async def set_reminder(
                 f"[red]Error: Cannot parse '{when}'. "
                 f"Use '30min', '1h', '2h', '1d', or ISO format (YYYY-MM-DDTHH:MM:SS).[/red]"
             )
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
     if reminder_dt <= now:
         console.print("[red]Error: Reminder time must be in the future.[/red]")

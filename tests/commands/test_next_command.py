@@ -11,7 +11,6 @@ Tests here verify:
 
 from __future__ import annotations
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.next_command import app
@@ -59,10 +58,8 @@ class TestNextCommandWithMocks:
     """Lines 30-55: next command body with proper mocks."""
 
     def _run(self, args=None, tasks=None):
-        from datetime import datetime
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        from todopro_cli.models import Task
 
         mock_sc = MagicMock()
         mock_sc.task_repository = MagicMock()

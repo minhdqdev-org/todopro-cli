@@ -7,9 +7,8 @@ The LocationContextService is imported lazily inside rename_context(), so
 it is patched via its canonical module path.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.rename_command import app

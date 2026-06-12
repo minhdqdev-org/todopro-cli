@@ -6,7 +6,6 @@ invoke it WITHOUT the subcommand name prefix (e.g. ``["my-key"]``).
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.recover_command import app

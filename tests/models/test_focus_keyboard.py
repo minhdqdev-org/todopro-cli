@@ -214,14 +214,14 @@ class TestWindowsKeyboardHandlerMsvcrtSuccess:
     def test_init_with_mocked_msvcrt(self):
         """Test that msvcrt is assigned when import succeeds (line 61)."""
         import sys
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import MagicMock
 
         fake_msvcrt = MagicMock()
 
         # Temporarily inject msvcrt into sys.modules so the import succeeds
         with patch.dict(sys.modules, {"msvcrt": fake_msvcrt}):
-            from todopro_cli.models.focus.keyboard import WindowsKeyboardHandler
             import importlib
+
             import todopro_cli.models.focus.keyboard as kb_module
             importlib.reload(kb_module)
             handler = kb_module.WindowsKeyboardHandler()

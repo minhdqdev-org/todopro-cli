@@ -325,7 +325,7 @@ def import_data(
                     existing = (
                         await storage_strategy_context.label_repository.list_all()
                     )
-                    if any(l.name == label_data.get("name") for l in existing):
+                    if any(lbl.name == label_data.get("name") for lbl in existing):
                         labels_skipped += 1
                         continue
 

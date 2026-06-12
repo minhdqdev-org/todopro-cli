@@ -11,7 +11,6 @@ Tests here cover:
 
 from __future__ import annotations
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.describe_command import app

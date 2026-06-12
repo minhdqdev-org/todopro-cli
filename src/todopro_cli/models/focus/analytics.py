@@ -208,7 +208,7 @@ class FocusAnalytics:
         total_sessions = len(sessions)
         total_focus_minutes = sum(s["actual_focus_minutes"] or 0 for s in sessions)
         completed_tasks = sum(1 for s in sessions if s["completed_task"])
-        total_tasks = len(set(s["task_id"] for s in sessions if s["task_id"]))
+        total_tasks = len({s["task_id"] for s in sessions if s["task_id"]})
         completion_rate = (
             (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
         )
@@ -256,7 +256,7 @@ class FocusAnalytics:
             prev_minutes = sum(s["actual_focus_minutes"] or 0 for s in prev_sessions)
             prev_completed = sum(1 for s in prev_sessions if s["completed_task"])
             prev_total_tasks = len(
-                set(s["task_id"] for s in prev_sessions if s["task_id"])
+                {s["task_id"] for s in prev_sessions if s["task_id"]}
             )
             prev_completion_rate = (
                 (prev_completed / prev_total_tasks * 100) if prev_total_tasks > 0 else 0
@@ -365,7 +365,7 @@ class FocusAnalytics:
             "longest_streak_end": longest_end.isoformat() if longest_end else None,
         }
 
-    def get_productivity_score(self, days: int = 7) -> dict[str, Any]:
+    def get_productivity_score(self, _days: int = 7) -> dict[str, Any]:
         """
         Calculate productivity score (0-100) based on multiple factors.
 
@@ -391,13 +391,13 @@ class FocusAnalytics:
         for d in weekly["daily_summaries"]:
             all_sessions.extend(d["sessions"])
 
-        total_tasks = len(set(s["task_id"] for s in all_sessions if s["task_id"]))
+        total_tasks = len({s["task_id"] for s in all_sessions if s["task_id"]})
         completed_tasks = len(
-            set(
+            {
                 s["task_id"]
                 for s in all_sessions
                 if s["task_id"] and s["completed_task"]
-            )
+            }
         )
         completion_rate = (
             (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
@@ -486,10 +486,10 @@ class FocusAnalytics:
         top_tasks = sorted(task_time.items(), key=lambda x: x[1], reverse=True)[:5]
 
         completed_tasks = len(
-            set(s["task_id"] for s in sessions if s["completed_task"])
+            {s["task_id"] for s in sessions if s["completed_task"]}
         )
         in_progress = len(
-            set(s["task_id"] for s in sessions if not s["completed_task"])
+            {s["task_id"] for s in sessions if not s["completed_task"]}
         )
 
         avg_session = (

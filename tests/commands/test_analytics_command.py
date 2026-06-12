@@ -2,7 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.analytics import app
@@ -168,9 +167,11 @@ class TestAnalyticsStats:
         mock_client = AsyncMock()
         mock_api = MagicMock()
         mock_api.get_productivity_score = AsyncMock(side_effect=RuntimeError("API down"))
-        with patch("todopro_cli.commands.analytics.get_client", return_value=mock_client):
-            with patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api):
-                result = runner.invoke(app, ["stats"])
+        with (
+            patch("todopro_cli.commands.analytics.get_client", return_value=mock_client),
+            patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api),
+        ):
+            runner.invoke(app, ["stats"])
         mock_client.close.assert_awaited_once()
 
     def test_stats_empty_breakdown(self):
@@ -281,9 +282,11 @@ class TestAnalyticsStreaks:
         mock_client = AsyncMock()
         mock_api = MagicMock()
         mock_api.get_streaks = AsyncMock(side_effect=RuntimeError("connection error"))
-        with patch("todopro_cli.commands.analytics.get_client", return_value=mock_client):
-            with patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api):
-                result = runner.invoke(app, ["streaks"])
+        with (
+            patch("todopro_cli.commands.analytics.get_client", return_value=mock_client),
+            patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api),
+        ):
+            runner.invoke(app, ["streaks"])
         mock_client.close.assert_awaited_once()
 
 
@@ -302,9 +305,11 @@ class TestAnalyticsExport:
         mock_client = AsyncMock()
         mock_api = MagicMock()
         mock_api.export_data = AsyncMock(return_value=b"col1,col2\nval1,val2")
-        with patch("todopro_cli.commands.analytics.get_client", return_value=mock_client):
-            with patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api):
-                result = runner.invoke(app, ["export", "--format", "csv", "--output", out_file])
+        with (
+            patch("todopro_cli.commands.analytics.get_client", return_value=mock_client),
+            patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api),
+        ):
+            result = runner.invoke(app, ["export", "--format", "csv", "--output", out_file])
         assert result.exit_code == 0
         mock_api.export_data.assert_awaited_once_with(format="csv")
         assert (tmp_path / "out.csv").exists()
@@ -314,9 +319,11 @@ class TestAnalyticsExport:
         mock_client = AsyncMock()
         mock_api = MagicMock()
         mock_api.export_data = AsyncMock(return_value=b'{"key": "value"}')
-        with patch("todopro_cli.commands.analytics.get_client", return_value=mock_client):
-            with patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api):
-                result = runner.invoke(app, ["export", "--format", "json", "--output", out_file])
+        with (
+            patch("todopro_cli.commands.analytics.get_client", return_value=mock_client),
+            patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api),
+        ):
+            result = runner.invoke(app, ["export", "--format", "json", "--output", out_file])
         assert result.exit_code == 0
         assert (tmp_path / "out.json").read_bytes() == b'{"key": "value"}'
 
@@ -325,16 +332,18 @@ class TestAnalyticsExport:
         mock_client = AsyncMock()
         mock_api = MagicMock()
         mock_api.export_data = AsyncMock(return_value=b"data")
-        with patch("todopro_cli.commands.analytics.get_client", return_value=mock_client):
-            with patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api):
-                # Change working dir so auto-generated file lands in tmp_path
-                import os
-                old_cwd = os.getcwd()
-                os.chdir(tmp_path)
-                try:
-                    result = runner.invoke(app, ["export", "--format", "csv"])
-                finally:
-                    os.chdir(old_cwd)
+        with (
+            patch("todopro_cli.commands.analytics.get_client", return_value=mock_client),
+            patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api),
+        ):
+            # Change working dir so auto-generated file lands in tmp_path
+            import os
+            old_cwd = os.getcwd()
+            os.chdir(tmp_path)
+            try:
+                result = runner.invoke(app, ["export", "--format", "csv"])
+            finally:
+                os.chdir(old_cwd)
         assert result.exit_code == 0
         csv_files = list(tmp_path.glob("todopro_analytics_*.csv"))
         assert len(csv_files) == 1
@@ -343,9 +352,11 @@ class TestAnalyticsExport:
         mock_client = AsyncMock()
         mock_api = MagicMock()
         mock_api.export_data = AsyncMock(side_effect=RuntimeError("server error"))
-        with patch("todopro_cli.commands.analytics.get_client", return_value=mock_client):
-            with patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api):
-                result = runner.invoke(app, ["export", "--format", "csv", "--output", "/tmp/x.csv"])
+        with (
+            patch("todopro_cli.commands.analytics.get_client", return_value=mock_client),
+            patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api),
+        ):
+            runner.invoke(app, ["export", "--format", "csv", "--output", "/tmp/x.csv"])
         mock_client.close.assert_awaited_once()
 
     def test_export_default_format_is_csv(self, tmp_path):
@@ -354,8 +365,10 @@ class TestAnalyticsExport:
         mock_client = AsyncMock()
         mock_api = MagicMock()
         mock_api.export_data = AsyncMock(return_value=b"a,b")
-        with patch("todopro_cli.commands.analytics.get_client", return_value=mock_client):
-            with patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api):
-                result = runner.invoke(app, ["export", "--output", out_file])
+        with (
+            patch("todopro_cli.commands.analytics.get_client", return_value=mock_client),
+            patch("todopro_cli.commands.analytics.AnalyticsAPI", return_value=mock_api),
+        ):
+            result = runner.invoke(app, ["export", "--output", out_file])
         assert result.exit_code == 0
         mock_api.export_data.assert_awaited_once_with(format="csv")

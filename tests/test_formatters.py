@@ -25,28 +25,28 @@ from todopro_cli.utils.ui.formatters import (
 
 def test_format_error():
     """Test formatting error messages."""
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_error("Test error")
         # Just verify no exception is raised
 
 
 def test_format_success():
     """Test formatting success messages."""
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_success("Test success")
         # Just verify no exception is raised
 
 
 def test_format_warning():
     """Test formatting warning messages."""
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_warning("Test warning")
         # Just verify no exception is raised
 
 
 def test_format_info():
     """Test formatting info messages."""
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_info("Test info")
         # Just verify no exception is raised
 
@@ -78,7 +78,7 @@ def test_format_output_quiet():
 def test_format_output_table():
     """Test table output format."""
     data = [{"id": "123", "name": "Test"}]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_output(data, "table")
         # Just verify no exception is raised
 
@@ -86,14 +86,14 @@ def test_format_output_table():
 def test_format_output_pretty():
     """Test pretty output format."""
     data = [{"id": "123", "name": "Test"}]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_output(data, "pretty")
         # Just verify no exception is raised
 
 
 def test_format_table_empty_data():
     """Test formatting empty data as table."""
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_table([])
         # Just verify no exception is raised
 
@@ -104,7 +104,7 @@ def test_format_table_with_dict_list():
         {"id": "1", "name": "Task 1", "is_completed": True},
         {"id": "2", "name": "Task 2", "is_completed": False},
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_table(data)
         # Just verify no exception is raised
 
@@ -112,7 +112,7 @@ def test_format_table_with_dict_list():
 def test_format_table_with_single_dict():
     """Test formatting single dict as table."""
     data = {"id": "1", "name": "Task 1", "is_completed": True}
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_table(data)
         # Just verify no exception is raised
 
@@ -120,14 +120,14 @@ def test_format_table_with_single_dict():
 def test_format_table_with_items_key():
     """Test formatting dict with items key."""
     data = {"items": [{"id": "1", "name": "Task 1"}]}
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_table(data)
         # Just verify no exception is raised
 
 
 def test_format_pretty_empty_data():
     """Test formatting empty data in pretty format."""
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty([])
         # Just verify no exception is raised
 
@@ -145,7 +145,7 @@ def test_format_pretty_with_tasks():
             "created_at": now.isoformat(),
         }
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty(tasks)
         # Just verify no exception is raised
 
@@ -163,7 +163,7 @@ def test_format_pretty_with_projects():
             "created_at": now.isoformat(),
         }
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty(projects)
         # Just verify no exception is raised
 

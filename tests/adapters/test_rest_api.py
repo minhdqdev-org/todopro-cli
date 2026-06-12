@@ -36,7 +36,6 @@ from todopro_cli.models import (
     TaskUpdate,
 )
 
-
 # ---------------------------------------------------------------------------
 # Shared test data factories
 # ---------------------------------------------------------------------------
@@ -104,7 +103,7 @@ def _disabled_e2ee():
     e2ee = MagicMock()
     e2ee.enabled = False
     e2ee.prepare_task_for_storage.side_effect = lambda c, d: (c, None, d, None)
-    e2ee.extract_task_content.side_effect = lambda c, ce, d, de: (c, d)
+    e2ee.extract_task_content.side_effect = lambda c, _ce, d, _de: (c, d)
     return e2ee
 
 
@@ -112,7 +111,7 @@ def _enabled_e2ee():
     e2ee = MagicMock()
     e2ee.enabled = True
     e2ee.prepare_task_for_storage.side_effect = lambda c, d: ("", f"enc({c})", "", f"enc({d or ''})")
-    e2ee.extract_task_content.side_effect = lambda c, ce, d, de: ("decrypted content", "decrypted desc")
+    e2ee.extract_task_content.side_effect = lambda _c, _ce, _d, _de: ("decrypted content", "decrypted desc")
     return e2ee
 
 
@@ -374,11 +373,13 @@ class TestRestApiTaskRepositoryLazyInit:
     def test_tasks_api_lazy_init(self):
         repo = RestApiTaskRepository()
         assert repo._tasks_api is None
-        with patch("todopro_cli.adapters.rest_api.APIClient") as MockClient:
-            with patch("todopro_cli.adapters.rest_api.TasksAPI") as MockTasksAPI:
-                _ = repo.tasks_api
-                MockClient.assert_called_once()
-                MockTasksAPI.assert_called_once()
+        with (
+            patch("todopro_cli.adapters.rest_api.APIClient") as MockClient,
+            patch("todopro_cli.adapters.rest_api.TasksAPI") as MockTasksAPI,
+        ):
+            _ = repo.tasks_api
+            MockClient.assert_called_once()
+            MockTasksAPI.assert_called_once()
 
     def test_e2ee_lazy_init(self):
         repo = RestApiTaskRepository()
@@ -522,11 +523,13 @@ class TestRestApiProjectRepository:
     def test_projects_api_lazy_init(self):
         repo = RestApiProjectRepository()
         assert repo._projects_api is None
-        with patch("todopro_cli.adapters.rest_api.APIClient") as MockClient:
-            with patch("todopro_cli.adapters.rest_api.ProjectsAPI") as MockProjectsAPI:
-                _ = repo.projects_api
-                MockClient.assert_called_once()
-                MockProjectsAPI.assert_called_once()
+        with (
+            patch("todopro_cli.adapters.rest_api.APIClient") as MockClient,
+            patch("todopro_cli.adapters.rest_api.ProjectsAPI") as MockProjectsAPI,
+        ):
+            _ = repo.projects_api
+            MockClient.assert_called_once()
+            MockProjectsAPI.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -616,11 +619,13 @@ class TestRestApiLabelRepository:
     def test_labels_api_lazy_init(self):
         repo = RestApiLabelRepository()
         assert repo._labels_api is None
-        with patch("todopro_cli.adapters.rest_api.APIClient") as MockClient:
-            with patch("todopro_cli.adapters.rest_api.LabelsAPI") as MockLabelsAPI:
-                _ = repo.labels_api
-                MockClient.assert_called_once()
-                MockLabelsAPI.assert_called_once()
+        with (
+            patch("todopro_cli.adapters.rest_api.APIClient") as MockClient,
+            patch("todopro_cli.adapters.rest_api.LabelsAPI") as MockLabelsAPI,
+        ):
+            _ = repo.labels_api
+            MockClient.assert_called_once()
+            MockLabelsAPI.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

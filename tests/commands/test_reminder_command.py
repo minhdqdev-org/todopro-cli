@@ -1,9 +1,8 @@
 """Unit tests for reminder management in set_command and delete_command."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.delete_command import app as delete_app
@@ -35,21 +34,18 @@ class TestSetReminder:
         mock_api.set_reminder = AsyncMock(return_value=reminder_resp)
         with patch(
             "todopro_cli.commands.set_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
-            ):
-                result = set_runner.invoke(set_app, ["reminder", "task-1", "30min"])
+            result = set_runner.invoke(set_app, ["reminder", "task-1", "30min"])
         assert result.exit_code == 0
         mock_api.set_reminder.assert_awaited_once()
         call_args = mock_api.set_reminder.call_args
         assert call_args.args[0] == "task-1"
         # The ISO string passed should parse to a future datetime
-        from datetime import datetime
-        from datetime import timezone as tz
 
         passed_dt = datetime.fromisoformat(call_args.args[1])
-        assert passed_dt > datetime.now(tz=tz.utc)
+        assert passed_dt > datetime.now(tz=UTC)
 
     def test_set_reminder_1h(self):
         """set reminder with '1h' should work."""
@@ -61,11 +57,10 @@ class TestSetReminder:
         )
         with patch(
             "todopro_cli.commands.set_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
-            ):
-                result = set_runner.invoke(set_app, ["reminder", "task-2", "1h"])
+            result = set_runner.invoke(set_app, ["reminder", "task-2", "1h"])
         assert result.exit_code == 0
 
     def test_set_reminder_iso_datetime(self):
@@ -80,11 +75,10 @@ class TestSetReminder:
         future = "2099-12-31T23:59:00"
         with patch(
             "todopro_cli.commands.set_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
-            ):
-                result = set_runner.invoke(set_app, ["reminder", "task-3", future])
+            result = set_runner.invoke(set_app, ["reminder", "task-3", future])
         assert result.exit_code == 0
 
     def test_set_reminder_invalid_format_exits(self):
@@ -95,13 +89,12 @@ class TestSetReminder:
         mock_api.set_reminder = AsyncMock()
         with patch(
             "todopro_cli.commands.set_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
-            ):
-                result = set_runner.invoke(
-                    set_app, ["reminder", "task-4", "not-a-time"]
-                )
+            result = set_runner.invoke(
+                set_app, ["reminder", "task-4", "not-a-time"]
+            )
         assert result.exit_code != 0
 
     def test_set_reminder_past_datetime_exits(self):
@@ -112,13 +105,12 @@ class TestSetReminder:
         mock_api.set_reminder = AsyncMock()
         with patch(
             "todopro_cli.commands.set_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
-            ):
-                result = set_runner.invoke(
-                    set_app, ["reminder", "task-5", "2000-01-01T00:00:00"]
-                )
+            result = set_runner.invoke(
+                set_app, ["reminder", "task-5", "2000-01-01T00:00:00"]
+            )
         assert result.exit_code != 0
 
     def test_set_reminder_calls_close_on_success(self):
@@ -129,11 +121,10 @@ class TestSetReminder:
         mock_api.set_reminder = AsyncMock(return_value={"id": "rem-5", "task_id": "t5"})
         with patch(
             "todopro_cli.commands.set_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.set_command.TasksAPI", return_value=mock_api
-            ):
-                set_runner.invoke(set_app, ["reminder", "t5", "2h"])
+            set_runner.invoke(set_app, ["reminder", "t5", "2h"])
         mock_client.close.assert_awaited_once()
 
 
@@ -152,13 +143,12 @@ class TestDeleteReminder:
         mock_api.delete_reminder = AsyncMock(return_value=None)
         with patch(
             "todopro_cli.commands.delete_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.delete_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.delete_command.TasksAPI", return_value=mock_api
-            ):
-                result = delete_runner.invoke(
-                    delete_app, ["reminder", "task-1", "rem-1", "--force"]
-                )
+            result = delete_runner.invoke(
+                delete_app, ["reminder", "task-1", "rem-1", "--force"]
+            )
         assert result.exit_code == 0
         mock_api.delete_reminder.assert_awaited_once_with("task-1", "rem-1")
 
@@ -170,13 +160,12 @@ class TestDeleteReminder:
         mock_api.delete_reminder = AsyncMock(return_value=None)
         with patch(
             "todopro_cli.commands.delete_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.delete_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.delete_command.TasksAPI", return_value=mock_api
-            ):
-                result = delete_runner.invoke(
-                    delete_app, ["reminder", "task-2", "rem-2"], input="y\n"
-                )
+            result = delete_runner.invoke(
+                delete_app, ["reminder", "task-2", "rem-2"], input="y\n"
+            )
         assert result.exit_code == 0
 
     def test_delete_reminder_confirm_no_cancels(self):
@@ -187,11 +176,10 @@ class TestDeleteReminder:
         mock_api.delete_reminder = AsyncMock(return_value=None)
         with patch(
             "todopro_cli.commands.delete_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.delete_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.delete_command.TasksAPI", return_value=mock_api
-            ):
-                result = delete_runner.invoke(
-                    delete_app, ["reminder", "task-3", "rem-3"], input="n\n"
-                )
+            delete_runner.invoke(
+                delete_app, ["reminder", "task-3", "rem-3"], input="n\n"
+            )
         mock_api.delete_reminder.assert_not_awaited()

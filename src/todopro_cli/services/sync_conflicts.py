@@ -7,7 +7,7 @@ local and remote data have diverged.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -37,9 +37,8 @@ class SyncConflict:
         self.local_data = local_data
         self.remote_data = remote_data
         self.resolution = resolution
-        from datetime import timezone
 
-        self.detected_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        self.detected_at = datetime.now(UTC).replace(tzinfo=None)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert conflict to dictionary.
@@ -92,7 +91,7 @@ class SyncConflictTracker:
         existing_conflicts = []
         if self.conflicts_file.exists():
             try:
-                with open(self.conflicts_file, "r") as f:
+                with open(self.conflicts_file) as f:
                     existing_data = json.load(f)
                     if isinstance(existing_data, list):
                         existing_conflicts = existing_data
@@ -161,9 +160,8 @@ class SyncConflictTracker:
 
             if local_dt > remote_dt:
                 return "local"
-            elif remote_dt > local_dt:
+            if remote_dt > local_dt:
                 return "remote"
-            else:
-                return "equal"
+            return "equal"
         except Exception:
             return "equal"

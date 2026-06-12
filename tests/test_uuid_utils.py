@@ -125,8 +125,8 @@ async def test_id_prefix_filtering(tmp_path):
 
     # Create tasks
     task1 = await repo.add(TaskCreate(content="Task 1"))
-    task2 = await repo.add(TaskCreate(content="Task 2"))
-    task3 = await repo.add(TaskCreate(content="Task 3"))
+    await repo.add(TaskCreate(content="Task 2"))
+    await repo.add(TaskCreate(content="Task 3"))
 
     # Filter by ID prefix (first 8 chars of task1)
     prefix = task1.id[:8]
@@ -145,7 +145,7 @@ async def test_id_prefix_filtering(tmp_path):
 async def test_ambiguous_uuid_resolution(tmp_path):
     """Test handling of ambiguous short UUIDs (collision)."""
     db_path = str(tmp_path / "test.db")
-    repo = SqliteTaskRepository(db_path=db_path)
+    SqliteTaskRepository(db_path=db_path)
 
     # This test would only fail if we had UUID collision
     # which is astronomically unlikely, so we skip implementation
@@ -172,7 +172,7 @@ async def test_uuid_case_insensitivity(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_task_full_uuid_not_found(tmp_path):
+async def test_task_full_uuid_not_found(_tmp_path):
     """Test that a full UUID that doesn't exist raises ValueError (line 101)."""
     from unittest.mock import AsyncMock, MagicMock
 
@@ -193,10 +193,10 @@ async def test_task_ambiguous_uuid_many_matches(tmp_path):
 
     # Create enough tasks so that we need to simulate >5 matches.
     # We do this by patching list_all to return 6 fake tasks.
-    from unittest.mock import AsyncMock, MagicMock, patch
+    from unittest.mock import AsyncMock, patch
 
     # Create a real task to get a valid-looking ID structure
-    task = await repo.add(TaskCreate(content="Real task"))
+    await repo.add(TaskCreate(content="Real task"))
 
     fake_ids = [
         f"aabbccdd-{i:04d}-4000-8000-000000000001" for i in range(6)
@@ -208,13 +208,15 @@ async def test_task_ambiguous_uuid_many_matches(tmp_path):
 
     fake_tasks = [FakeTask(fid) for fid in fake_ids]
 
-    with patch.object(repo, "list_all", new=AsyncMock(return_value=fake_tasks)):
-        with pytest.raises(ValueError, match=r"Ambiguous ID.*\.\.\. \(6 total\)"):
-            await resolve_task_uuid("aabbccdd", repo)
+    with (
+        patch.object(repo, "list_all", new=AsyncMock(return_value=fake_tasks)),
+        pytest.raises(ValueError, match=r"Ambiguous ID.*\.\.\. \(6 total\)"),
+    ):
+        await resolve_task_uuid("aabbccdd", repo)
 
 
 @pytest.mark.asyncio
-async def test_project_full_uuid_not_found(tmp_path):
+async def test_project_full_uuid_not_found(_tmp_path):
     """Test that a full UUID for project that doesn't exist raises ValueError (line 152)."""
     from unittest.mock import AsyncMock, MagicMock
 
@@ -255,9 +257,11 @@ async def test_project_ambiguous_uuid_many_matches(tmp_path):
 
     fake_projects = [FakeProject(fid) for fid in fake_ids]
 
-    with patch.object(repo, "list_all", new=AsyncMock(return_value=fake_projects)):
-        with pytest.raises(ValueError, match=r"Ambiguous ID.*\.\.\. \(6 total\)"):
-            await resolve_project_uuid("aabbccdd", repo)
+    with (
+        patch.object(repo, "list_all", new=AsyncMock(return_value=fake_projects)),
+        pytest.raises(ValueError, match=r"Ambiguous ID.*\.\.\. \(6 total\)"),
+    ):
+        await resolve_project_uuid("aabbccdd", repo)
 
 
 if __name__ == "__main__":

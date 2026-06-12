@@ -150,7 +150,7 @@ def ramble(
         audio_data = b""
     except Exception as exc:
         console.print(f"[red]Error recording audio: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     if not audio_data:
         console.print("[yellow]No audio recorded.[/yellow]")
@@ -184,7 +184,7 @@ def _process_text_ramble(
         asyncio.run(_do())
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 def _process_audio_ramble(
@@ -227,7 +227,7 @@ def _process_audio_ramble(
         _display_ramble_result(result, dry_run)
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 def _display_ramble_result(result: dict, dry_run: bool) -> None:
@@ -312,7 +312,7 @@ def history() -> None:
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("config")
@@ -372,7 +372,7 @@ def ramble_config(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command()
@@ -397,4 +397,4 @@ def usage() -> None:
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc

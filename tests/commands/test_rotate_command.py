@@ -8,6 +8,7 @@ a stub via builtins before the module loads so the import succeeds.
 from __future__ import annotations
 
 import builtins
+import contextlib
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -26,10 +27,8 @@ if _MOD not in sys.modules:
         import todopro_cli.commands.rotate_command  # noqa: F401
     finally:
         if _orig is _sentinel:
-            try:
+            with contextlib.suppress(AttributeError):
                 delattr(builtins, "get_console")
-            except AttributeError:
-                pass
         else:
             builtins.get_console = _orig  # type: ignore[assignment]
 
@@ -109,9 +108,8 @@ class TestRotateCommandInvocation:
         with patch(
             "todopro_cli.services.encryption_service.EncryptionService",
             return_value=mock_svc,
-        ):
-            with patch("typer.prompt", return_value="prompted-passphrase"):
-                result = runner.invoke(app, [])
+        ), patch("typer.prompt", return_value="prompted-passphrase"):
+            result = runner.invoke(app, [])
         assert result.exit_code == 0
         mock_svc.rotate_key.assert_awaited_once_with("prompted-passphrase")
 

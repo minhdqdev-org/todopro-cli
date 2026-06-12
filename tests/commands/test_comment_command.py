@@ -2,7 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.comment_command import app
@@ -20,12 +19,11 @@ def _make_mocks():
 def _invoke(args, mock_client, mock_api, **kwargs):
     with patch(
         "todopro_cli.commands.comment_command.get_client", return_value=mock_client
+    ), patch(
+        "todopro_cli.commands.comment_command.CollaborationAPI",
+        return_value=mock_api,
     ):
-        with patch(
-            "todopro_cli.commands.comment_command.CollaborationAPI",
-            return_value=mock_api,
-        ):
-            return runner.invoke(app, args, **kwargs)
+        return runner.invoke(app, args, **kwargs)
 
 
 class TestAddComment:

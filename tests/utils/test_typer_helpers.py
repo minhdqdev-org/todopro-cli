@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
-import typer
 
 
 class TestSuggestingGroup:
@@ -40,8 +39,9 @@ class TestSuggestingGroup:
 
     def test_unknown_command_with_suggestion_prints_hint_and_exits(self):
         """An unknown command similar to a real command triggers suggestion output."""
-        from todopro_cli.utils.typer_helpers import SuggestingGroup
         import click
+
+        from todopro_cli.utils.typer_helpers import SuggestingGroup
 
         group = SuggestingGroup(name="testgroup")
         group.commands = {
@@ -59,14 +59,12 @@ class TestSuggestingGroup:
             SuggestingGroup.__bases__[0],
             "resolve_command",
             side_effect=Exception("No such command"),
-        ):
-            with patch(
-                "todopro_cli.utils.typer_helpers.get_console",
-                return_value=mock_console,
-                create=True,
-            ):
-                with pytest.raises((SystemExit, click.exceptions.Exit)):
-                    group.resolve_command(ctx, ["lst"])  # typo of "list"
+        ), patch(
+            "todopro_cli.utils.typer_helpers.get_console",
+            return_value=mock_console,
+            create=True,
+        ), pytest.raises((SystemExit, click.exceptions.Exit)):
+            group.resolve_command(ctx, ["lst"])  # typo of "list"
 
         # Console should have printed something
         assert mock_console.print.called
@@ -88,9 +86,8 @@ class TestSuggestingGroup:
             SuggestingGroup.__bases__[0],
             "resolve_command",
             side_effect=original_error,
-        ):
-            with pytest.raises(Exception):
-                group.resolve_command(ctx, ["xyzabc"])
+        ), pytest.raises(Exception):  # noqa: B017
+            group.resolve_command(ctx, ["xyzabc"])
 
     def test_unknown_command_empty_args_reraises(self):
         """When args is empty, the original exception is re-raised."""
@@ -106,14 +103,14 @@ class TestSuggestingGroup:
             SuggestingGroup.__bases__[0],
             "resolve_command",
             side_effect=original_error,
-        ):
-            with pytest.raises(Exception):
-                group.resolve_command(ctx, [])
+        ), pytest.raises(Exception):  # noqa: B017
+            group.resolve_command(ctx, [])
 
     def test_single_suggestion_uses_singular_message(self):
         """A single suggestion prints 'Did you mean this?'."""
-        from todopro_cli.utils.typer_helpers import SuggestingGroup
         import click
+
+        from todopro_cli.utils.typer_helpers import SuggestingGroup
 
         group = SuggestingGroup(name="testgroup")
         group.commands = {
@@ -125,7 +122,7 @@ class TestSuggestingGroup:
 
         mock_console = MagicMock()
         printed_messages = []
-        mock_console.print.side_effect = lambda *args, **kw: printed_messages.append(
+        mock_console.print.side_effect = lambda *args, **_kw: printed_messages.append(
             str(args[0]) if args else ""
         )
 
@@ -133,22 +130,21 @@ class TestSuggestingGroup:
             SuggestingGroup.__bases__[0],
             "resolve_command",
             side_effect=Exception("No command"),
-        ):
-            with patch(
-                "todopro_cli.utils.typer_helpers.get_console",
-                return_value=mock_console,
-                create=True,
-            ):
-                with pytest.raises((SystemExit, click.exceptions.Exit)):
-                    group.resolve_command(ctx, ["lis"])  # close to "list"
+        ), patch(
+            "todopro_cli.utils.typer_helpers.get_console",
+            return_value=mock_console,
+            create=True,
+        ), pytest.raises((SystemExit, click.exceptions.Exit)):
+            group.resolve_command(ctx, ["lis"])  # close to "list"
 
         combined = " ".join(printed_messages)
         assert "Did you mean this" in combined
 
     def test_multiple_suggestions_uses_plural_message(self):
         """Multiple suggestions print 'Did you mean one of these?'."""
-        from todopro_cli.utils.typer_helpers import SuggestingGroup
         import click
+
+        from todopro_cli.utils.typer_helpers import SuggestingGroup
 
         group = SuggestingGroup(name="testgroup")
         group.commands = {
@@ -162,7 +158,7 @@ class TestSuggestingGroup:
 
         mock_console = MagicMock()
         printed_messages = []
-        mock_console.print.side_effect = lambda *args, **kw: printed_messages.append(
+        mock_console.print.side_effect = lambda *args, **_kw: printed_messages.append(
             str(args[0]) if args else ""
         )
 
@@ -170,14 +166,12 @@ class TestSuggestingGroup:
             SuggestingGroup.__bases__[0],
             "resolve_command",
             side_effect=Exception("No command"),
-        ):
-            with patch(
-                "todopro_cli.utils.typer_helpers.get_console",
-                return_value=mock_console,
-                create=True,
-            ):
-                with pytest.raises((SystemExit, click.exceptions.Exit)):
-                    group.resolve_command(ctx, ["aad"])  # matches add, ads, adx
+        ), patch(
+            "todopro_cli.utils.typer_helpers.get_console",
+            return_value=mock_console,
+            create=True,
+        ), pytest.raises((SystemExit, click.exceptions.Exit)):
+            group.resolve_command(ctx, ["aad"])  # matches add, ads, adx
 
         combined = " ".join(printed_messages)
         assert "Did you mean" in combined

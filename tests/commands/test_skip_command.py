@@ -2,7 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.skip_command import app
@@ -28,11 +27,10 @@ class TestSkipCommand:
         mock_api.skip_task = AsyncMock(return_value=skip_result)
         with patch(
             "todopro_cli.commands.skip_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.skip_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.skip_command.TasksAPI", return_value=mock_api
-            ):
-                result = runner.invoke(app, ["task-abc"])
+            result = runner.invoke(app, ["task-abc"])
         assert result.exit_code == 0
         mock_api.skip_task.assert_awaited_once_with("task-abc")
         assert "task-abc" in result.stdout
@@ -45,11 +43,10 @@ class TestSkipCommand:
         mock_api.skip_task = AsyncMock(return_value={})
         with patch(
             "todopro_cli.commands.skip_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.skip_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.skip_command.TasksAPI", return_value=mock_api
-            ):
-                runner.invoke(app, ["task-xyz"])
+            runner.invoke(app, ["task-xyz"])
         mock_client.close.assert_awaited_once()
 
     def test_skip_task_no_result_body(self):
@@ -60,11 +57,10 @@ class TestSkipCommand:
         mock_api.skip_task = AsyncMock(return_value=None)
         with patch(
             "todopro_cli.commands.skip_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.skip_command.TasksAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.skip_command.TasksAPI", return_value=mock_api
-            ):
-                result = runner.invoke(app, ["task-no-body"])
+            result = runner.invoke(app, ["task-no-body"])
         assert result.exit_code == 0
 
     def test_skip_requires_task_id(self):

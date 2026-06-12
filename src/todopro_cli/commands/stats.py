@@ -27,10 +27,7 @@ def format_duration(minutes: float) -> str:
 
 def render_progress_bar(value: float, max_value: float, width: int = 10) -> str:
     """Render a progress bar using block characters."""
-    if max_value == 0:
-        ratio = 0
-    else:
-        ratio = min(value / max_value, 1.0)
+    ratio = 0 if max_value == 0 else min(value / max_value, 1.0)
     filled = int(ratio * width)
     return "█" * filled + "░" * (width - filled)
 
@@ -92,16 +89,12 @@ def show_today(
             if session["status"] == "completed":
                 if session["completed_task"]:
                     status = "[green]✓[/green]"
-                    color = "green"
                 else:
                     status = "[yellow]○[/yellow]"
-                    color = "yellow"
             elif session["status"] == "cancelled":
                 status = "[red]✗[/red]"
-                color = "red"
             else:
                 status = "[dim]?[/dim]"
-                color = "dim"
 
             bar = "▓" * 5
             console.print(f"  {bar} {time_range}  {title} {status}")
@@ -136,7 +129,7 @@ def show_week(
         (d["total_sessions"] for d in summary["daily_summaries"]), default=1
     )
 
-    for i, daily in enumerate(summary["daily_summaries"]):
+    for _i, daily in enumerate(summary["daily_summaries"]):
         date = datetime.fromisoformat(daily["date"])
         day_name = days[date.weekday()]
         bar = render_progress_bar(daily["total_sessions"], max_sessions, width=10)
@@ -202,7 +195,7 @@ def show_month(
             console.print(
                 "[red]Error: Month must be in YYYY-MM format (e.g., 2026-02)[/red]"
             )
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
     else:
         now = datetime.now()
         year, month = now.year, now.month
@@ -450,7 +443,7 @@ def show_heatmap(
 @app.command("export")
 def export_data(
     format: str = typer.Option("json", "--format", help="Export format (csv, json)"),
-    output: Path = typer.Option(None, "--output", help="Output file (default: stdout)"),
+    output: Path = typer.Option(None, "--output", help="Output file (default: stdout)"),  # noqa: B008
     from_date: str = typer.Option(None, "--from", help="Start date (YYYY-MM-DD)"),
     to_date: str = typer.Option(None, "--to", help="End date (YYYY-MM-DD)"),
     context: str = typer.Option(None, "--context", help="Filter by context/project"),
@@ -492,12 +485,8 @@ def export_data(
 
     # Export
     if format == "csv":
-        output_file = output or sys.stdout
 
-        if output:
-            f = open(output, "w", newline="")
-        else:
-            f = sys.stdout
+        f = open(output, "w", newline="") if output else sys.stdout  # noqa: SIM115
 
         try:
             fieldnames = [
@@ -551,7 +540,7 @@ def show_quality(
     output: str = typer.Option(None, "--output", "-o", help="Output format (json)"),
 ):
     """Show focus quality metrics."""
-    analytics = FocusAnalytics()
+    FocusAnalytics()
 
     # Get sessions for analysis
     logger = HistoryLogger()

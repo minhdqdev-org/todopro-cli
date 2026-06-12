@@ -14,7 +14,7 @@ from todopro_cli.services.cache_service import (
 
 
 @pytest.fixture
-def cleanup_cache():
+def _cleanup_cache():
     """Clean up cache files before and after tests."""
     if SUFFIX_MAPPING_FILE.exists():
         SUFFIX_MAPPING_FILE.unlink()
@@ -23,7 +23,7 @@ def cleanup_cache():
         SUFFIX_MAPPING_FILE.unlink()
 
 
-def test_save_and_get_suffix_mapping(cleanup_cache):
+def test_save_and_get_suffix_mapping(_cleanup_cache):
     """Test saving and retrieving suffix mapping."""
     mapping = {
         "abc": "123e4567-e89b-12d3-a456-426614174000",
@@ -37,7 +37,7 @@ def test_save_and_get_suffix_mapping(cleanup_cache):
     assert retrieved == mapping
 
 
-def test_suffix_mapping_ttl_expiration(cleanup_cache):
+def test_suffix_mapping_ttl_expiration(_cleanup_cache):
     """Test that expired suffix mappings are not returned."""
     mapping = {
         "abc": "123e4567-e89b-12d3-a456-426614174000",
@@ -56,13 +56,13 @@ def test_suffix_mapping_ttl_expiration(cleanup_cache):
     assert retrieved == {}
 
 
-def test_suffix_mapping_missing_file(cleanup_cache):
+def test_suffix_mapping_missing_file(_cleanup_cache):
     """Test get_suffix_mapping when file doesn't exist."""
     retrieved = get_suffix_mapping()
     assert retrieved == {}
 
 
-def test_suffix_mapping_corrupted_file(cleanup_cache):
+def test_suffix_mapping_corrupted_file(_cleanup_cache):
     """Test get_suffix_mapping with corrupted file."""
     SUFFIX_MAPPING_FILE.parent.mkdir(parents=True, exist_ok=True)
     SUFFIX_MAPPING_FILE.write_text("not valid json{{{")
@@ -72,7 +72,7 @@ def test_suffix_mapping_corrupted_file(cleanup_cache):
     assert retrieved == {}
 
 
-def test_suffix_mapping_overwrite(cleanup_cache):
+def test_suffix_mapping_overwrite(_cleanup_cache):
     """Test that new mappings overwrite old ones."""
     mapping1 = {
         "abc": "123e4567-e89b-12d3-a456-426614174000",
@@ -88,7 +88,7 @@ def test_suffix_mapping_overwrite(cleanup_cache):
     assert retrieved == mapping2
 
 
-def test_suffix_mapping_timestamp(cleanup_cache):
+def test_suffix_mapping_timestamp(_cleanup_cache):
     """Test that timestamp is saved correctly."""
     mapping = {
         "abc": "123e4567-e89b-12d3-a456-426614174000",
@@ -105,7 +105,7 @@ def test_suffix_mapping_timestamp(cleanup_cache):
     assert data["mapping"] == mapping
 
 
-def test_suffix_mapping_empty_dict(cleanup_cache):
+def test_suffix_mapping_empty_dict(_cleanup_cache):
     """Test saving and retrieving empty mapping."""
     mapping = {}
 

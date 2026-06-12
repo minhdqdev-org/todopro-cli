@@ -9,12 +9,10 @@ from __future__ import annotations
 import sqlite3
 
 import pytest
-import pytest_asyncio
 
 from todopro_cli.adapters.sqlite import schema as db_schema
 from todopro_cli.adapters.sqlite.label_repository import SqliteLabelRepository
 from todopro_cli.models import LabelCreate
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -340,7 +338,7 @@ class TestSearch:
         await repo.create(LabelCreate(name="Personal"))
 
         result = await repo.search("Work")
-        names = {l.name for l in result}
+        names = {lbl.name for lbl in result}
         assert "Work" in names
         assert "Workout" in names
         assert "Personal" not in names
@@ -374,5 +372,5 @@ class TestSearch:
         await repo.create(LabelCreate(name="Zone"))
 
         result = await repo.search("Z")
-        names = [l.name for l in result]
+        names = [lbl.name for lbl in result]
         assert names == sorted(names)

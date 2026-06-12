@@ -6,7 +6,6 @@ We mock ``todopro_cli.services.data_service`` (lazy-imported at function start)
 so the cancel paths can be reached and verified.
 """
 
-import sys
 from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner

@@ -19,9 +19,8 @@ def _make_mocks():
 def _invoke(args, mock_client, mock_api, **kwargs):
     with patch(
         "todopro_cli.commands.link_command.get_client", return_value=mock_client
-    ):
-        with patch("todopro_cli.commands.link_command.TasksAPI", return_value=mock_api):
-            return runner.invoke(app, args, **kwargs)
+    ), patch("todopro_cli.commands.link_command.TasksAPI", return_value=mock_api):
+        return runner.invoke(app, args, **kwargs)
 
 
 class TestLinkTask:

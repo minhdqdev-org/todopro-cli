@@ -110,7 +110,7 @@ def calendar_connect() -> None:
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("disconnect")
@@ -127,7 +127,7 @@ def calendar_disconnect() -> None:
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("status")
@@ -157,7 +157,7 @@ def calendar_status() -> None:
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("list")
@@ -194,7 +194,7 @@ def calendar_list(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("set")
@@ -220,7 +220,7 @@ def calendar_set(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("push")
@@ -253,7 +253,7 @@ def calendar_push(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("pull")
@@ -290,7 +290,7 @@ def calendar_pull(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("sync")
@@ -330,7 +330,7 @@ def calendar_sync(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("configure")
@@ -366,7 +366,7 @@ def calendar_configure(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("describe")
@@ -396,4 +396,4 @@ def calendar_describe(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc

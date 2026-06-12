@@ -19,8 +19,7 @@ from pathlib import Path
 import pytest
 
 from todopro_cli.models.focus.history import HistoryLogger
-from todopro_cli.models.focus.state import SessionState, SessionStateManager
-
+from todopro_cli.models.focus.state import SessionState
 
 # ---------------------------------------------------------------------------
 # Fixtures & helpers
@@ -40,7 +39,7 @@ def logger(db_path: Path) -> HistoryLogger:
 
 
 @pytest.fixture()
-def db_conn(db_path: Path, logger: HistoryLogger):
+def db_conn(db_path: Path, _logger: HistoryLogger):
     """
     Raw sqlite3 connection to the DB (logger fixture ensures schema is created
     before the connection is opened).
@@ -131,12 +130,12 @@ def _insert(
 class TestHistoryLoggerInit:
     """Tests for HistoryLogger construction and schema creation."""
 
-    def test_creates_db_file(self, db_path: Path, logger: HistoryLogger) -> None:
+    def test_creates_db_file(self, db_path: Path, _logger: HistoryLogger) -> None:
         """The SQLite file should exist after instantiation."""
         assert db_path.exists()
 
     def test_creates_pomodoro_sessions_table(
-        self, db_path: Path, logger: HistoryLogger
+        self, db_path: Path, _logger: HistoryLogger
     ) -> None:
         """The pomodoro_sessions table must be present after init."""
         with sqlite3.connect(db_path) as conn:
@@ -146,7 +145,7 @@ class TestHistoryLoggerInit:
         assert row is not None
 
     def test_creates_required_indexes(
-        self, db_path: Path, logger: HistoryLogger
+        self, db_path: Path, _logger: HistoryLogger
     ) -> None:
         """The three indexes (date, task, status) should be created."""
         with sqlite3.connect(db_path) as conn:
@@ -174,7 +173,7 @@ class TestHistoryLoggerInit:
     def test_parent_directory_created(self, tmp_path: Path) -> None:
         """HistoryLogger creates intermediate directories automatically."""
         deep_path = tmp_path / "a" / "b" / "c" / "test.db"
-        logger = HistoryLogger(db_path=deep_path)
+        HistoryLogger(db_path=deep_path)
         assert deep_path.exists()
 
 

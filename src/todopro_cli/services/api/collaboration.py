@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from todopro_cli.services.api.client import APIClient
 
 

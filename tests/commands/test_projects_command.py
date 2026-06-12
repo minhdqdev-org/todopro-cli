@@ -30,10 +30,12 @@ runner = CliRunner()
 @pytest.fixture
 def config_service():
     """Fixture for ConfigService with temporary directory."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        with patch("platformdirs.user_config_dir", return_value=tmpdir):
-            with patch("platformdirs.user_data_dir", return_value=tmpdir):
-                yield ConfigService()
+    with (
+        tempfile.TemporaryDirectory() as tmpdir,
+        patch("platformdirs.user_config_dir", return_value=tmpdir),
+        patch("platformdirs.user_data_dir", return_value=tmpdir),
+    ):
+        yield ConfigService()
 
 
 @pytest.fixture
@@ -64,7 +66,7 @@ def mock_project_service():
     service_mock.archive_project = AsyncMock()
     service_mock.unarchive_project = AsyncMock()
 
-    async def _passthrough_uuid(project_id, repo, **kwargs):
+    async def _passthrough_uuid(project_id, _repo, **_kwargs):
         return project_id
 
     with (
@@ -164,7 +166,10 @@ class TestCreateProject:
         result = runner.invoke(app, ["create", "New Project"])
 
         assert result.exit_code == 0
-        assert "Project created: proj-123" in result.stdout
+        clean_output = strip_ansi(result.stdout)
+        assert "Success: Project Test Project is created!" in clean_output
+        assert "Project ID: proj-123" in clean_output
+        assert "Is Favorite" not in clean_output
         mock_project_service.create_project.assert_called_once()
         call_kwargs = mock_project_service.create_project.call_args[1]
         assert call_kwargs["name"] == "New Project"

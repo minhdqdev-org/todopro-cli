@@ -28,10 +28,7 @@ def format_duration(minutes: float) -> str:
 
 def render_progress_bar(value: float, max_value: float, width: int = 12) -> str:
     """Render a progress bar using block characters."""
-    if max_value == 0:
-        ratio = 0
-    else:
-        ratio = min(value / max_value, 1.0)
+    ratio = 0 if max_value == 0 else min(value / max_value, 1.0)
     filled = int(ratio * width)
     return "█" * filled + "░" * (width - filled)
 
@@ -41,7 +38,7 @@ def render_progress_bar(value: float, max_value: float, width: int = 12) -> str:
 def show_goals():
     """Show current goals and progress."""
     manager = _get_goals_manager()
-    goals = manager.get_goals()
+    manager.get_goals()
     progress = manager.get_all_progress()
 
     console.print("\n[bold cyan]🎯 Focus Goals & Progress[/bold cyan]\n")
@@ -161,7 +158,7 @@ def set_goal(
 
     except ValueError as e:
         console.print(f"\n[red]Error: {e}[/red]\n")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command("list")

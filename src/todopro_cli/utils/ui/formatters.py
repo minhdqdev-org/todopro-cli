@@ -1,6 +1,7 @@
 """Output formatters for different formats."""
 
 import json
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -11,6 +12,14 @@ from rich.text import Text
 from .console import get_console
 
 console = get_console()
+
+INLINE_MARKDOWN_PATTERN = re.compile(
+    r"\[([^\]]+)\]\(([^)]+)\)"
+    r"|\*\*([^*\n]+?)\*\*"
+    r"|__([^_\n]+?)__"
+    r"|(?<!\*)\*([^*\n]+?)\*(?!\*)"
+    r"|(?<!_)_([^_\n]+?)_(?!_)"
+)
 
 
 def calculate_unique_suffixes(task_ids: list[str]) -> dict[str, int]:
@@ -138,6 +147,8 @@ def format_dict_table(items: list[dict]) -> None:
                 value = ", ".join(str(v) for v in value)
             elif value is None:
                 value = "-"
+            elif col in {"content", "description"} and isinstance(value, str):
+                value = render_inline_markdown_text(value)
             else:
                 value = str(value)
             row.append(value)
@@ -160,6 +171,8 @@ def format_single_item(item: dict) -> None:
             formatted_value = ", ".join(str(v) for v in value)
         elif value is None:
             formatted_value = "-"
+        elif key in {"content", "description"} and isinstance(value, str):
+            formatted_value = render_inline_markdown_text(value)
         else:
             formatted_value = str(value)
         table.add_row(formatted_key, formatted_value)
@@ -366,18 +379,19 @@ def _build_status_icon(is_completed: bool, is_recurring: bool, priority: int) ->
     return formatted_status_icon
 
 
-def _build_content(content: str, is_completed: bool) -> str:
-    """Build content string with styling based on completion."""
+def _build_content(content: Text, is_completed: bool) -> Text:
+    """Build content text with styling based on completion."""
+    styled_content = content.copy()
     if is_completed:
-        return f"[dim]{content}[/dim]"
-    return content
+        styled_content.stylize("dim")
+    return styled_content
 
 
 def format_task_item(
     task: dict,
     indent: str = "",
     suffix_map: dict[str, int] | None = None,
-    compact: bool = False,
+    _compact: bool = False,
 ) -> None:
     """Format a single task item."""
     # Status icon
@@ -388,24 +402,24 @@ def format_task_item(
     status_icon = _build_status_icon(is_completed, is_recurring, priority)
 
     content = task.get("content", "<Untitled>")
-
-    # Render Markdown links - convert to Rich markup
-    content = render_markdown_links(content)
-
-    line_str = f"{indent}{status_icon} {_build_content(content, is_completed)}"
+    content_text = _build_content(render_inline_markdown_text(content), is_completed)
 
     # Full format with metadata
 
     # Labels on same line
+    line = Text(indent)
+    line.append_text(Text.from_markup(f"{status_icon} "))
+    line.append_text(content_text)
+
     labels = task.get("labels", [])
     if labels:
-        line_str += "  "
+        line.append("  ")
         for label in labels:
             # Handle both string labels and dict labels
             label_name = label.get("name", "") if isinstance(label, dict) else label
-            line_str += f"[blue]#{label_name}[/blue] "
+            line.append(f"#{label_name} ", style="blue")
 
-    console.print(Text.from_markup(line_str))
+    console.print(line)
 
     # Metadata line
     meta = []
@@ -684,13 +698,15 @@ def format_project_item(
                 console.print(meta_line)
 
 
-def format_generic_list_pretty(items: list[dict], compact: bool = False) -> None:
+def format_generic_list_pretty(items: list[dict], _compact: bool = False) -> None:
     """Format generic list of items."""
     for item in items:
         if "name" in item:
             console.print(f"• {item['name']}", style="bold")
         elif "content" in item:
-            console.print(f"• {item['content']}")
+            line = Text("• ")
+            line.append_text(render_inline_markdown_text(item["content"]))
+            console.print(line)
         else:
             console.print(f"• {item.get('id', 'Item')}")
 
@@ -862,14 +878,33 @@ def get_completion_color(percentage: float) -> str:
     return "red"
 
 
-def render_markdown_links(text: str) -> str:
-    """Render Markdown links [text](url) as clickable links."""
-    import re
+def render_inline_markdown_text(text: str) -> Text:
+    """Render common inline Markdown styles as Rich text."""
+    rendered = Text()
+    last_index = 0
 
-    # Pattern: [text](url)
-    pattern = r"\[([^\]]+)\]\(([^\)]+)\)"
-    # Replace with Rich markup: [link=url]text[/link]
-    return re.sub(pattern, r"[link=\2]\1[/link]", text)
+    for match in INLINE_MARKDOWN_PATTERN.finditer(text):
+        start, end = match.span()
+        if start > last_index:
+            rendered.append(text[last_index:start])
+
+        link_label, link_url, bold_asterisk, bold_underscore, italic_asterisk, italic_underscore = (
+            match.groups()
+        )
+
+        if link_label is not None and link_url is not None:
+            rendered.append(link_label, style=f"link {link_url}")
+        elif bold_asterisk is not None or bold_underscore is not None:
+            rendered.append(bold_asterisk or bold_underscore, style="bold")
+        else:
+            rendered.append(italic_asterisk or italic_underscore or "", style="italic")
+
+        last_index = end
+
+    if last_index < len(text):
+        rendered.append(text[last_index:])
+
+    return rendered
 
 
 # Eisenhower Quadrant Icons
@@ -893,11 +928,13 @@ def format_next_task(task: dict) -> None:
 
     # Content with Markdown rendering
     content = task.get("content", "Untitled")
-    content = render_markdown_links(content)
+    content_text = render_inline_markdown_text(content)
+    content_text.stylize("bold")
 
-    # Main line - build as markup string
-    line_str = f"  {status_icon} [bold]{content}[/bold]"
-    console.print(Text.from_markup(line_str))
+    line = Text("  ")
+    line.append_text(Text.from_markup(f"{status_icon} "))
+    line.append_text(content_text)
+    console.print(line)
 
     # Metadata line
     meta = []
@@ -940,6 +977,10 @@ def format_next_task(task: dict) -> None:
     # Description if exists
     if task.get("description"):
         console.print()
-        console.print(f"  [dim]{task['description']}[/dim]")
+        description = render_inline_markdown_text(task["description"])
+        description.stylize("dim")
+        description_line = Text("  ")
+        description_line.append_text(description)
+        console.print(description_line)
 
     console.print()

@@ -15,11 +15,10 @@ def mock_cache_dir(tmp_path):
     cache_dir = tmp_path / "todopro"
     cache_file = cache_dir / "processing_tasks.json"
 
-    with patch("todopro_cli.services.cache_service.CACHE_DIR", cache_dir):
-        with patch(
-            "todopro_cli.services.cache_service.PROCESSING_CACHE_FILE", cache_file
-        ):
-            yield cache_dir
+    with patch("todopro_cli.services.cache_service.CACHE_DIR", cache_dir), patch(
+        "todopro_cli.services.cache_service.PROCESSING_CACHE_FILE", cache_file
+    ):
+        yield cache_dir
 
 
 def test_cache_initialization(mock_cache_dir):
@@ -28,7 +27,7 @@ def test_cache_initialization(mock_cache_dir):
     assert cache.cache_file == mock_cache_dir / "processing_tasks.json"
 
 
-def test_add_completing_task(mock_cache_dir):
+def test_add_completing_task(_mock_cache_dir):
     """Test adding a task to the cache."""
     cache = BackgroundTaskCache()
     cache.add_completing_task("task-123")
@@ -38,7 +37,7 @@ def test_add_completing_task(mock_cache_dir):
     assert not cache.is_being_completed("task-456")
 
 
-def test_add_completing_tasks_batch(mock_cache_dir):
+def test_add_completing_tasks_batch(_mock_cache_dir):
     """Test adding multiple tasks to the cache."""
     cache = BackgroundTaskCache()
     cache.add_completing_tasks(["task-1", "task-2", "task-3"])
@@ -50,7 +49,7 @@ def test_add_completing_tasks_batch(mock_cache_dir):
     assert not cache.is_being_completed("task-4")
 
 
-def test_remove_task(mock_cache_dir):
+def test_remove_task(_mock_cache_dir):
     """Test removing a task from the cache."""
     cache = BackgroundTaskCache()
     cache.add_completing_task("task-123")
@@ -61,7 +60,7 @@ def test_remove_task(mock_cache_dir):
     assert not cache.is_being_completed("task-123")
 
 
-def test_get_completing_tasks(mock_cache_dir):
+def test_get_completing_tasks(_mock_cache_dir):
     """Test getting list of completing tasks."""
     cache = BackgroundTaskCache()
     cache.add_completing_tasks(["task-1", "task-2", "task-3"])
@@ -70,7 +69,7 @@ def test_get_completing_tasks(mock_cache_dir):
     assert set(completing) == {"task-1", "task-2", "task-3"}
 
 
-def test_cache_persistence(mock_cache_dir):
+def test_cache_persistence(_mock_cache_dir):
     """Test that cache persists across instances."""
     cache1 = BackgroundTaskCache()
     cache1.add_completing_task("task-123")
@@ -120,7 +119,7 @@ def test_clear_expired(mock_cache_dir):
     assert "task-2" in completing
 
 
-def test_clear_all(mock_cache_dir):
+def test_clear_all(_mock_cache_dir):
     """Test clearing all entries from cache."""
     cache = BackgroundTaskCache()
     cache.add_completing_tasks(["task-1", "task-2", "task-3"])
@@ -131,7 +130,7 @@ def test_clear_all(mock_cache_dir):
     assert len(cache.get_completing_tasks()) == 0
 
 
-def test_cache_file_not_exists(mock_cache_dir):
+def test_cache_file_not_exists(_mock_cache_dir):
     """Test behavior when cache file doesn't exist."""
     cache = BackgroundTaskCache()
 
@@ -154,7 +153,7 @@ def test_corrupted_cache_file(mock_cache_dir):
     assert cache.get_completing_tasks() == []
 
 
-def test_get_background_cache_singleton(mock_cache_dir):
+def test_get_background_cache_singleton(_mock_cache_dir):
     """Test that get_background_cache returns singleton."""
     cache1 = get_background_cache()
     cache2 = get_background_cache()

@@ -13,7 +13,7 @@ from .history import HistoryLogger
 class TaskSuggestionEngine:
     """Generate smart task suggestions based on multiple factors."""
 
-    def __init__(self, config: AppConfig, profile: str = "default"):
+    def __init__(self, config: AppConfig, _profile: str = "default"):
         """Initialize suggestion engine.
 
         Args:

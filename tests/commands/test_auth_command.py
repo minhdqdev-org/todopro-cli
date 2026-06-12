@@ -6,15 +6,13 @@ Goal: maximise line/branch coverage across all paths.
 
 from __future__ import annotations
 
-import asyncio
 import re
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.auth import app
-from todopro_cli.models.config_models import AppConfig, Context
+from todopro_cli.models.config_models import Context
 
 runner = CliRunner()
 
@@ -56,7 +54,7 @@ def _make_auth_api_mock(
     login_result=None,
     signup_result=None,
     get_profile_result=None,
-    logout_result=None,
+    _logout_result=None,
     update_profile_result=None,
     login_side_effect=None,
     signup_side_effect=None,
@@ -180,9 +178,11 @@ class TestLogin:
         p_client, _ = _patch_get_client()
 
         prompt_answers = iter(["a@b.com", "password123"])
-        with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
-            with patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers):
-                result = runner.invoke(app, ["login"])
+        with (
+            _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock),
+            patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
+        ):
+            result = runner.invoke(app, ["login"])
 
         assert result.exit_code == 0
 
@@ -191,9 +191,11 @@ class TestLogin:
         ctx = _make_context()
         svc = _mock_config_service(context=ctx)
 
-        with _patch_config_service(svc):
-            with patch("todopro_cli.commands.auth.Prompt.ask", return_value=""):
-                result = runner.invoke(app, ["login"])
+        with (
+            _patch_config_service(svc),
+            patch("todopro_cli.commands.auth.Prompt.ask", return_value=""),
+        ):
+            result = runner.invoke(app, ["login"])
 
         assert result.exit_code == 1
         assert "required" in strip_ansi(result.stdout).lower()
@@ -321,9 +323,11 @@ class TestSignup:
         p_client, _ = _patch_get_client()
 
         prompt_answers = iter(["a@b.com", "pass123", "pass123"])
-        with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
-            with patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers):
-                result = runner.invoke(app, ["signup"])
+        with (
+            _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock),
+            patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
+        ):
+            result = runner.invoke(app, ["signup"])
 
         assert result.exit_code == 0
 
@@ -333,9 +337,11 @@ class TestSignup:
         svc = _mock_config_service(context=ctx)
 
         prompt_answers = iter(["a@b.com", "pass1", "pass2"])
-        with _patch_config_service(svc):
-            with patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers):
-                result = runner.invoke(app, ["signup"])
+        with (
+            _patch_config_service(svc),
+            patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
+        ):
+            result = runner.invoke(app, ["signup"])
 
         assert result.exit_code == 1
         assert "do not match" in strip_ansi(result.stdout).lower()
@@ -347,9 +353,11 @@ class TestSignup:
 
         # Need 3 answers: email="", password="", confirm=""
         prompt_answers = iter(["", "", ""])
-        with _patch_config_service(svc):
-            with patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers):
-                result = runner.invoke(app, ["signup"])
+        with (
+            _patch_config_service(svc),
+            patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
+        ):
+            result = runner.invoke(app, ["signup"])
 
         assert result.exit_code == 1
         assert "required" in strip_ansi(result.stdout).lower()

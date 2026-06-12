@@ -55,42 +55,24 @@ async def resolve_task_id(task_service: TaskService, task_id_or_suffix: str) -> 
         # Not a valid full ID, try to resolve as suffix
         pass
 
-    # Search for tasks matching the suffix
-    tasks_response = await task_service.list_tasks(limit=100)
-
-    # Handle both dict response with 'items' key and direct list
-    if isinstance(tasks_response, dict):
-        tasks = tasks_response.get("items", tasks_response.get("tasks", []))
-    else:
-        tasks = tasks_response
-
-    # Handle both dict and object tasks
-    if tasks and isinstance(tasks[0], dict):
-        matching_tasks = [
-            task for task in tasks if task.get("id", "").endswith(task_id_or_suffix)
-        ]
-    else:
-        matching_tasks = [task for task in tasks if task.id.endswith(task_id_or_suffix)]
+    # Search for tasks matching the suffix using the targeted id_suffix filter.
+    # Pass status="all" so completed tasks are also reachable (e.g., for reopen).
+    # No limit — the adapter applies the suffix filter efficiently (LIKE '%suffix').
+    matching_tasks = await task_service.list_tasks(id_suffix=task_id_or_suffix, status="all")
 
     if not matching_tasks:
         raise ValueError(f"No task found with ID or suffix '{task_id_or_suffix}'")
 
     if len(matching_tasks) > 1:
-        # Find suggested unique suffixes and format with task content
+        # Need all task IDs to compute shortest unique suffixes for suggestions.
+        # Fetch active tasks with a reasonable limit for context.
+        all_tasks = await task_service.list_tasks(status="all", limit=1000)
+        all_task_ids = [t.id for t in all_tasks]
+
         suggestions = []
         for task in matching_tasks:
-            # Handle both dict and object
-            task_id = task.get("id") if isinstance(task, dict) else task.id
-            task_content = (
-                task.get("content") if isinstance(task, dict) else task.content
-            )
-
-            # Get all task IDs for comparison
-            all_task_ids = [t.get("id") if isinstance(t, dict) else t.id for t in tasks]
-
-            unique_suffix = _find_shortest_unique_suffix(all_task_ids, task_id)
-            content = task_content
-            # Truncate long content
+            unique_suffix = _find_shortest_unique_suffix(all_task_ids, task.id)
+            content = task.content or ""
             if len(content) > 70:
                 content = content[:67] + "..."
             suggestions.append(f"  [{unique_suffix}] {content}")
@@ -101,8 +83,4 @@ async def resolve_task_id(task_service: TaskService, task_id_or_suffix: str) -> 
             + "\n\nUse the suffix in brackets to select a specific task."
         )
 
-    return (
-        matching_tasks[0].get("id")
-        if isinstance(matching_tasks[0], dict)
-        else matching_tasks[0].id
-    )
+    return matching_tasks[0].id

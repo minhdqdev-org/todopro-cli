@@ -102,14 +102,13 @@ class LocalNLPParser:
             # Extract date-related tokens and pass only those to dateparser
             fragment = self._extract_date_fragment(text)
             if fragment:
-                parsed = dateparser.parse(
+                return dateparser.parse(
                     fragment,
                     settings={
                         "PREFER_DATES_FROM": "future",
                         "RELATIVE_BASE": datetime.now(),
                     },
                 )
-                return parsed
 
         return None
 

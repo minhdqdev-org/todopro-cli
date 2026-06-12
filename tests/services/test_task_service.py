@@ -19,7 +19,6 @@ import pytest
 from todopro_cli.models import Task, TaskUpdate
 from todopro_cli.services.task_service import TaskService
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

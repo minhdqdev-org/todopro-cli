@@ -8,19 +8,15 @@ Uses a real ConfigService pointed at a tmp_path directory.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from todopro_cli.models.config_models import AppConfig, Context
 from todopro_cli.models.storage_strategy import (
-    LocalStorageStrategy,
-    RemoteStorageStrategy,
     StorageStrategyContext,
 )
 from todopro_cli.services.config_service import ConfigService, get_config_service
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -32,12 +28,14 @@ def svc(tmp_path) -> ConfigService:
     from todopro_cli.services.config_service import get_config_service as gcs
 
     gcs.cache_clear()
-    with patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)):
-        with patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)):
-            service = ConfigService()
-            # Trigger config initialization
-            _ = service.config
-            yield service
+    with (
+        patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)),
+        patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)),
+    ):
+        service = ConfigService()
+        # Trigger config initialization
+        _ = service.config
+        yield service
     gcs.cache_clear()
 
 
@@ -47,22 +45,24 @@ def svc_with_remote(tmp_path) -> ConfigService:
     from todopro_cli.services.config_service import get_config_service as gcs
 
     gcs.cache_clear()
-    with patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)):
-        with patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)):
-            service = ConfigService()
-            # Force a remote context config
-            remote_ctx = Context(name="myremote", type="remote", source="https://api.example.com")
-            local_ctx = Context(name="local", type="local", source=str(tmp_path / "test.db"))
-            service._config = AppConfig(
-                current_context_name="myremote",
-                contexts=[remote_ctx, local_ctx],
-            )
-            service.save_config()
-            # Re-load to trigger storage strategy initialisation
-            service._config = None
-            service._storage_strategy_context = None
-            _ = service.config
-            yield service
+    with (
+        patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)),
+        patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)),
+    ):
+        service = ConfigService()
+        # Force a remote context config
+        remote_ctx = Context(name="myremote", type="remote", source="https://api.example.com")
+        local_ctx = Context(name="local", type="local", source=str(tmp_path / "test.db"))
+        service._config = AppConfig(
+            current_context_name="myremote",
+            contexts=[remote_ctx, local_ctx],
+        )
+        service.save_config()
+        # Re-load to trigger storage strategy initialisation
+        service._config = None
+        service._storage_strategy_context = None
+        _ = service.config
+        yield service
     gcs.cache_clear()
 
 
@@ -132,15 +132,17 @@ class TestLoadConfig:
     def test_load_raises_on_malformed_json(self, tmp_path):
         from todopro_cli.services.config_service import get_config_service as gcs
         gcs.cache_clear()
-        with patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)):
-            with patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)):
-                service = ConfigService()
-                # Write invalid JSON
-                service.config_path.parent.mkdir(parents=True, exist_ok=True)
-                service.config_path.write_text("{invalid json}")
-                with pytest.raises(RuntimeError, match="Failed to load config"):
-                    service._config = None
-                    service.load_config()
+        with (
+            patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)),
+            patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)),
+        ):
+            service = ConfigService()
+            # Write invalid JSON
+            service.config_path.parent.mkdir(parents=True, exist_ok=True)
+            service.config_path.write_text("{invalid json}")
+            with pytest.raises(RuntimeError, match="Failed to load config"):
+                service._config = None
+                service.load_config()
         gcs.cache_clear()
 
 
@@ -159,7 +161,6 @@ class TestSaveConfig:
 
     def test_save_file_permissions_restrictive(self, svc):
         svc.save_config()
-        import stat
         mode = svc.config_path.stat().st_mode & 0o777
         # Should be 0o600
         assert mode == 0o600
@@ -301,7 +302,6 @@ class TestSaveCredentials:
 
     def test_file_permissions_restrictive(self, svc):
         svc.save_credentials("my-token", context_name="cloud")
-        import stat
         mode = (svc.credentials_dir / "cloud.json").stat().st_mode & 0o777
         assert mode == 0o600
 
@@ -411,12 +411,14 @@ class TestStorageStrategyWiring:
     def test_uninitialized_storage_strategy_raises(self, tmp_path):
         from todopro_cli.services.config_service import get_config_service as gcs
         gcs.cache_clear()
-        with patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)):
-            with patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)):
-                service = ConfigService()
-                # Do NOT call load_config — strategy is not set yet
-                with pytest.raises(AssertionError):
-                    _ = service.storage_strategy_context
+        with (
+            patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)),
+            patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)),
+        ):
+            service = ConfigService()
+            # Do NOT call load_config — strategy is not set yet
+            with pytest.raises(AssertionError):
+                _ = service.storage_strategy_context
         gcs.cache_clear()
 
 
@@ -427,27 +429,33 @@ class TestStorageStrategyWiring:
 class TestGetConfigServiceFactory:
     def test_returns_config_service_instance(self, tmp_path):
         get_config_service.cache_clear()
-        with patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)):
-            with patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)):
-                instance = get_config_service()
-                assert isinstance(instance, ConfigService)
+        with (
+            patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)),
+            patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)),
+        ):
+            instance = get_config_service()
+            assert isinstance(instance, ConfigService)
         get_config_service.cache_clear()
 
     def test_returns_same_instance_on_repeated_calls(self, tmp_path):
         get_config_service.cache_clear()
-        with patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)):
-            with patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)):
-                a = get_config_service()
-                b = get_config_service()
-                assert a is b
+        with (
+            patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)),
+            patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)),
+        ):
+            a = get_config_service()
+            b = get_config_service()
+            assert a is b
         get_config_service.cache_clear()
 
     def test_cache_clear_allows_new_instance(self, tmp_path):
         get_config_service.cache_clear()
-        with patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)):
-            with patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)):
-                a = get_config_service()
-                get_config_service.cache_clear()
-                b = get_config_service()
-                assert a is not b
+        with (
+            patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)),
+            patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)),
+        ):
+            a = get_config_service()
+            get_config_service.cache_clear()
+            b = get_config_service()
+            assert a is not b
         get_config_service.cache_clear()

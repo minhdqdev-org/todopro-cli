@@ -16,13 +16,12 @@ from __future__ import annotations
 
 from datetime import datetime as _real_datetime
 from datetime import timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from todopro_cli.models.config_models import AppConfig
 from todopro_cli.models.focus.suggestions import TaskSuggestionEngine
-
 
 # ---------------------------------------------------------------------------
 # Module-level helpers
@@ -68,7 +67,7 @@ def mock_analytics(mocker):
 
 
 @pytest.fixture()
-def engine(mock_analytics) -> TaskSuggestionEngine:
+def engine(_mock_analytics) -> TaskSuggestionEngine:
     """TaskSuggestionEngine with DB access fully mocked out."""
     return _make_engine()
 
@@ -339,18 +338,18 @@ class TestWasRecentlyWorkedOn:
 class TestSuggestTasks:
     """End-to-end tests for the suggest_tasks() method."""
 
-    def test_empty_task_list_returns_empty(self, engine, no_recent_work):
+    def test_empty_task_list_returns_empty(self, engine, _no_recent_work):
         assert engine.suggest_tasks([]) == []
 
-    def test_non_list_input_returns_empty(self, engine, no_recent_work):
+    def test_non_list_input_returns_empty(self, engine, _no_recent_work):
         assert engine.suggest_tasks(None) == []  # type: ignore[arg-type]
 
-    def test_returns_list(self, engine, no_recent_work):
+    def test_returns_list(self, engine, _no_recent_work):
         tasks = [_task("t1"), _task("t2")]
         result = engine.suggest_tasks(tasks)
         assert isinstance(result, list)
 
-    def test_result_contains_task_score_and_components(self, engine, no_recent_work):
+    def test_result_contains_task_score_and_components(self, engine, _no_recent_work):
         tasks = [_task("t1")]
         result = engine.suggest_tasks(tasks)
         assert len(result) == 1
@@ -359,24 +358,24 @@ class TestSuggestTasks:
         assert "score" in entry
         assert "components" in entry
 
-    def test_components_have_all_scoring_keys(self, engine, no_recent_work):
+    def test_components_have_all_scoring_keys(self, engine, _no_recent_work):
         result = engine.suggest_tasks([_task("t1")])
         components = result[0]["components"]
         assert {"due_date", "priority", "eisenhower", "time_estimate"} == set(
             components.keys()
         )
 
-    def test_respects_limit(self, engine, no_recent_work):
+    def test_respects_limit(self, engine, _no_recent_work):
         tasks = [_task(f"t{i}") for i in range(10)]
         result = engine.suggest_tasks(tasks, limit=3)
         assert len(result) <= 3
 
-    def test_default_limit_is_five(self, engine, no_recent_work):
+    def test_default_limit_is_five(self, engine, _no_recent_work):
         tasks = [_task(f"t{i}") for i in range(10)]
         result = engine.suggest_tasks(tasks)
         assert len(result) <= 5
 
-    def test_sorted_by_score_descending(self, engine, no_recent_work):
+    def test_sorted_by_score_descending(self, engine, _no_recent_work):
         """Higher-priority / more-urgent tasks should appear first."""
         today = _real_datetime.now().date().isoformat()
         high_urgency = _task("urgent", priority=1, due_date=today)
@@ -408,7 +407,7 @@ class TestSuggestTasks:
 
     # ── Label filtering ───────────────────────────────────────────────────
 
-    def test_label_filter_includes_matching_tasks(self, engine, no_recent_work):
+    def test_label_filter_includes_matching_tasks(self, engine, _no_recent_work):
         task_with_label = _task("t1", labels=["work", "focus"])
         task_no_label = _task("t2", labels=[])
         result = engine.suggest_tasks(
@@ -418,17 +417,17 @@ class TestSuggestTasks:
         assert "t1" in ids
         assert "t2" not in ids
 
-    def test_label_filter_excludes_non_matching_tasks(self, engine, no_recent_work):
+    def test_label_filter_excludes_non_matching_tasks(self, engine, _no_recent_work):
         task = _task("t1", labels=["personal"])
         result = engine.suggest_tasks([task], label="work")
         assert result == []
 
-    def test_label_filter_none_returns_all_tasks(self, engine, no_recent_work):
+    def test_label_filter_none_returns_all_tasks(self, engine, _no_recent_work):
         tasks = [_task("t1", labels=["a"]), _task("t2", labels=["b"])]
         result = engine.suggest_tasks(tasks, label=None)
         assert len(result) == 2
 
-    def test_label_filter_on_task_with_no_labels_key(self, engine, no_recent_work):
+    def test_label_filter_on_task_with_no_labels_key(self, engine, _no_recent_work):
         """Tasks missing 'labels' key should be excluded when a label filter is set."""
         task = {"id": "t1", "priority": 1}  # no 'labels' key
         result = engine.suggest_tasks([task], label="work")
@@ -436,7 +435,7 @@ class TestSuggestTasks:
 
     # ── Custom weights ─────────────────────────────────────────────────────
 
-    def test_custom_weights_from_config(self, no_recent_work):
+    def test_custom_weights_from_config(self, _no_recent_work):
         """Overriding weights in focus_suggestions config is respected."""
         config = AppConfig()
         config.focus_suggestions = {
@@ -454,7 +453,7 @@ class TestSuggestTasks:
         # due_score=8.0*0.5 + priority=3*0.3 + eisenhower=4.0*0.1 + time*0.1
         assert score > 0
 
-    def test_default_weights_when_config_is_none(self, engine, no_recent_work):
+    def test_default_weights_when_config_is_none(self, engine, _no_recent_work):
         """When focus_suggestions is None, default weights are used without error."""
         engine.config.focus_suggestions = None
         task = _task("t1")
@@ -464,27 +463,27 @@ class TestSuggestTasks:
     # ── Score boundary checks ─────────────────────────────────────────────
 
     def test_score_is_positive_for_overdue_high_priority_task(
-        self, engine, no_recent_work
+        self, engine, _no_recent_work
     ):
         yesterday = (_real_datetime.now() - timedelta(days=1)).date().isoformat()
         task = _task("urgent", priority=1, due_date=yesterday)
         result = engine.suggest_tasks([task])
         assert result[0]["score"] > 0
 
-    def test_score_is_float(self, engine, no_recent_work):
+    def test_score_is_float(self, engine, _no_recent_work):
         result = engine.suggest_tasks([_task("t1")])
         assert isinstance(result[0]["score"], float)
 
-    def test_task_reference_in_result_matches_input(self, engine, no_recent_work):
+    def test_task_reference_in_result_matches_input(self, engine, _no_recent_work):
         original = _task("original-id")
         result = engine.suggest_tasks([original])
         assert result[0]["task"] is original
 
-    def test_single_task_always_returned_if_not_recent(self, engine, no_recent_work):
+    def test_single_task_always_returned_if_not_recent(self, engine, _no_recent_work):
         result = engine.suggest_tasks([_task("solo")])
         assert len(result) == 1
 
-    def test_all_tasks_same_score_returns_limit(self, engine, no_recent_work):
+    def test_all_tasks_same_score_returns_limit(self, engine, _no_recent_work):
         """When tasks have the same score the limit is still respected."""
         tasks = [_task(f"t{i}") for i in range(10)]
         result = engine.suggest_tasks(tasks, limit=4)

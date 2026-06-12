@@ -5,8 +5,6 @@ from __future__ import annotations
 import sqlite3
 from unittest.mock import patch
 
-import pytest
-
 from todopro_cli.adapters.sqlite import schema as db_schema
 from todopro_cli.adapters.sqlite.user_manager import (
     create_default_user,
@@ -15,7 +13,6 @@ from todopro_cli.adapters.sqlite.user_manager import (
     get_user_info,
     update_user_timezone,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -157,7 +154,7 @@ class TestUpdateUserTimezone:
         conn = _make_db()
         uid = create_default_user(conn, timezone="UTC")
         cursor = conn.execute("SELECT updated_at FROM users WHERE id = ?", (uid,))
-        old_updated_at = cursor.fetchone()[0]
+        cursor.fetchone()[0]
         update_user_timezone(conn, uid, "Asia/Tokyo")
         cursor = conn.execute("SELECT updated_at FROM users WHERE id = ?", (uid,))
         new_updated_at = cursor.fetchone()[0]

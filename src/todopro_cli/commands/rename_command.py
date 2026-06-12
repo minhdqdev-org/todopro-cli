@@ -21,7 +21,7 @@ async def rename_context(
     """Rename a location context."""
     from todopro_cli.services.location_context_service import LocationContextService
 
-    context_service = LocationContextService()
+    LocationContextService()
     # TODO:
     # context_service.rename(old_name, new_name)
     format_success(f"Location context renamed: {old_name} → {new_name}")

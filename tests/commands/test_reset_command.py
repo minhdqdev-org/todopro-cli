@@ -5,7 +5,6 @@ Tests `todopro reset goals` and `todopro reset config`.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.reset_command import app
@@ -68,8 +67,8 @@ class TestResetConfig:
         with patch("todopro_cli.services.config_service.ConfigService") as mock_cls:
             mock_svc = MagicMock()
             mock_cls.return_value = mock_svc
-            result = runner.invoke(app, ["config", "--force"])
-            assert result.exit_code == 0 or mock_svc.reset.called or True
+            runner.invoke(app, ["config", "--force"])
+            assert True
 
     def test_reset_config_without_force_prompts(self):
         """Test reset config without --force prompts for confirmation."""

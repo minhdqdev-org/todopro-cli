@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.check_command import app
@@ -123,10 +122,7 @@ class TestCheckLocation:
     """Tests for 'check location' sub-command."""
 
     def _run(self, args=None, location=None, return_none=False):
-        if return_none:
-            loc_return = None
-        else:
-            loc_return = location or _make_location()
+        loc_return = None if return_none else location or _make_location()
 
         svc = MagicMock()
         svc.check_current_location = AsyncMock(return_value=loc_return)

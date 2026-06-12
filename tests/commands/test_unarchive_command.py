@@ -43,12 +43,11 @@ def _invoke_unarchive(args, project=None, service_side_effect=None):
         "todopro_cli.commands.unarchive_command.get_storage_strategy_context",
         return_value=mock_ctx,
         create=True,
+    ), patch(
+        "todopro_cli.commands.unarchive_command.ProjectService",
+        return_value=mock_service,
     ):
-        with patch(
-            "todopro_cli.commands.unarchive_command.ProjectService",
-            return_value=mock_service,
-        ):
-            return runner.invoke(app, args), mock_service
+        return runner.invoke(app, args), mock_service
 
 
 # ---------------------------------------------------------------------------
@@ -108,11 +107,10 @@ class TestUnarchiveProjectCommand:
             "todopro_cli.commands.unarchive_command.get_storage_strategy_context",
             return_value=mock_ctx,
             create=True,
-        ):
-            with patch(
-                "todopro_cli.commands.unarchive_command.ProjectService",
-                return_value=mock_service,
-            ) as MockProjectService:
-                runner.invoke(app, ["proj-xyz"])
+        ), patch(
+            "todopro_cli.commands.unarchive_command.ProjectService",
+            return_value=mock_service,
+        ) as MockProjectService:
+            runner.invoke(app, ["proj-xyz"])
 
         MockProjectService.assert_called_once_with(mock_repo)

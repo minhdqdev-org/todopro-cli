@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -140,7 +141,7 @@ class TestFmtDue:
         """If strftime raises, falls back to str(due_date)."""
 
         class BadDate:
-            def strftime(self, fmt):
+            def strftime(self, _fmt):
                 raise AttributeError("no strftime")
 
             def __str__(self):
@@ -250,7 +251,7 @@ class TestEditInteractiveMode:
         """Interactive: changing content updates the task."""
         responses = iter(["New Content", "", "", "", ""])
 
-        def fake_prompt(*args, **kwargs):
+        def fake_prompt(*_args, **_kwargs):
             return next(responses)
 
         updated = TASK.model_copy(update={"content": "New Content"})
@@ -267,7 +268,7 @@ class TestEditInteractiveMode:
 
         with patch(
             "todopro_cli.commands.edit_command.typer.prompt",
-            side_effect=lambda *a, **kw: next(responses),
+            side_effect=lambda *_a, **_kw: next(responses),
         ):
             result = _run(["task-123"], task=task_with_project)
 
@@ -279,7 +280,7 @@ class TestEditInteractiveMode:
 
         with patch(
             "todopro_cli.commands.edit_command.typer.prompt",
-            side_effect=lambda *a, **kw: next(responses),
+            side_effect=lambda *_a, **_kw: next(responses),
         ):
             result = _run(["task-123"])
 
@@ -292,7 +293,7 @@ class TestEditInteractiveMode:
 
         with patch(
             "todopro_cli.commands.edit_command.typer.prompt",
-            side_effect=lambda *a, **kw: next(responses),
+            side_effect=lambda *_a, **_kw: next(responses),
         ):
             result = _run(["task-123"])
 
@@ -359,14 +360,13 @@ class TestResolveProjectName:
         with patch(
             "todopro_cli.commands.edit_command.ProjectService",
             return_value=mock_proj_svc,
-        ):
-            with pytest.raises((ValueError, Exception)):
-                # "qqqnonexistent" has no dashes and won't fuzzy-match "Work"
-                asyncio.run(
-                    _resolve_project_name(
-                        "qqqnonexistent", mock_strategy
-                    )
+        ), pytest.raises((ValueError, Exception)):
+            # "qqqnonexistent" has no dashes and won't fuzzy-match "Work"
+            asyncio.run(
+                _resolve_project_name(
+                    "qqqnonexistent", mock_strategy
                 )
+            )
 
     def test_multiple_prefix_matches_non_interactive(self):
         """Single prefix match returns that project's ID directly."""
@@ -409,6 +409,7 @@ class TestResolveProjectNameUUID:
     def test_uuid_like_input_calls_resolve_uuid(self):
         """Input with len >= 8 and '-' calls resolve_project_uuid (line 31)."""
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
         mock_strategy = MagicMock()
@@ -436,6 +437,7 @@ class TestResolveProjectNameUUID:
     def test_full_uuid_input(self):
         """Full UUID calls resolve_project_uuid (line 31 via is_full_uuid)."""
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
         full_uuid = "proj-1111-2222-3333"
@@ -469,6 +471,7 @@ class TestResolveProjectNameFuzzyMultiple:
     def test_fuzzy_single_candidate_returns_id(self):
         """Lines 62-63: single fuzzy candidate → returns its ID directly."""
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
         # Use MagicMock projects (hashable, so dict.fromkeys works)
@@ -492,6 +495,7 @@ class TestResolveProjectNameFuzzyMultiple:
     def test_fuzzy_multiple_candidates_non_interactive(self):
         """Lines 64-69: multiple candidates → non-interactive uses first (no prefix match)."""
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
         # Two projects that don't prefix-match the input "xyz" but might fuzzy-match
@@ -511,13 +515,12 @@ class TestResolveProjectNameFuzzyMultiple:
         mock_proj_svc.list_projects = AsyncMock(return_value=[mock_p])
 
         with (
+            (
             patch("todopro_cli.commands.edit_command.ProjectService", return_value=mock_proj_svc),
+        ),
+            contextlib.suppress(ValueError, Exception),
         ):
-            try:
-                result = asyncio.run(_resolve_project_name("zzzznotfound", mock_strategy))
-                # If no error, just check result is something
-            except (ValueError, Exception):
-                pass  # Expected: ValueError for no matches (lines 58-61)
+            asyncio.run(_resolve_project_name("zzzznotfound", mock_strategy))
 
 
 class TestEditInteractiveModeProjectLookupFailure:
@@ -549,7 +552,7 @@ class TestEditInteractiveModeProjectLookupFailure:
             patch("todopro_cli.commands.edit_command.resolve_task_id", new=AsyncMock(return_value="abcd-efgh-1234-5678")),
             patch("todopro_cli.commands.edit_command.TaskService", return_value=mock_ts),
             patch("todopro_cli.commands.edit_command.ProjectService", return_value=mock_proj_svc),
-            patch("todopro_cli.commands.edit_command.typer.prompt", side_effect=lambda *a, **kw: next(responses)),
+            patch("todopro_cli.commands.edit_command.typer.prompt", side_effect=lambda *_a, **_kw: next(responses)),
         ):
             result = runner.invoke(app, ["task-123"])
         # Should exit 0 - exception is caught and no-op
@@ -587,7 +590,7 @@ class TestEditInteractiveModeWithProject:
             patch("todopro_cli.commands.edit_command.resolve_task_id", new=AsyncMock(return_value="abcd-efgh-1234-5678")),
             patch("todopro_cli.commands.edit_command.TaskService", return_value=mock_ts),
             patch("todopro_cli.commands.edit_command.ProjectService", return_value=mock_proj_svc),
-            patch("todopro_cli.commands.edit_command.typer.prompt", side_effect=lambda *a, **kw: next(responses)),
+            patch("todopro_cli.commands.edit_command.typer.prompt", side_effect=lambda *_a, **_kw: next(responses)),
             patch(
                 "todopro_cli.commands.edit_command._resolve_project_name",
                 new=AsyncMock(return_value=PROJECT.id),
@@ -608,6 +611,7 @@ class TestResolveProjectNameFuzzyPaths:
 
     def _run_resolve(self, project_input, projects, **extra_patches):
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
         mock_strategy = MagicMock()
@@ -643,6 +647,7 @@ class TestResolveProjectNameFuzzyPaths:
         mock_proj_svc.list_projects = AsyncMock(return_value=[p1, p2])
 
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
         # sys.stdin.isatty() returns False in non-interactive mode
@@ -666,6 +671,7 @@ class TestResolveProjectNameFuzzyPaths:
         mock_proj_svc.list_projects = AsyncMock(return_value=[p1, p2])
 
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
         with (
@@ -689,6 +695,7 @@ class TestResolveProjectNameFuzzyPaths:
         mock_proj_svc.list_projects = AsyncMock(return_value=[p1, p2])
 
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
         with (
@@ -711,8 +718,11 @@ class TestResolveProjectNameFuzzyPaths:
         mock_proj_svc.list_projects = AsyncMock(return_value=[p1])
 
         import asyncio
+
         from todopro_cli.commands.edit_command import _resolve_project_name
 
-        with patch("todopro_cli.commands.edit_command.ProjectService", return_value=mock_proj_svc):
-            with pytest.raises((ValueError, Exception)):
-                asyncio.run(_resolve_project_name("ZZZCompletelyDifferent", mock_strategy))
+        with (
+            patch("todopro_cli.commands.edit_command.ProjectService", return_value=mock_proj_svc),
+            pytest.raises((ValueError, Exception)),
+        ):
+            asyncio.run(_resolve_project_name("ZZZCompletelyDifferent", mock_strategy))

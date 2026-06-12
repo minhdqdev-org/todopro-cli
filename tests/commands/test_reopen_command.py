@@ -6,7 +6,6 @@ invoke it WITHOUT the subcommand name prefix (e.g. ``["task-001"]``).
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.reopen_command import app
@@ -40,13 +39,12 @@ def _invoke_reopen(task_id_arg, task=None, resolved_id=None):
     with patch(
         "todopro_cli.commands.reopen_command.get_task_service",
         return_value=mock_service,
+    ), patch(
+        "todopro_cli.commands.reopen_command.resolve_task_id",
+        new_callable=AsyncMock,
+        return_value=rid,
     ):
-        with patch(
-            "todopro_cli.commands.reopen_command.resolve_task_id",
-            new_callable=AsyncMock,
-            return_value=rid,
-        ):
-            return runner.invoke(app, [task_id_arg])
+        return runner.invoke(app, [task_id_arg])
 
 
 # ---------------------------------------------------------------------------
@@ -101,13 +99,12 @@ class TestReopenTask:
         with patch(
             "todopro_cli.commands.reopen_command.get_task_service",
             return_value=mock_service,
+        ), patch(
+            "todopro_cli.commands.reopen_command.resolve_task_id",
+            new_callable=AsyncMock,
+            return_value="task-resolved",
         ):
-            with patch(
-                "todopro_cli.commands.reopen_command.resolve_task_id",
-                new_callable=AsyncMock,
-                return_value="task-resolved",
-            ):
-                runner.invoke(app, ["task-001"])
+            runner.invoke(app, ["task-001"])
         mock_service.reopen_task.assert_awaited_once_with("task-resolved")
 
     def test_reopen_task_resolves_id(self):
@@ -119,12 +116,11 @@ class TestReopenTask:
         with patch(
             "todopro_cli.commands.reopen_command.get_task_service",
             return_value=mock_service,
+        ), patch(
+            "todopro_cli.commands.reopen_command.resolve_task_id",
+            resolve_mock,
         ):
-            with patch(
-                "todopro_cli.commands.reopen_command.resolve_task_id",
-                resolve_mock,
-            ):
-                runner.invoke(app, ["task-short"])
+            runner.invoke(app, ["task-short"])
         resolve_mock.assert_awaited_once_with(mock_service, "task-short")
 
     def test_reopen_task_service_error_exits_nonzero(self):
@@ -134,13 +130,12 @@ class TestReopenTask:
         with patch(
             "todopro_cli.commands.reopen_command.get_task_service",
             return_value=mock_service,
+        ), patch(
+            "todopro_cli.commands.reopen_command.resolve_task_id",
+            new_callable=AsyncMock,
+            return_value="task-001",
         ):
-            with patch(
-                "todopro_cli.commands.reopen_command.resolve_task_id",
-                new_callable=AsyncMock,
-                return_value="task-001",
-            ):
-                result = runner.invoke(app, ["task-001"])
+            result = runner.invoke(app, ["task-001"])
         assert result.exit_code != 0
 
     def test_reopen_task_missing_id_exits_nonzero(self):

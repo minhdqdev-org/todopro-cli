@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 
-from todopro_cli.models.crypto.cipher import EncryptedData
 from todopro_cli.services.encryption_service import EncryptionService
 
 

@@ -75,9 +75,8 @@ class TestSetupCommandInvocation:
         with patch(
             "todopro_cli.services.encryption_service.EncryptionService",
             return_value=mock_svc,
-        ):
-            with patch("typer.prompt", return_value="prompted-pass"):
-                result = runner.invoke(app, [])
+        ), patch("typer.prompt", return_value="prompted-pass"):
+            result = runner.invoke(app, [])
         assert result.exit_code == 0
         mock_svc.setup.assert_awaited_once_with("prompted-pass")
 

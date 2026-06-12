@@ -5,8 +5,6 @@ from __future__ import annotations
 import subprocess
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from todopro_cli.utils.background import run_in_background
 
 
@@ -138,7 +136,7 @@ class TestRunInBackground:
 
     @patch("todopro_cli.utils.background.subprocess.Popen")
     @patch("todopro_cli.utils.background.tempfile.NamedTemporaryFile")
-    def test_worker_script_written_to_file(self, mock_tmp, mock_popen):
+    def test_worker_script_written_to_file(self, mock_tmp, _mock_popen):
         """Worker script template is written to the temp file."""
         written_content = []
 

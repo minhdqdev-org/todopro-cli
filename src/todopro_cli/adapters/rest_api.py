@@ -136,12 +136,17 @@ class RestApiTaskRepository(TaskRepository):
             params["priority"] = filters.priority
         if filters.search:
             params["search"] = filters.search
-        if filters.limit is not None:
-            params["limit"] = filters.limit
-        if filters.offset is not None:
-            params["offset"] = filters.offset
         if filters.sort:
             params["sort"] = filters.sort
+
+        # When resolving by suffix, skip pagination so we search the full dataset
+        if filters.id_suffix:
+            params["limit"] = 10000
+        else:
+            if filters.limit is not None:
+                params["limit"] = filters.limit
+            if filters.offset is not None:
+                params["offset"] = filters.offset
 
         result = await self.tasks_api.list_tasks(**params)
 
@@ -154,7 +159,13 @@ class RestApiTaskRepository(TaskRepository):
                 self._decrypt_task_fields(task_dict) for task_dict in tasks_data
             ]
 
-        return [Task(**task_dict) for task_dict in tasks_data]
+        tasks = [Task(**task_dict) for task_dict in tasks_data]
+
+        # Apply client-side suffix filter (server does not support id_suffix)
+        if filters.id_suffix:
+            tasks = [t for t in tasks if t.id.endswith(filters.id_suffix)]
+
+        return tasks
 
     async def get(self, task_id: str) -> Task:
         """Get a specific task by ID."""

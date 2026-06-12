@@ -14,10 +14,8 @@ Covers:
 
 from __future__ import annotations
 
-import subprocess
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.update_command import app

@@ -5,8 +5,6 @@ from __future__ import annotations
 import sqlite3
 from unittest.mock import patch
 
-import pytest
-
 from todopro_cli.adapters.sqlite.migrations.migrate_v2_sync_compat import (
     CREATE_CONTEXTS_INDEXES_V2,
     CREATE_CONTEXTS_TABLE_V2,
@@ -26,7 +24,6 @@ from todopro_cli.adapters.sqlite.migrations.migrate_v2_sync_compat import (
     run_migration,
     verify_migration,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -372,7 +369,7 @@ def test_run_migration_creates_indexes(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_run_migration_returns_false_when_execute_fails(tmp_path):
+def test_run_migration_returns_false_when_execute_fails(_tmp_path):
     """If cursor.execute() fails inside the try block, run_migration returns False."""
     from unittest.mock import MagicMock
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -428,7 +425,7 @@ def test_verify_migration_fails_wrong_version(tmp_path):
     assert verify_migration(conn) is False
 
 
-def test_verify_migration_handles_exception(tmp_path):
+def test_verify_migration_handles_exception(_tmp_path):
     """When cursor.execute() raises inside verify_migration, it returns False."""
     from unittest.mock import MagicMock
     mock_conn = MagicMock(spec=sqlite3.Connection)

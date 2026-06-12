@@ -11,10 +11,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from todopro_cli.services.goal_service import GoldService, get_goal_service
-
 
 # ---------------------------------------------------------------------------
 # GoldService.__init__ (line 8)

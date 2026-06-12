@@ -1,6 +1,6 @@
 """Additional tests for UI formatters to improve coverage."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from io import StringIO
 from unittest.mock import patch
 
@@ -20,15 +20,15 @@ from todopro_cli.utils.ui.formatters import (
     format_table,
     format_task_item,
     format_tasks_pretty,
-    is_overdue,
     is_today,
+    render_inline_markdown_text,
 )
 
 
 def test_format_output_default():
     """Test output format defaults to pretty."""
     data = [{"id": "123"}]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_output(data, "unknown_format")
         # Should use pretty format as default
 
@@ -44,8 +44,29 @@ def test_format_output_json_pretty():
 def test_format_output_wide():
     """Test wide table output format."""
     data = [{"id": "123", "name": "Test"}]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_output(data, "wide")
+
+
+def test_render_inline_markdown_text_strips_emphasis_markers():
+    """Bold and italic markers should render as styled text, not literal asterisks."""
+    rendered = render_inline_markdown_text(
+        "Check **AI Jason** and *read docs*"
+    )
+
+    assert rendered.plain == "Check AI Jason and read docs"
+
+    spans = {(span.start, span.end): span.style for span in rendered.spans}
+    assert any(style == "bold" for style in spans.values())
+    assert any(style == "italic" for style in spans.values())
+
+
+def test_render_inline_markdown_text_renders_links():
+    """Markdown links should render as Rich links with plain label text."""
+    rendered = render_inline_markdown_text("[AI Jason](https://youtube.com)")
+
+    assert rendered.plain == "AI Jason"
+    assert any(span.style == "link https://youtube.com" for span in rendered.spans)
 
 
 def test_format_dict_table_with_boolean():
@@ -76,28 +97,28 @@ def test_format_single_item_with_various_types():
         "tags": ["a", "b"],
         "description": None,
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_single_item(data)
 
 
 def test_format_table_with_tasks_key():
     """Test formatting dict with tasks key."""
     data = {"tasks": [{"id": "1", "content": "Task 1"}]}
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_table(data)
 
 
 def test_format_table_with_projects_key():
     """Test formatting dict with projects key."""
     data = {"projects": [{"id": "1", "name": "Project 1"}]}
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_table(data)
 
 
 def test_format_pretty_with_dict_items():
     """Test pretty format with dict containing items."""
     data = {"items": [{"id": "1", "content": "Test"}]}
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty(data)
 
 
@@ -116,7 +137,7 @@ def test_format_pretty_with_dict_tasks():
             }
         ]
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty(data)
 
 
@@ -135,14 +156,14 @@ def test_format_pretty_with_dict_projects():
             }
         ]
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty(data)
 
 
 def test_format_pretty_single_item():
     """Test pretty format with single item dict."""
     data = {"id": "123", "content": "Test task", "is_completed": False}
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_pretty(data)
 
 
@@ -166,7 +187,7 @@ def test_format_tasks_pretty_with_completed():
             "labels": ["work"],
         },
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_tasks_pretty(tasks)
 
 
@@ -183,7 +204,7 @@ def test_format_tasks_pretty_with_overdue():
             "labels": [],
         }
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_tasks_pretty(tasks)
 
 
@@ -201,7 +222,7 @@ def test_format_tasks_pretty_compact():
             "labels": ["work", "urgent", "important"],
         }
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_tasks_pretty(tasks)
 
 
@@ -217,7 +238,7 @@ def test_format_task_item_recurring():
         "labels": [],
         "next_occurrence": (now + timedelta(days=1)).isoformat(),
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_task_item(task, compact=False)
 
 
@@ -236,13 +257,13 @@ def test_format_task_item_with_metadata():
         "project_name": "Project Alpha",
         "created_at": (now - timedelta(hours=1)).isoformat(),
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_task_item(task, compact=False)
 
 
 def test_format_projects_pretty_with_archived():
     """Test formatting projects with archived ones."""
-    now = datetime.now()
+    datetime.now()
     projects = [
         {
             "id": "1",
@@ -259,7 +280,7 @@ def test_format_projects_pretty_with_archived():
             "is_archived": True,
         },
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_projects_pretty(projects, compact=False)
 
 
@@ -274,7 +295,7 @@ def test_format_projects_pretty_with_favorites():
             "is_archived": False,
         }
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_projects_pretty(projects, compact=False)
 
 
@@ -294,7 +315,7 @@ def test_format_project_item_with_stats():
         "due_date": (now + timedelta(days=7)).isoformat(),
         "overdue_count": 3,
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_project_item(project, compact=False)
 
 
@@ -305,7 +326,7 @@ def test_format_project_item_compact():
         "name": "Compact Project",
         "color": "#00FF00",
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_project_item(project, compact=True)
 
 
@@ -316,7 +337,7 @@ def test_format_generic_list_pretty():
         {"content": "Item 2"},
         {"other": "value"},
     ]
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_generic_list_pretty(items, compact=False)
 
 
@@ -328,7 +349,7 @@ def test_format_single_item_pretty_task():
         "is_completed": False,
         "priority": 2,
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_single_item_pretty(task)
 
 
@@ -340,28 +361,28 @@ def test_format_single_item_pretty_project():
         "color": "#FF0000",
         "is_favorite": True,
     }
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_single_item_pretty(project)
 
 
 def test_format_single_item_pretty_generic():
     """Test formatting single generic item in pretty mode."""
     item = {"id": "1", "other_field": "value"}
-    with patch("sys.stdout", new=StringIO()) as fake_out:
+    with patch("sys.stdout", new=StringIO()):
         format_single_item_pretty(item)
 
 
 def test_format_due_date_this_week():
     """Test formatting due date for this week."""
     future = datetime.now() + timedelta(days=3)
-    result = format_due_date(future.isoformat())
+    format_due_date(future.isoformat())
     # Should return day name
 
 
 def test_format_due_date_multiple_days_ago():
     """Test formatting date multiple days ago."""
     past = datetime.now() - timedelta(days=10)
-    result = format_due_date(past.isoformat())
+    format_due_date(past.isoformat())
     # Should return formatted date
 
 
@@ -429,10 +450,9 @@ def test_format_dict_table_empty_items():
 
 def test_is_today_with_timezone_aware_datetime():
     """is_today must handle a timezone-aware datetime string (line 616)."""
-    from datetime import timezone
 
     # Use a UTC datetime for today
-    today_utc = datetime.now(tz=timezone.utc).replace(
+    today_utc = datetime.now(tz=UTC).replace(
         hour=12, minute=0, second=0, microsecond=0
     )
     date_str = today_utc.isoformat()
@@ -454,15 +474,14 @@ def test_is_today_with_z_suffix():
 
 def test_format_relative_time_with_timezone_aware_datetime():
     """format_relative_time with tz-aware input triggers the UTC now branch (line 690)."""
-    from datetime import timezone
 
     # A timezone-aware datetime 2 hours ago
-    two_hours_ago = datetime.now(tz=timezone.utc) - timedelta(hours=2)
+    two_hours_ago = datetime.now(tz=UTC) - timedelta(hours=2)
     result = format_relative_time(two_hours_ago)
     assert "ago" in result.lower() or "h ago" in result
 
     # 5 minutes ago
-    five_min_ago = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
+    five_min_ago = datetime.now(tz=UTC) - timedelta(minutes=5)
     result2 = format_relative_time(five_min_ago)
     assert "ago" in result2.lower() or "m ago" in result2
 

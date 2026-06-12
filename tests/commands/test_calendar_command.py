@@ -1,7 +1,6 @@
 """Unit tests for calendar_command."""
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.calendar_command import app
@@ -322,14 +321,13 @@ def test_connect_server_error():
 # Additional tests — covering the previously uncovered lines
 # ===========================================================================
 
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+import asyncio  # noqa: E402
+from unittest.mock import MagicMock  # noqa: E402
 
-from todopro_cli.commands.calendar_command import (
+from todopro_cli.commands.calendar_command import (  # noqa: E402
     _get_auth_headers,
     _get_base_url,
 )
-
 
 # ---------------------------------------------------------------------------
 # _get_base_url (lines 19-21)
@@ -428,12 +426,10 @@ def test_calendar_api_get_returns_json_on_200():
     mock_client = _make_async_httpx_mock(200, {"connected": True})
     with patch(
         "todopro_cli.commands.calendar_command._get_base_url", return_value="http://t"
-    ):
-        with patch(
-            "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
-        ):
-            with patch("httpx.AsyncClient", return_value=mock_client):
-                result = asyncio.run(_api_get("/status/"))
+    ), patch(
+        "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
+    ), patch("httpx.AsyncClient", return_value=mock_client):
+        result = asyncio.run(_api_get("/status/"))
     assert result == {"connected": True}
 
 
@@ -443,12 +439,10 @@ def test_calendar_api_get_returns_error_on_500():
     mock_client = _make_async_httpx_mock(503, {})
     with patch(
         "todopro_cli.commands.calendar_command._get_base_url", return_value="http://t"
-    ):
-        with patch(
-            "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
-        ):
-            with patch("httpx.AsyncClient", return_value=mock_client):
-                result = asyncio.run(_api_get("/status/"))
+    ), patch(
+        "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
+    ), patch("httpx.AsyncClient", return_value=mock_client):
+        result = asyncio.run(_api_get("/status/"))
     assert "error" in result
 
 
@@ -458,12 +452,10 @@ def test_calendar_api_post_returns_json_on_200():
     mock_client = _make_async_httpx_mock(200, {"auth_url": "https://google.com"})
     with patch(
         "todopro_cli.commands.calendar_command._get_base_url", return_value="http://t"
-    ):
-        with patch(
-            "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
-        ):
-            with patch("httpx.AsyncClient", return_value=mock_client):
-                result = asyncio.run(_api_post("/auth-url/"))
+    ), patch(
+        "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
+    ), patch("httpx.AsyncClient", return_value=mock_client):
+        result = asyncio.run(_api_post("/auth-url/"))
     assert result == {"auth_url": "https://google.com"}
 
 
@@ -473,12 +465,10 @@ def test_calendar_api_post_returns_error_on_500():
     mock_client = _make_async_httpx_mock(500, {})
     with patch(
         "todopro_cli.commands.calendar_command._get_base_url", return_value="http://t"
-    ):
-        with patch(
-            "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
-        ):
-            with patch("httpx.AsyncClient", return_value=mock_client):
-                result = asyncio.run(_api_post("/push/"))
+    ), patch(
+        "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
+    ), patch("httpx.AsyncClient", return_value=mock_client):
+        result = asyncio.run(_api_post("/push/"))
     assert "error" in result
 
 
@@ -488,12 +478,10 @@ def test_calendar_api_delete_returns_json():
     mock_client = _make_async_httpx_mock(200, {"status": "disconnected"})
     with patch(
         "todopro_cli.commands.calendar_command._get_base_url", return_value="http://t"
-    ):
-        with patch(
-            "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
-        ):
-            with patch("httpx.AsyncClient", return_value=mock_client):
-                result = asyncio.run(_api_delete("/disconnect/"))
+    ), patch(
+        "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
+    ), patch("httpx.AsyncClient", return_value=mock_client):
+        result = asyncio.run(_api_delete("/disconnect/"))
     assert result == {"status": "disconnected"}
 
 
@@ -512,12 +500,10 @@ def test_calendar_api_delete_handles_non_json_response():
 
     with patch(
         "todopro_cli.commands.calendar_command._get_base_url", return_value="http://t"
-    ):
-        with patch(
-            "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
-        ):
-            with patch("httpx.AsyncClient", return_value=mock_client):
-                result = asyncio.run(_api_delete("/disconnect/"))
+    ), patch(
+        "todopro_cli.commands.calendar_command._get_auth_headers", return_value={}
+    ), patch("httpx.AsyncClient", return_value=mock_client):
+        result = asyncio.run(_api_delete("/disconnect/"))
     assert result == {"status": "ok"}
 
 

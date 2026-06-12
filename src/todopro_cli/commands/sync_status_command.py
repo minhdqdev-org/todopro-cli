@@ -2,6 +2,7 @@
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_output
@@ -21,7 +22,7 @@ async def sync_status(
     from todopro_cli.services.sync_service import SyncService
 
     storage_strategy_context = get_storage_strategy_context()
-    sync_service = SyncService(factory)
+    sync_service = SyncService(storage_strategy_context)  # noqa: F821
 
     status = await sync_service.get_status()
     format_output(status.model_dump(), output)

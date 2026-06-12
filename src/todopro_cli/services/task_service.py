@@ -30,6 +30,7 @@ class TaskService:
     async def list_tasks(
         self,
         *,
+        id_suffix: str | None = None,
         status: str | None = None,
         project_id: str | None = None,
         priority: int | None = None,
@@ -43,6 +44,7 @@ class TaskService:
         """List tasks with filtering and pagination.
 
         Args:
+            id_suffix: Filter to tasks whose ID ends with this string (for short-ID resolution)
             status: Filter by status ("active", "completed", "all")
             project_id: Filter by project ID
             priority: Filter by priority level
@@ -57,6 +59,7 @@ class TaskService:
             List of Task objects matching the criteria
         """
         filters = TaskFilters(
+            id_suffix=id_suffix,
             status=status,
             project_id=project_id,
             priority=priority,

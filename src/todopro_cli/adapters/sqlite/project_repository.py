@@ -290,7 +290,7 @@ class SqliteProjectRepository(ProjectRepository):
         pending = row[2] or 0
         overdue = row[3] or 0
 
-        completion_rate = int((completed / total * 100)) if total > 0 else 0
+        completion_rate = int(completed / total * 100) if total > 0 else 0
 
         return {
             "total_tasks": total,

@@ -78,7 +78,6 @@ class TestCreateTaskWithService:
 
     def _run(self, args, task=None):
         from datetime import datetime
-        from unittest.mock import AsyncMock, MagicMock, patch
 
         from todopro_cli.models import Task
         if task is None:
@@ -126,7 +125,6 @@ class TestCreateProjectWithService:
 
     def _run(self, args, project=None):
         from datetime import datetime
-        from unittest.mock import AsyncMock, MagicMock, patch
 
         from todopro_cli.models import Project
         if project is None:
@@ -164,7 +162,6 @@ class TestCreateContextCommand:
 
     def test_create_context_success(self):
         """create context creates a new storage context."""
-        from unittest.mock import MagicMock, patch
 
         mock_ctx_svc_class = MagicMock()
         mock_ctx_svc_instance = MagicMock()
@@ -177,7 +174,6 @@ class TestCreateContextCommand:
 
     def test_create_context_with_backend(self):
         """create context with --backend option."""
-        from unittest.mock import MagicMock, patch
 
         mock_ctx_svc_class = MagicMock()
         mock_ctx_svc_instance = MagicMock()
@@ -194,8 +190,6 @@ class TestCreateLabelCommand:
 
     def _run(self, args, label=None):
         from datetime import datetime
-        from unittest.mock import AsyncMock, MagicMock, patch
-        from todopro_cli.models import Label
         if label is None:
             label = Label(
                 id="label-new-1", name="urgent", color="#FF0000",

@@ -6,7 +6,6 @@ import sqlite3
 
 import pytest
 
-from todopro_cli.adapters.sqlite import schema as db_schema
 from todopro_cli.adapters.sqlite.schema import (
     ALL_INDEXES,
     ALL_TABLES,

@@ -3,7 +3,6 @@
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.github_command import app
@@ -38,7 +37,7 @@ def _make_mock_client(status_code: int, json_data):
     if status_code < 400:
         mock_response.raise_for_status = MagicMock()
     else:
-        from httpx import HTTPStatusError, Request, Response
+        from httpx import HTTPStatusError
 
         mock_response.raise_for_status = MagicMock(
             side_effect=HTTPStatusError(
@@ -79,19 +78,17 @@ def test_import_success():
     with patch(
         "todopro_cli.commands.github_command.httpx.AsyncClient",
         return_value=mock_client,
+    ), patch(
+        "todopro_cli.commands.github_command.get_client",
+        return_value=mock_api_client,
+    ), patch(
+        "todopro_cli.commands.github_command.TasksAPI",
+        return_value=mock_tasks_api,
     ):
-        with patch(
-            "todopro_cli.commands.github_command.get_client",
-            return_value=mock_api_client,
-        ):
-            with patch(
-                "todopro_cli.commands.github_command.TasksAPI",
-                return_value=mock_tasks_api,
-            ):
-                result = runner.invoke(
-                    app,
-                    ["import", "--repo", "owner/repo", "--token", "test-token"],
-                )
+        result = runner.invoke(
+            app,
+            ["import", "--repo", "owner/repo", "--token", "test-token"],
+        )
 
     assert result.exit_code == 0
     assert "Imported" in result.output
@@ -108,26 +105,24 @@ def test_import_dry_run():
     with patch(
         "todopro_cli.commands.github_command.httpx.AsyncClient",
         return_value=mock_client,
+    ), patch(
+        "todopro_cli.commands.github_command.get_client",
+        return_value=mock_api_client,
+    ), patch(
+        "todopro_cli.commands.github_command.TasksAPI",
+        return_value=mock_tasks_api,
     ):
-        with patch(
-            "todopro_cli.commands.github_command.get_client",
-            return_value=mock_api_client,
-        ):
-            with patch(
-                "todopro_cli.commands.github_command.TasksAPI",
-                return_value=mock_tasks_api,
-            ):
-                result = runner.invoke(
-                    app,
-                    [
-                        "import",
-                        "--repo",
-                        "owner/repo",
-                        "--token",
-                        "test-token",
-                        "--dry-run",
-                    ],
-                )
+        result = runner.invoke(
+            app,
+            [
+                "import",
+                "--repo",
+                "owner/repo",
+                "--token",
+                "test-token",
+                "--dry-run",
+            ],
+        )
 
     assert result.exit_code == 0
     # dry run output should mention the issues or "dry"
@@ -202,8 +197,9 @@ def test_list_issues_success():
     assert result.exit_code == 0
 
 
-from todopro_cli.commands.github_command import _get_priority_from_labels
-import httpx
+import httpx  # noqa: E402
+
+from todopro_cli.commands.github_command import _get_priority_from_labels  # noqa: E402
 
 
 class TestGetPriorityFromLabels:
@@ -275,10 +271,12 @@ class TestImportDoImport:
         mock_api_client = MagicMock()
         mock_api_client.close = AsyncMock()
 
-        with patch("todopro_cli.commands.github_command.httpx.AsyncClient", return_value=mock_http_client):
-            with patch("todopro_cli.commands.github_command.get_client", return_value=mock_api_client):
-                with patch("todopro_cli.commands.github_command.TasksAPI", return_value=mock_tasks_api):
-                    result = runner.invoke(app, ["import", "--repo", "o/r", "--token", "tok"])
+        with (
+            patch("todopro_cli.commands.github_command.httpx.AsyncClient", return_value=mock_http_client),
+            patch("todopro_cli.commands.github_command.get_client", return_value=mock_api_client),
+            patch("todopro_cli.commands.github_command.TasksAPI", return_value=mock_tasks_api),
+        ):
+            result = runner.invoke(app, ["import", "--repo", "o/r", "--token", "tok"])
         assert result.exit_code == 0
         # Only 1 real issue imported (PR filtered)
         assert mock_tasks_api.create_task.call_count == 1
@@ -289,10 +287,12 @@ class TestImportDoImport:
         mock_api_client = MagicMock()
         mock_api_client.close = AsyncMock()
 
-        with patch("todopro_cli.commands.github_command.httpx.AsyncClient", return_value=mock_http_client):
-            with patch("todopro_cli.commands.github_command.get_client", return_value=mock_api_client):
-                with patch("todopro_cli.commands.github_command.TasksAPI", side_effect=Exception("api down")):
-                    result = runner.invoke(app, ["import", "--repo", "o/r", "--token", "tok"])
+        with (
+            patch("todopro_cli.commands.github_command.httpx.AsyncClient", return_value=mock_http_client),
+            patch("todopro_cli.commands.github_command.get_client", return_value=mock_api_client),
+            patch("todopro_cli.commands.github_command.TasksAPI", side_effect=Exception("api down")),
+        ):
+            result = runner.invoke(app, ["import", "--repo", "o/r", "--token", "tok"])
         assert result.exit_code == 1
 
     def test_list_issues_no_token(self):

@@ -10,7 +10,7 @@ except ImportError:
     pass
 
 try:
-    import numpy as np
+    import numpy as np  # noqa: F401
     NUMPY_AVAILABLE = True
 except ImportError:
     pass
@@ -32,7 +32,7 @@ def record_audio(duration_seconds: int = 30, sample_rate: int = 16000, channels:
     
     import io
     import wave
-    import numpy as np
+
     
     recording = sd.rec(
         int(duration_seconds * sample_rate),

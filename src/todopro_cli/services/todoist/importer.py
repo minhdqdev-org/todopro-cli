@@ -12,7 +12,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from todopro_cli.models import LabelCreate, ProjectCreate, ProjectFilters, TaskCreate, TaskFilters
+from todopro_cli.models import (
+    LabelCreate,
+    ProjectCreate,
+    ProjectFilters,
+    TaskCreate,
+    TaskFilters,
+)
 
 from .client import TodoistClientProtocol
 from .models import (

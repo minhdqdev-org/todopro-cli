@@ -1,6 +1,7 @@
 """Project management commands."""
 
 import typer
+from rich.text import Text
 
 from todopro_cli.services.project_service import get_project_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
@@ -60,7 +61,7 @@ async def create_project(
     name: str = typer.Argument(..., help="Project name"),
     color: str | None = typer.Option(None, "--color", help="Project color"),
     favorite: bool = typer.Option(False, "--favorite", help="Mark as favorite"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
 ) -> None:
     """Create a new project."""
     project_service = get_project_service()
@@ -68,6 +69,16 @@ async def create_project(
     project = await project_service.create_project(
         name=name, color=color, is_favorite=favorite
     )
+    if output == "pretty":
+        success_line = Text()
+        success_line.append("Success: ", style="bold green")
+        success_line.append("Project ")
+        success_line.append(project.name, style="bold cyan")
+        success_line.append(" is created!")
+        console.print(success_line)
+        console.print(f"[dim]Project ID: {project.id}[/dim]")
+        return
+
     format_success(f"Project created: {project.id}")
     format_output(project.model_dump(), output)
 

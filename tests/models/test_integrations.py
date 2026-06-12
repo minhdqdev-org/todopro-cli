@@ -23,7 +23,6 @@ from todopro_cli.models.integrations import (
     SyncStats,
 )
 
-
 # ---------------------------------------------------------------------------
 # GitHubStatus
 # ---------------------------------------------------------------------------
@@ -102,7 +101,7 @@ class TestGitHubDeviceAuth:
         assert auth.interval == 10
 
     def test_missing_required_field_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             GitHubDeviceAuth(device_code="d", user_code="u")  # missing verification_uri
 
 

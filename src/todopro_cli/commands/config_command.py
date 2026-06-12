@@ -115,7 +115,7 @@ def use_context(
 ) -> None:
     """Switch to a different context (environment)."""
     try:
-        config_service = get_config_service(profile)
+        config_service = get_config_service()
 
         # Initialize contexts if they don't exist
         if not config_service.config.contexts:
@@ -234,7 +234,7 @@ def delete_context(
             format_error("Cancelled")
             raise typer.Exit(0)
 
-    config_service = get_config_service(profile)
+    config_service = get_config_service()
     config_service.remove_context(name)
     config_service.clear_context_credentials(name)
 

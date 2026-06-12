@@ -4,6 +4,7 @@ import json
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import (
@@ -31,7 +32,7 @@ async def next_command(
         output = "json"
 
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     # Get active tasks sorted by priority and due date

@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from todopro_cli.services.api.client import APIClient
 from todopro_cli.services.api.analytics import AnalyticsAPI
+from todopro_cli.services.api.client import APIClient
 
 
 @pytest.fixture

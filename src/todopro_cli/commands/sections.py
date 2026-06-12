@@ -125,7 +125,7 @@ async def delete_section(
 @command_wrapper
 async def reorder_sections(
     project_id: str = typer.Argument(..., help="Project ID, name, or suffix"),
-    orders: list[str] = typer.Argument(
+    orders: list[str] = typer.Argument(  # noqa: B008
         ...,
         help="Space-separated list of section_id:display_order pairs (e.g. abc:0 def:1)",
     ),
@@ -150,7 +150,7 @@ async def reorder_sections(
             pos = int(pos_str)
         except ValueError:
             format_error(f"Invalid display_order '{pos_str}'. Must be an integer.")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
         resolved_sid = await resolve_section_id(section_id_part, section_service.repository, resolved_project_id)
         section_orders.append({"section_id": resolved_sid, "display_order": pos})
 

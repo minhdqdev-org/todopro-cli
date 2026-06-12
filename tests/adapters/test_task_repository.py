@@ -6,17 +6,16 @@ schema applied, so we test the real SQL without touching production data.
 
 from __future__ import annotations
 
+import contextlib
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-import pytest_asyncio
 
-from todopro_cli.adapters.sqlite.task_repository import SqliteTaskRepository
 from todopro_cli.adapters.sqlite import schema as db_schema
+from todopro_cli.adapters.sqlite.task_repository import SqliteTaskRepository
 from todopro_cli.models import Task, TaskCreate, TaskFilters, TaskUpdate
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -41,10 +40,8 @@ def _create_in_memory_db() -> sqlite3.Connection:
     conn.execute(db_schema.CREATE_FILTERS_TABLE)
 
     for idx_sql in db_schema.ALL_INDEXES:
-        try:
+        with contextlib.suppress(sqlite3.OperationalError):
             conn.execute(idx_sql)
-        except sqlite3.OperationalError:
-            pass  # Ignore index creation errors on in-memory DB
 
     conn.commit()
     return conn
@@ -84,7 +81,7 @@ def repo(db):
     e2ee_mock = MagicMock()
     e2ee_mock.enabled = False
     e2ee_mock.prepare_task_for_storage.side_effect = lambda c, d: (c, None, d, None)
-    e2ee_mock.extract_task_content.side_effect = lambda c, ce, d, de: (c, d)
+    e2ee_mock.extract_task_content.side_effect = lambda c, _ce, d, _de: (c, d)
     r._e2ee_handler = e2ee_mock
     return r
 
@@ -435,10 +432,10 @@ class TestBulkUpdate:
 
 
 class TestLabelContextHelpers:
-    def test_get_task_labels_empty(self, repo, db):
+    def test_get_task_labels_empty(self, repo, _db):
         assert repo._get_task_labels("nonexistent") == []
 
-    def test_get_task_contexts_empty(self, repo, db):
+    def test_get_task_contexts_empty(self, repo, _db):
         assert repo._get_task_contexts("nonexistent") == []
 
     def test_set_and_get_task_labels(self, repo, db):
@@ -700,7 +697,7 @@ class TestListAllDateFilters:
             (user_id,),
         )
         conn.commit()
-        cutoff = datetime(2024, 6, 1, tzinfo=timezone.utc)
+        cutoff = datetime(2024, 6, 1, tzinfo=UTC)
         tasks = await repo.list_all(TaskFilters(due_before=cutoff))
         ids = [t.id for t in tasks]
         assert "due-task-1" in ids
@@ -724,7 +721,7 @@ class TestListAllDateFilters:
             (user_id,),
         )
         conn.commit()
-        cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        cutoff = datetime(2025, 1, 1, tzinfo=UTC)
         tasks = await repo.list_all(TaskFilters(due_after=cutoff))
         ids = [t.id for t in tasks]
         assert "after-task-2" in ids
@@ -761,7 +758,7 @@ class TestE2EEDecryption:
         e2ee_mock = MagicMock()
         e2ee_mock.enabled = True
         e2ee_mock.prepare_task_for_storage.side_effect = lambda c, d: (c, None, d, None)
-        e2ee_mock.extract_task_content.side_effect = lambda c, ce, d, de: (
+        e2ee_mock.extract_task_content.side_effect = lambda c, _ce, d, _de: (
             f"decrypted:{c}",
             d,
         )
@@ -798,7 +795,7 @@ class TestAddWithDatetimeAndContexts:
     @pytest.mark.asyncio
     async def test_add_with_datetime_due_date(self, repo):
         """Passing a datetime object as due_date triggers isoformat conversion (line 236)."""
-        due = datetime(2025, 3, 15, 12, 0, 0, tzinfo=timezone.utc)
+        due = datetime(2025, 3, 15, 12, 0, 0, tzinfo=UTC)
         task = await repo.add(TaskCreate(content="Datetime task", due_date=due))
         assert task.id is not None
 
@@ -830,7 +827,7 @@ class TestUpdateEdgeCases:
     async def test_update_with_datetime_due_date(self, repo):
         """Datetime due_date in update triggers isoformat (line 298)."""
         t = await repo.add(_task_create("Original"))
-        due = datetime(2025, 4, 10, 9, 0, 0, tzinfo=timezone.utc)
+        due = datetime(2025, 4, 10, 9, 0, 0, tzinfo=UTC)
         updated = await repo.update(t.id, TaskUpdate(due_date=due))
         assert updated.id == t.id
 
@@ -844,7 +841,7 @@ class TestUpdateEdgeCases:
         e2ee_mock.prepare_task_for_storage.side_effect = lambda c, d: (
             c, None, d, None
         )
-        e2ee_mock.extract_task_content.side_effect = lambda c, ce, d, de: (c, d)
+        e2ee_mock.extract_task_content.side_effect = lambda c, _ce, d, _de: (c, d)
         repo._e2ee_handler = e2ee_mock
 
         task = await repo.add(_task_create("E2EE task", description="original desc"))
@@ -881,7 +878,7 @@ class TestBulkUpdateRollback:
         """When one update fails, the transaction rolls back and exception re-raised."""
         t = await repo.add(_task_create("Good task"))
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             await repo.bulk_update(
                 [t.id, "nonexistent-task-id-that-will-fail"],
                 TaskUpdate(priority=2),

@@ -7,22 +7,13 @@ and SyncPushService — fully mocked to avoid filesystem / network I/O.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
+from unittest.mock import AsyncMock, MagicMock
 
 from todopro_cli.models import (
     Label,
-    LabelCreate,
     Project,
-    ProjectCreate,
-    ProjectFilters,
-    ProjectUpdate,
     Task,
     TaskCreate,
-    TaskFilters,
     TaskUpdate,
 )
 from todopro_cli.services.sync_service import (
@@ -32,7 +23,6 @@ from todopro_cli.services.sync_service import (
     SyncService,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -41,7 +31,7 @@ def _mock_repo(**overrides) -> MagicMock:
     """Return a MagicMock that behaves like any repository."""
     repo = MagicMock()
     repo.list_all = AsyncMock(return_value=overrides.get("list_all", []))
-    repo.get_by_id = AsyncMock(return_value=overrides.get("get_by_id", None))
+    repo.get_by_id = AsyncMock(return_value=overrides.get("get_by_id"))
     repo.create = AsyncMock(return_value=None)
     repo.update = AsyncMock(return_value=None)
     return repo
@@ -49,8 +39,9 @@ def _mock_repo(**overrides) -> MagicMock:
 
 def _make_pull_service(**repo_overrides) -> SyncPullService:
     """Instantiate SyncPullService with 8 mock repositories."""
-    from rich.console import Console
     from io import StringIO
+
+    from rich.console import Console
 
     console = Console(file=StringIO(), no_color=True)
     repos = [_mock_repo(**repo_overrides) for _ in range(8)]
@@ -67,8 +58,9 @@ def _make_pull_service(**repo_overrides) -> SyncPullService:
 
 
 def _make_push_service(**repo_overrides) -> SyncPushService:
-    from rich.console import Console
     from io import StringIO
+
+    from rich.console import Console
 
     console = Console(file=StringIO(), no_color=True)
     repos = [_mock_repo(**repo_overrides) for _ in range(8)]
@@ -179,8 +171,9 @@ class TestShouldUpdate:
 
     def setup_method(self):
         repos = [_mock_repo() for _ in range(8)]
-        from rich.console import Console
         from io import StringIO
+
+        from rich.console import Console
         self.svc = SyncService(*repos, console=Console(file=StringIO(), no_color=True))
 
     # --- equal timestamps ---
@@ -256,8 +249,9 @@ class TestLogConflict:
 
     def setup_method(self):
         repos = [_mock_repo() for _ in range(8)]
-        from rich.console import Console
         from io import StringIO
+
+        from rich.console import Console
         self.svc = SyncService(*repos, console=Console(file=StringIO(), no_color=True))
         # Use real conflict tracker but point it at a temp dir
         from todopro_cli.services.sync_conflicts import SyncConflictTracker

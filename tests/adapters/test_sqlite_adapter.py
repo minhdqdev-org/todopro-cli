@@ -6,8 +6,6 @@ import importlib
 import importlib.util
 from pathlib import Path
 
-import pytest
-
 # Path to the sqlite.py adapter file (shadowed at runtime by the sqlite/ package)
 _SQLITE_PY_PATH = (
     Path(__file__).parent.parent.parent

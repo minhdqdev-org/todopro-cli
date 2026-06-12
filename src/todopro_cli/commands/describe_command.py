@@ -4,6 +4,7 @@ import asyncio
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_output

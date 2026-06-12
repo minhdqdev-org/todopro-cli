@@ -22,12 +22,15 @@ console = get_console()
 @app.command("tasks")
 @command_wrapper
 async def list_tasks(
-    status: str | None = typer.Option(None, "--status", help="Filter by status"),
+    status: str | None = typer.Option(None, "--status", help="Filter by status (active/completed/all)"),
     project: str | None = typer.Option(None, "--project", help="Filter by project ID"),
     priority: int | None = typer.Option(None, "--priority", help="Filter by priority"),
     search: str | None = typer.Option(None, "--search", help="Search tasks"),
     recurring: bool = typer.Option(
         False, "--recurring", help="Show only recurring tasks"
+    ),
+    show_completed: bool = typer.Option(
+        False, "--show-completed", help="Include completed tasks"
     ),
     limit: int = typer.Option(30, "--limit", help="Limit results (default 30)"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
@@ -37,11 +40,15 @@ async def list_tasks(
     ),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
-    """List tasks."""
+    """List tasks. Completed tasks are hidden by default; use --show-completed to include them."""
     import sys
 
     if json_opt:
         output = "json"
+
+    # Default to active-only unless --show-completed or an explicit --status is given
+    if status is None:
+        status = "all" if show_completed else "active"
 
     task_service = get_task_service()
 
@@ -131,7 +138,7 @@ async def list_labels(
     label_service = get_label_service()
 
     labels = await label_service.list_labels()
-    result = {"labels": [l.model_dump() for l in labels]}
+    result = {"labels": [lbl.model_dump() for lbl in labels]}
     format_output(result, output)
 
 

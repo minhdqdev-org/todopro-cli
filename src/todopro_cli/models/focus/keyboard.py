@@ -1,9 +1,9 @@
 """Cross-platform keyboard input handler for timer controls."""
 
+import contextlib
 import sys
 import termios
 import tty
-from typing import Optional
 
 
 class KeyboardHandler:
@@ -23,7 +23,7 @@ class KeyboardHandler:
             # Windows or other platform
             pass
 
-    def get_key(self) -> Optional[str]:
+    def get_key(self) -> str | None:
         """
         Get a single keypress without blocking.
 
@@ -44,10 +44,8 @@ class KeyboardHandler:
     def stop(self):
         """Restore terminal settings."""
         if self.old_settings:
-            try:
+            with contextlib.suppress(Exception):
                 termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
-            except Exception:
-                pass
 
 
 # Windows alternative (if needed)
@@ -62,7 +60,7 @@ class WindowsKeyboardHandler:
         except ImportError:
             self.msvcrt = None
 
-    def get_key(self) -> Optional[str]:
+    def get_key(self) -> str | None:
         """Get key on Windows."""
         if not self.msvcrt:
             return None
@@ -76,4 +74,3 @@ class WindowsKeyboardHandler:
 
     def stop(self):
         """No cleanup needed on Windows."""
-        pass

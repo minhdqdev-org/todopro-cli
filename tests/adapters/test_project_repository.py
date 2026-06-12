@@ -6,16 +6,16 @@ so SQL is exercised without touching production data.
 
 from __future__ import annotations
 
+import contextlib
 import sqlite3
 
 import pytest
 
+from todopro_cli.adapters.sqlite import schema as db_schema
 from todopro_cli.adapters.sqlite.project_repository import (
     SqliteProjectRepository,
 )
-from todopro_cli.adapters.sqlite import schema as db_schema
 from todopro_cli.models import Project, ProjectCreate, ProjectFilters, ProjectUpdate
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -38,10 +38,8 @@ def _create_in_memory_db() -> sqlite3.Connection:
     conn.execute(db_schema.CREATE_FILTERS_TABLE)
 
     for idx_sql in db_schema.ALL_INDEXES:
-        try:
+        with contextlib.suppress(sqlite3.OperationalError):
             conn.execute(idx_sql)
-        except sqlite3.OperationalError:
-            pass
 
     conn.commit()
     return conn

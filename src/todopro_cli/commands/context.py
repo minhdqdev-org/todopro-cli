@@ -150,8 +150,7 @@ def _get_user_info_sync():
         client = get_client()
         auth_api = AuthAPI(client)
         try:
-            user = await auth_api.get_profile()
-            return user
+            return await auth_api.get_profile()
         finally:
             await client.close()
 

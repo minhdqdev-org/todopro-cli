@@ -11,8 +11,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from todopro_cli.services.todoist.client import TodoistClient, TodoistClientProtocol
-from todopro_cli.services.todoist.models import TodoistLabel, TodoistProject, TodoistTask
-
+from todopro_cli.services.todoist.models import (
+    TodoistLabel,
+    TodoistProject,
+    TodoistTask,
+)
 
 # ---------------------------------------------------------------------------
 # Protocol conformance
@@ -131,7 +134,7 @@ class TestGetTasks:
         page2 = {"results": [{"id": "t2", "content": "B", "project_id": "p1"}], "next_cursor": None}
         call_count = 0
 
-        async def fake_get(path, params=None):
+        async def fake_get(_path, _params=None):
             nonlocal call_count
             call_count += 1
             return page1 if call_count == 1 else page2
@@ -169,7 +172,7 @@ class TestGetLabels:
         """Workaround for Todoist labels pagination bug — always fetches 200."""
         captured_params = {}
 
-        async def fake_get(path, params=None):
+        async def fake_get(_path, params=None):
             captured_params.update(params or {})
             return []
 
@@ -188,21 +191,18 @@ class TestGetLabels:
 class TestHttpErrors:
     @pytest.mark.asyncio
     async def test_401_raises_value_error(self):
-        import httpx
 
         client = _make_client()
 
         async def fake_get(*_, **__):
             raise ValueError("Invalid Todoist API key — check your credentials.")
 
-        with patch.object(client, "_get", new=fake_get):
-            with pytest.raises(ValueError, match="API key"):
-                await client.get_projects()
+        with patch.object(client, "_get", new=fake_get), pytest.raises(ValueError, match="API key"):
+            await client.get_projects()
 
     @pytest.mark.asyncio
     async def test_real_get_raises_value_error_on_401(self):
         """Integration: _get itself raises ValueError for 401."""
-        import httpx
 
         client = _make_client()
         mock_resp = MagicMock()
@@ -214,6 +214,8 @@ class TestHttpErrors:
         mock_async_client.__aexit__ = AsyncMock(return_value=False)
         mock_async_client.get = AsyncMock(return_value=mock_resp)
 
-        with patch("todopro_cli.services.todoist.client.httpx.AsyncClient", return_value=mock_async_client):
-            with pytest.raises(ValueError, match="API key"):
-                await client._get("/projects")
+        with (
+            patch("todopro_cli.services.todoist.client.httpx.AsyncClient", return_value=mock_async_client),
+            pytest.raises(ValueError, match="API key"),
+        ):
+            await client._get("/projects")

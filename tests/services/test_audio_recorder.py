@@ -14,7 +14,6 @@ import pytest
 
 import todopro_cli.services.audio.recorder as recorder
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -78,23 +77,29 @@ def test_check_dependencies_all_available():
 
 def test_record_audio_raises_when_sounddevice_missing():
     """Raises RuntimeError when sounddevice is not available."""
-    with _BoolFlags(sd=False, np=True):
-        with pytest.raises(RuntimeError, match="Audio dependencies not available"):
-            recorder.record_audio()
+    with (
+        _BoolFlags(sd=False, np=True),
+        pytest.raises(RuntimeError, match="Audio dependencies not available"),
+    ):
+        recorder.record_audio()
 
 
 def test_record_audio_raises_when_numpy_missing():
     """Raises RuntimeError when numpy is not available."""
-    with _BoolFlags(sd=True, np=False):
-        with pytest.raises(RuntimeError, match="Audio dependencies not available"):
-            recorder.record_audio()
+    with (
+        _BoolFlags(sd=True, np=False),
+        pytest.raises(RuntimeError, match="Audio dependencies not available"),
+    ):
+        recorder.record_audio()
 
 
 def test_record_audio_raises_when_both_missing():
     """Raises RuntimeError when both deps are missing."""
-    with _BoolFlags(sd=False, np=False):
-        with pytest.raises(RuntimeError, match="Audio dependencies not available"):
-            recorder.record_audio()
+    with (
+        _BoolFlags(sd=False, np=False),
+        pytest.raises(RuntimeError, match="Audio dependencies not available"),
+    ):
+        recorder.record_audio()
 
 
 # ---------------------------------------------------------------------------
@@ -116,19 +121,16 @@ def test_record_audio_returns_wav_bytes():
     # numpy is unused at runtime (only imported), so a plain MagicMock suffices
     mock_np = MagicMock()
 
-    with _BoolFlags(sd=True, np=True):
-        # Inject the sounddevice stub at module level (create=True because the
-        # real 'sd' name never existed when sounddevice is absent)
-        with patch.object(recorder, "sd", mock_sd, create=True):
-            sys.modules.setdefault("numpy", mock_np)  # satisfy the inner import
-            try:
-                result = recorder.record_audio(
-                    duration_seconds=1, sample_rate=16_000, channels=1
-                )
-            finally:
-                # Only remove the stub if we inserted it
-                if sys.modules.get("numpy") is mock_np:
-                    del sys.modules["numpy"]
+    with _BoolFlags(sd=True, np=True), patch.object(recorder, "sd", mock_sd, create=True):
+        sys.modules.setdefault("numpy", mock_np)  # satisfy the inner import
+        try:
+            result = recorder.record_audio(
+                duration_seconds=1, sample_rate=16_000, channels=1
+            )
+        finally:
+            # Only remove the stub if we inserted it
+            if sys.modules.get("numpy") is mock_np:
+                del sys.modules["numpy"]
 
     assert isinstance(result, bytes)
     # A well-formed WAV file always begins with the RIFF header
@@ -145,14 +147,13 @@ def test_record_audio_calls_sd_rec_with_correct_args():
     mock_sd.rec.return_value = mock_recording
     mock_np = MagicMock()
 
-    with _BoolFlags(sd=True, np=True):
-        with patch.object(recorder, "sd", mock_sd, create=True):
-            sys.modules.setdefault("numpy", mock_np)
-            try:
-                recorder.record_audio(duration_seconds=1, sample_rate=8_000, channels=1)
-            finally:
-                if sys.modules.get("numpy") is mock_np:
-                    del sys.modules["numpy"]
+    with _BoolFlags(sd=True, np=True), patch.object(recorder, "sd", mock_sd, create=True):
+        sys.modules.setdefault("numpy", mock_np)
+        try:
+            recorder.record_audio(duration_seconds=1, sample_rate=8_000, channels=1)
+        finally:
+            if sys.modules.get("numpy") is mock_np:
+                del sys.modules["numpy"]
 
     mock_sd.rec.assert_called_once_with(
         8_000,  # frames = duration * sample_rate

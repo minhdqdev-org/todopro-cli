@@ -10,6 +10,7 @@ from todopro_cli.utils.ui.formatters import format_error, format_output, format_
 from todopro_cli.utils.uuid_utils import resolve_label_id
 
 from .decorators import command_wrapper
+
 app = typer.Typer(cls=SuggestingGroup, help="Label management commands")
 console = get_console()
 
@@ -34,8 +35,8 @@ async def list_labels(
     labels = await label_service.list_labels()
     if search:
         search_lower = search.lower()
-        labels = [l for l in labels if search_lower in l.name.lower()]
-    result = {"labels": [l.model_dump() for l in labels]}
+        labels = [lbl for lbl in labels if search_lower in lbl.name.lower()]
+    result = {"labels": [lbl.model_dump() for lbl in labels]}
     format_output(result, output, compact=compact)
 
 

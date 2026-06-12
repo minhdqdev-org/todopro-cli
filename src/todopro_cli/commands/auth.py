@@ -164,7 +164,7 @@ def signup(
                                     error_msg = f"Password: {error_data['password'][0] if isinstance(error_data['password'], list) else error_data['password']}"
                                 elif "error" in error_data:
                                     error_msg = error_data["error"]
-                        except:
+                        except Exception:
                             pass
                     raise Exception(error_msg) from e
 

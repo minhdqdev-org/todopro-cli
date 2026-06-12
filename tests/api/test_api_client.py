@@ -1,7 +1,5 @@
 """Tests for API client."""
 
-import tempfile
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -17,12 +15,11 @@ def mock_config_manager(tmp_path):
     tmpdir = str(tmp_path)
     with patch(
         "todopro_cli.services.config_service.user_config_dir", return_value=tmpdir
+    ), patch(
+        "todopro_cli.services.config_service.user_data_dir", return_value=tmpdir
     ):
-        with patch(
-            "todopro_cli.services.config_service.user_data_dir", return_value=tmpdir
-        ):
-            config_manager = ConfigService()
-            yield config_manager
+        config_manager = ConfigService()
+        yield config_manager
 
 
 @pytest.mark.asyncio
@@ -377,7 +374,7 @@ async def test_get_headers_with_token_adds_authorization(mock_config_manager):
 
     mock_ctx = Context(name="test-ctx", type="remote", source="https://api.test.com")
     mock_config_manager.get_current_context = lambda: mock_ctx
-    mock_config_manager.load_context_credentials = lambda ctx_name: {
+    mock_config_manager.load_context_credentials = lambda _ctx_name: {
         "token": "my-jwt-token"
     }
     with patch(
@@ -399,7 +396,7 @@ async def test_get_headers_context_creds_missing_falls_back_to_default(
     mock_ctx = Context(name="test-ctx", type="remote", source="https://api.test.com")
     mock_config_manager.get_current_context = lambda: mock_ctx
     mock_config_manager.load_context_credentials = (
-        lambda ctx_name: None
+        lambda _ctx_name: None
     )  # no context creds
     # Stub load_credentials to return a token directly (avoids file-system round-trip)
     mock_config_manager.load_credentials = lambda: {"token": "fallback-token"}
@@ -453,7 +450,7 @@ async def test_try_refresh_token_success_returns_true(mock_config_manager):
     }
     save_called = []
     mock_config_manager.save_credentials = (
-        lambda tok, ref=None, **kw: save_called.append(tok)
+        lambda tok, _ref=None, **_kw: save_called.append(tok)
     )
 
     mock_response = MagicMock()
@@ -555,14 +552,13 @@ async def test_request_401_with_successful_refresh_retries_and_succeeds(
             "request",
             new_callable=AsyncMock,
             side_effect=[error_401, success_response],
+        ), patch.object(
+            client,
+            "_try_refresh_token",
+            new_callable=AsyncMock,
+            return_value=True,
         ):
-            with patch.object(
-                client,
-                "_try_refresh_token",
-                new_callable=AsyncMock,
-                return_value=True,
-            ):
-                response = await client.request("GET", "/protected", retry=0)
+            response = await client.request("GET", "/protected", retry=0)
     assert response.status_code == 200
 
 
@@ -589,15 +585,13 @@ async def test_request_401_with_successful_refresh_but_retry_fails(mock_config_m
             "request",
             new_callable=AsyncMock,
             side_effect=[error_401, error_after_refresh],
-        ):
-            with patch.object(
-                client,
-                "_try_refresh_token",
-                new_callable=AsyncMock,
-                return_value=True,
-            ):
-                with pytest.raises(httpx.HTTPStatusError):
-                    await client.request("GET", "/protected", retry=0)
+        ), patch.object(
+            client,
+            "_try_refresh_token",
+            new_callable=AsyncMock,
+            return_value=True,
+        ), pytest.raises(httpx.HTTPStatusError):
+            await client.request("GET", "/protected", retry=0)
 
 
 @pytest.mark.asyncio
@@ -622,15 +616,13 @@ async def test_request_401_refresh_fails_no_refresh_token_in_creds(mock_config_m
             "request",
             new_callable=AsyncMock,
             side_effect=error_401,
-        ):
-            with patch.object(
-                client,
-                "_try_refresh_token",
-                new_callable=AsyncMock,
-                return_value=False,
-            ):
-                with pytest.raises(httpx.HTTPStatusError):
-                    await client.request("GET", "/secret", retry=0)
+        ), patch.object(
+            client,
+            "_try_refresh_token",
+            new_callable=AsyncMock,
+            return_value=False,
+        ), pytest.raises(httpx.HTTPStatusError):
+            await client.request("GET", "/secret", retry=0)
 
 
 @pytest.mark.asyncio
@@ -659,15 +651,13 @@ async def test_request_401_refresh_fails_with_refresh_token_still_raises(
             "request",
             new_callable=AsyncMock,
             side_effect=error_401,
-        ):
-            with patch.object(
-                client,
-                "_try_refresh_token",
-                new_callable=AsyncMock,
-                return_value=False,
-            ):
-                with pytest.raises(httpx.HTTPStatusError):
-                    await client.request("GET", "/secret", retry=0)
+        ), patch.object(
+            client,
+            "_try_refresh_token",
+            new_callable=AsyncMock,
+            return_value=False,
+        ), pytest.raises(httpx.HTTPStatusError):
+            await client.request("GET", "/secret", retry=0)
 
 
 # ===========================================================================
@@ -690,9 +680,8 @@ async def test_request_request_error_sets_last_exception(mock_config_manager):
             "request",
             new_callable=AsyncMock,
             side_effect=req_error,
-        ):
-            with pytest.raises(httpx.RequestError):
-                await client.request("GET", "/test", retry=0)
+        ), pytest.raises(httpx.RequestError):
+            await client.request("GET", "/test", retry=0)
         await client.close()
 
 
@@ -716,9 +705,8 @@ async def test_request_request_error_with_retries_eventually_raises(mock_config_
             "request",
             new_callable=AsyncMock,
             side_effect=req_error,
-        ):
-            with pytest.raises(httpx.RequestError):
-                await client.request("GET", "/test", retry=2)
+        ), pytest.raises(httpx.RequestError):
+            await client.request("GET", "/test", retry=2)
         await client.close()
 
 

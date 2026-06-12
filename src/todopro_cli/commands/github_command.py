@@ -11,6 +11,7 @@ from todopro_cli.services.api.client import get_client
 from todopro_cli.services.api.tasks import TasksAPI
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
+
 app = typer.Typer(cls=SuggestingGroup, help="GitHub integration commands")
 console = get_console()
 
@@ -60,10 +61,10 @@ def import_issues(
     ),
     state: str = typer.Option("open", "--state", help="Issue state (open/closed/all)"),
     limit: int = typer.Option(20, "--limit", help="Max issues to import"),
-    label: str = typer.Option(
+    _label: str = typer.Option(
         "github", "--label", help="Label to apply to imported tasks"
     ),
-    profile: str = typer.Option("default", "--profile", help="TodoPro profile to use"),
+    _profile: str = typer.Option("default", "--_profile", help="TodoPro _profile to use"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview without importing"),
 ) -> None:
     """Import GitHub Issues as TodoPro tasks."""
@@ -81,10 +82,10 @@ def import_issues(
         raise
     except httpx.ConnectError:
         console.print("[red]Error: Cannot connect to GitHub API[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     # Filter out pull requests
     issues = [i for i in issues if i.get("pull_request") is None]
@@ -130,7 +131,7 @@ def import_issues(
         raise
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
 
 @app.command("list-issues")
@@ -156,10 +157,10 @@ def list_issues(
         raise
     except httpx.ConnectError:
         console.print("[red]Error: Cannot connect to GitHub API[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except Exception as exc:
         console.print(f"[red]Error: {exc}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     issues = [i for i in issues if i.get("pull_request") is None]
 

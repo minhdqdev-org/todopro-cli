@@ -11,7 +11,6 @@ import pytest
 
 from todopro_cli.services.api.templates import TemplatesAPI
 
-
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
 # ---------------------------------------------------------------------------

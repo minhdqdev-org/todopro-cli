@@ -15,7 +15,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from todopro_cli.models.crypto.exceptions import (
-    DecryptionError,
     InvalidRecoveryPhraseError,
 )
 from todopro_cli.services.encryption_service import EncryptionService
@@ -54,8 +53,9 @@ class TestEncryptionEdgeCases:
         # Corrupt the ciphertext
         encrypted["ciphertext"] = base64.b64encode(b"corrupted_data").decode()
 
-        with pytest.raises(Exception):  # Should raise DecryptionError or similar
+        with pytest.raises(Exception) as exc_info:  # Should raise DecryptionError or similar
             encryption_service.decrypt(encrypted)
+        assert exc_info.value is not None
 
     def test_decrypt_missing_iv(self, encryption_service):
         """Test that missing IV in encrypted data raises error."""
@@ -66,8 +66,9 @@ class TestEncryptionEdgeCases:
             "version": "1",
         }
 
-        with pytest.raises(Exception):  # Should raise validation error
+        with pytest.raises(Exception) as exc_info:  # Should raise validation error
             encryption_service.decrypt(encrypted)
+        assert exc_info.value is not None
 
     def test_decrypt_invalid_tag(self, encryption_service):
         """Test that invalid authentication tag is detected."""
@@ -77,8 +78,9 @@ class TestEncryptionEdgeCases:
         # Corrupt the authentication tag
         encrypted["authTag"] = base64.b64encode(b"wrong_tag_value_12345").decode()
 
-        with pytest.raises(Exception):  # Should raise authentication error
+        with pytest.raises(Exception) as exc_info:  # Should raise authentication error
             encryption_service.decrypt(encrypted)
+        assert exc_info.value is not None
 
     def test_encrypt_empty_string(self, encryption_service):
         """Test that empty string can be encrypted and decrypted."""
@@ -249,7 +251,7 @@ class TestKeyRotation:
 
             # Try to recover with old phrase - should fail or recover wrong key
             # (Current implementation might not track this, documenting expected behavior)
-            recovered = service.recover(old_phrase)
+            service.recover(old_phrase)
 
             # If it recovers, it should be the old key, not current one
             # This test documents that key rotation creates new key lineage
@@ -394,7 +396,7 @@ class TestSecurityProperties:
         assert "ssn" in encrypted_dict
 
         # But values should be encrypted
-        for key, value in encrypted_dict.items():
+        for _key, value in encrypted_dict.items():
             if isinstance(value, dict):
                 assert "ciphertext" in value
                 assert "iv" in value

@@ -22,9 +22,9 @@ app = typer.Typer(cls=SuggestingGroup, help="Task management commands")
 console = get_console()
 
 # ---------- sub-typer mounts (comment, link, apply) ----------
+from .apply_command import app as _apply_app  # noqa: E402
 from .comment_command import app as _comment_app  # noqa: E402
 from .link_command import app as _link_app  # noqa: E402
-from .apply_command import app as _apply_app  # noqa: E402
 
 app.add_typer(_comment_app, name="comment", help="Manage task comments")
 app.add_typer(_link_app, name="link", help="Manage task dependencies")
@@ -34,10 +34,15 @@ app.add_typer(_apply_app, name="apply", help="Apply saved filters")
 @app.command("list")
 @command_wrapper
 async def list_tasks(
-    status: str | None = typer.Option(None, "--status", help="Filter by status"),
+    status: str | None = typer.Option(
+        None, "--status", help="Filter by status (active/completed/all)"
+    ),
     project: str | None = typer.Option(None, "--project", help="Filter by project ID"),
     priority: int | None = typer.Option(None, "--priority", help="Filter by priority"),
     search: str | None = typer.Option(None, "--search", help="Search tasks"),
+    show_completed: bool = typer.Option(
+        False, "--show-completed", help="Include completed tasks"
+    ),
     limit: int = typer.Option(250, "--limit", help="Limit results"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
     output: str = typer.Option("pretty", "--output", "-o", help="Output format"),
@@ -46,9 +51,11 @@ async def list_tasks(
     ),
     compact: bool = typer.Option(False, "--compact", help="Compact output"),
 ) -> None:
-    """List tasks."""
+    """List tasks. Completed tasks are hidden by default."""
     if json_opt:
         output = "json"
+    if status is None:
+        status = "all" if show_completed else "active"
     # TODO: consider deprecated --status in favor of dedicated commands to view project tasks, etc.
 
     storage_strategy_context = get_storage_strategy_context()
@@ -63,7 +70,7 @@ async def list_tasks(
             project_uuid = await resolve_project_uuid(project, project_repo)
         except ValueError as e:
             format_error(str(e))
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     tasks = await task_service.list_tasks(
         status=status,
@@ -122,7 +129,7 @@ async def create_task(
     # Parse labels
     label_list = None
     if labels:
-        label_list = [l.strip() for l in labels.split(",")]
+        label_list = [lbl.strip() for lbl in labels.split(",")]
 
     task = await task_service.add_task(
         content=content,

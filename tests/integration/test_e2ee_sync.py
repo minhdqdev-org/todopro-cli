@@ -9,13 +9,12 @@ Tests the complete flow:
 6. Verify decrypted data matches
 """
 
-from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
 from todopro_cli.adapters.sqlite.e2ee import E2EEHandler
-from todopro_cli.models import Task, TaskCreate
+from todopro_cli.models import TaskCreate
 from todopro_cli.services.encryption_service import EncryptionService
 
 
@@ -175,7 +174,6 @@ class TestE2EESyncIntegration:
     async def test_rest_api_repository_encrypts_on_create(self, mock_e2ee_handler):
         """Test that REST API repository encrypts task data on create."""
         from todopro_cli.adapters.rest_api import RestApiTaskRepository
-        from todopro_cli.services.config_service import ConfigService
 
         # Create repository
         repo = RestApiTaskRepository()
@@ -205,7 +203,7 @@ class TestE2EESyncIntegration:
             content="Secret task", description="Secret description"
         )
 
-        result = await repo.add(task_create)
+        await repo.add(task_create)
 
         # Verify API was called with encrypted data
         call_kwargs = mock_tasks_api.create_task.call_args[1]
@@ -272,7 +270,7 @@ class TestE2EEConfigIntegration:
     @patch("todopro_cli.services.config_service.get_config_service")
     def test_encryption_setup_enables_e2ee_in_config(self, mock_get_config):
         """Test that encryption setup command enables E2EE in config."""
-        from todopro_cli.models.config_models import AppConfig, Context, E2EEConfig
+        from todopro_cli.models.config_models import AppConfig, Context
 
         # Create mock config service
         mock_config_service = Mock()

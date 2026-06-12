@@ -35,17 +35,15 @@ class TestPushCommandInvocation:
             "todopro_cli.commands.push_command.get_storage_strategy_context",
             return_value=mock_ctx,
             create=True,
+        ), patch(
+            "todopro_cli.commands.push_command.factory",
+            MagicMock(),
+            create=True,
+        ), patch(
+            "todopro_cli.services.sync_service.SyncService",
+            return_value=mock_service,
         ):
-            with patch(
-                "todopro_cli.commands.push_command.factory",
-                MagicMock(),
-                create=True,
-            ):
-                with patch(
-                    "todopro_cli.services.sync_service.SyncService",
-                    return_value=mock_service,
-                ):
-                    return runner.invoke(app, args or []), mock_service
+            return runner.invoke(app, args or []), mock_service
 
     def test_push_fails_gracefully_with_undefined_refs(self):
         result = runner.invoke(app, [])

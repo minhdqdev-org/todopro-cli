@@ -2,7 +2,6 @@
 
 import os
 from pathlib import Path
-from typing import Optional
 
 
 class KeyStorage:
@@ -55,6 +54,6 @@ class KeyStorage:
         if self.key_file.exists():
             self.key_file.unlink()
 
-    def get_key_path(self) -> Optional[Path]:
+    def get_key_path(self) -> Path | None:
         """Get path to key file if it exists."""
         return self.key_file if self.has_key() else None

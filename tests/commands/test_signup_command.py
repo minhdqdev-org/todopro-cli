@@ -78,9 +78,8 @@ class TestSignupCommandInvocation:
         with patch(
             "todopro_cli.services.auth_service.AuthService",
             return_value=mock_svc,
-        ):
-            with patch("typer.prompt", side_effect=["prompted@x.com", "pw123"]):
-                result = runner.invoke(app, [])
+        ), patch("typer.prompt", side_effect=["prompted@x.com", "pw123"]):
+            result = runner.invoke(app, [])
         # Should succeed if prompts supply valid values
         assert result.exit_code == 0
         mock_svc.signup.assert_awaited_once_with(
@@ -93,7 +92,6 @@ class TestSignupCommandInvocation:
         with patch(
             "todopro_cli.services.auth_service.AuthService",
             return_value=mock_svc,
-        ):
-            with patch("typer.prompt", return_value="pw123"):
-                result = runner.invoke(app, ["--email", "x@x.com"])
+        ), patch("typer.prompt", return_value="pw123"):
+            result = runner.invoke(app, ["--email", "x@x.com"])
         assert result.exit_code == 0

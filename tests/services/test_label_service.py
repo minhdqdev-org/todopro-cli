@@ -16,7 +16,6 @@ import pytest
 from todopro_cli.models import Label
 from todopro_cli.services.label_service import LabelService
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -200,7 +199,7 @@ async def test_get_label_delegates_to_repo(service, mock_repo):
 
 def test_get_label_service_factory(mocker):
     """get_label_service should return a LabelService wrapping the repo from context."""
-    from todopro_cli.services.label_service import get_label_service, LabelService
+    from todopro_cli.services.label_service import LabelService, get_label_service
 
     mock_repo = MagicMock()
     mock_context = MagicMock()

@@ -1,5 +1,7 @@
 """Authentication API endpoints."""
 
+import contextlib
+
 from todopro_cli.services.api.client import APIClient
 
 
@@ -20,11 +22,8 @@ class AuthAPI:
 
     async def logout(self) -> None:
         """Logout and revoke tokens."""
-        try:
+        with contextlib.suppress(Exception):
             await self.client.post("/v1/auth/logout")
-        except Exception:
-            # Logout may fail if token is already invalid
-            pass
 
     async def refresh_token(self, refresh_token: str) -> dict:
         """Refresh access token."""

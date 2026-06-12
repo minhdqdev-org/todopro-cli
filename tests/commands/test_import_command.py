@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.import_command import app
@@ -81,25 +80,26 @@ class TestImportTodoistAuth:
 
     def test_reads_api_key_from_env_var(self):
         ctx1, ctx2, ctx3, mock_svc = _patch_import_service()
-        with ctx1, ctx2, ctx3:
-            with patch.dict("os.environ", {"TODOIST_API_KEY": "env-secret"}):
-                result = runner.invoke(app, ["todoist"])
+        with ctx1, ctx2, ctx3, patch.dict("os.environ", {"TODOIST_API_KEY": "env-secret"}):
+            result = runner.invoke(app, ["todoist"])
         assert result.exit_code == 0
 
     def test_invalid_api_key_exits_nonzero(self):
-        with patch("todopro_cli.commands.import_command.TodoistClient", MagicMock()):
-            with patch(
+        with (
+            patch("todopro_cli.commands.import_command.TodoistClient", MagicMock()),
+            patch(
                 "todopro_cli.commands.import_command.TodoistImportService",
                 MagicMock(return_value=MagicMock(
                     import_all=AsyncMock(side_effect=ValueError("Invalid Todoist API key"))
                 )),
-            ):
-                with patch(
-                    "todopro_cli.commands.import_command.get_storage_strategy_context",
-                    return_value=MagicMock(),
-                    create=True,
-                ):
-                    result = runner.invoke(app, ["todoist", "--api-key", "bad"])
+            ),
+            patch(
+                "todopro_cli.commands.import_command.get_storage_strategy_context",
+                return_value=MagicMock(),
+                create=True,
+            ),
+        ):
+            result = runner.invoke(app, ["todoist", "--api-key", "bad"])
         assert result.exit_code != 0
 
 
@@ -181,13 +181,15 @@ class TestImportDataCommand:
         fake_module = MagicMock()
         fake_module.DataService = MagicMock(return_value=mock_data_service)
 
-        with patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}):
-            with patch(
+        with (
+            patch.dict("sys.modules", {"todopro_cli.services.data_service": fake_module}),
+            patch(
                 "todopro_cli.commands.import_command.get_storage_strategy_context",
                 return_value=MagicMock(),
                 create=True,
-            ):
-                return runner.invoke(app, ["data"] + args), mock_data_service
+            ),
+        ):
+            return runner.invoke(app, ["data"] + args), mock_data_service
 
     def test_import_data_success(self):
         result, mock_service = self._invoke_import_data(["input.json"])

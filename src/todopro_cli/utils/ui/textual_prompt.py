@@ -14,7 +14,10 @@ from textual.containers import Vertical
 from textual.suggester import Suggester
 from textual.widgets import Input, Static
 
-from todopro_cli.services.config_service import get_config_service, get_storage_strategy_context
+from todopro_cli.services.config_service import (
+    get_config_service,
+    get_storage_strategy_context,
+)
 
 
 class TaskSuggester(Suggester):
@@ -231,7 +234,9 @@ class QuickAddApp(App):
         suggester = task_input.suggester
 
         try:
-            from todopro_cli.models.core import ProjectFilters  # pylint: disable=import-outside-toplevel
+            from todopro_cli.models.core import (
+                ProjectFilters,  # pylint: disable=import-outside-toplevel
+            )
 
             storage_strategy_context = get_storage_strategy_context()
             projects_data = await storage_strategy_context.project_repository.list_all(
@@ -239,7 +244,7 @@ class QuickAddApp(App):
             )
             labels_data = await storage_strategy_context.label_repository.list_all()
             projects = [p.name for p in projects_data] if projects_data else []
-            labels = [l.name for l in labels_data] if labels_data else []
+            labels = [lbl.name for lbl in labels_data] if labels_data else []
             task_input.projects = projects
             task_input.labels = labels
             if isinstance(suggester, TaskSuggester):
@@ -313,7 +318,7 @@ def load_cache() -> tuple[list[str], list[str]]:
         labels_data = await storage_strategy_context.label_repository.list_all()
 
         projects = [p.name for p in projects_data] if projects_data else []
-        labels = [l.name for l in labels_data] if labels_data else []
+        labels = [lbl.name for lbl in labels_data] if labels_data else []
 
         return projects, labels
 

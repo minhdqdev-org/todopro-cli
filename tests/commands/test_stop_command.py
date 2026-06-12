@@ -5,7 +5,6 @@ Tests `todopro stop focus` which delegates to focus.py's stop_focus().
 
 from unittest.mock import patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.stop_command import app
@@ -35,12 +34,12 @@ class TestStopFocus:
         """Test that stop focus calls the underlying focus.stop_focus implementation."""
         with patch("todopro_cli.commands.focus.stop_focus") as mock_impl:
             mock_impl.return_value = None
-            result = runner.invoke(app, [])
+            runner.invoke(app, [])
             mock_impl.assert_called_once()
 
     def test_stop_focus_with_output_option(self):
         """Test stop focus accepts output format option."""
         with patch("todopro_cli.commands.focus.stop_focus") as mock_impl:
             mock_impl.return_value = None
-            result = runner.invoke(app, ["--output", "json"])
+            runner.invoke(app, ["--output", "json"])
             mock_impl.assert_called_once()

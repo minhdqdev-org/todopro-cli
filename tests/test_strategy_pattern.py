@@ -18,7 +18,10 @@ from todopro_cli.repositories import (
     ProjectRepository,
     TaskRepository,
 )
-from todopro_cli.services.config_service import ConfigService, get_storage_strategy_context
+from todopro_cli.services.config_service import (
+    ConfigService,
+    get_storage_strategy_context,
+)
 
 
 class TestLocalStorageStrategy:
@@ -82,10 +85,12 @@ class TestRemoteStorageStrategy:
     @pytest.fixture
     def config_service(self):
         """Fixture for ConfigService with temporary directory."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("platformdirs.user_config_dir", return_value=tmpdir):
-                with patch("platformdirs.user_data_dir", return_value=tmpdir):
-                    yield ConfigService()
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch("platformdirs.user_config_dir", return_value=tmpdir),
+            patch("platformdirs.user_data_dir", return_value=tmpdir),
+        ):
+            yield ConfigService()
 
     def test_initialization(self):
         """Test RemoteStorageStrategy initializes with config service"""
@@ -129,15 +134,17 @@ class TestStorageStrategyContext:
 
     def test_initialization_with_remote_strategy(self):
         """Test StorageStrategyContext wraps RemoteStorageStrategy"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("platformdirs.user_config_dir", return_value=tmpdir):
-                with patch("platformdirs.user_data_dir", return_value=tmpdir):
-                    config_service = ConfigService()
-                    strategy = RemoteStorageStrategy()
-                    context = StorageStrategyContext(strategy)
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch("platformdirs.user_config_dir", return_value=tmpdir),
+            patch("platformdirs.user_data_dir", return_value=tmpdir),
+        ):
+            ConfigService()
+            strategy = RemoteStorageStrategy()
+            context = StorageStrategyContext(strategy)
 
-                    assert context.storage_type == "remote"
-                    assert context.strategy is strategy
+            assert context.storage_type == "remote"
+            assert context.strategy is strategy
 
     def test_task_repository_property(self, tmp_path):
         """Test task_repository property"""
@@ -192,21 +199,23 @@ class TestStrategyPatternIntegration:
 
     def test_strategy_isolation_local_and_remote_dont_touch(self):
         """Test that local and remote strategies are completely isolated"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("platformdirs.user_config_dir", return_value=tmpdir):
-                with patch("platformdirs.user_data_dir", return_value=tmpdir):
-                    local_strategy = LocalStorageStrategy(db_path=":memory:")
-                    remote_strategy = RemoteStorageStrategy()
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch("platformdirs.user_config_dir", return_value=tmpdir),
+            patch("platformdirs.user_data_dir", return_value=tmpdir),
+        ):
+            local_strategy = LocalStorageStrategy(db_path=":memory:")
+            remote_strategy = RemoteStorageStrategy()
 
-                    local_repo = local_strategy.get_task_repository()
-                    remote_repo = remote_strategy.get_task_repository()
+            local_repo = local_strategy.get_task_repository()
+            remote_repo = remote_strategy.get_task_repository()
 
-                    # Repositories should be different types
-                    assert type(local_repo).__name__ == "SqliteTaskRepository"
-                    assert type(remote_repo).__name__ == "RestApiTaskRepository"
+            # Repositories should be different types
+            assert type(local_repo).__name__ == "SqliteTaskRepository"
+            assert type(remote_repo).__name__ == "RestApiTaskRepository"
 
-                    # No shared state
-                    assert local_repo is not remote_repo
+            # No shared state
+            assert local_repo is not remote_repo
 
     def test_service_layer_decoupling(self, tmp_path):
         """Test that service layer doesn't know which strategy it's using"""

@@ -4,13 +4,19 @@ This module provides authenticated encryption using AES-256-GCM.
 All operations use cryptographically secure random number generation.
 """
 
+from __future__ import annotations
+
 import base64
 import os
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from .exceptions import DecryptionError
+
+if TYPE_CHECKING:
+    from .keys import MasterKey
 
 # Constants
 IV_SIZE = 12  # 96 bits (recommended for GCM)
@@ -36,7 +42,7 @@ class EncryptedData:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> "EncryptedData":
+    def from_dict(cls, data: dict[str, str]) -> EncryptedData:
         """Create from dictionary (from JSON)."""
         return cls(
             ciphertext=data["ciphertext"],
@@ -46,7 +52,7 @@ class EncryptedData:
         )
 
 
-def encrypt(plaintext: str, master_key: "MasterKey") -> EncryptedData:
+def encrypt(plaintext: str, master_key: MasterKey) -> EncryptedData:
     """Encrypt plaintext using AES-256-GCM."""
 
     # Generate random IV
@@ -71,7 +77,7 @@ def encrypt(plaintext: str, master_key: "MasterKey") -> EncryptedData:
     )
 
 
-def decrypt(encrypted: EncryptedData, master_key: "MasterKey") -> str:
+def decrypt(encrypted: EncryptedData, master_key: MasterKey) -> str:
     """Decrypt data using AES-256-GCM."""
 
     try:

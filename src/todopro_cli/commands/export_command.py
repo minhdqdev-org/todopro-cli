@@ -2,11 +2,13 @@
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.utils.typer_helpers import SuggestingGroup
+from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_success
 
 from .decorators import command_wrapper
-from todopro_cli.utils.ui.console import get_console
+
 app = typer.Typer(cls=SuggestingGroup, help="Export data")
 console = get_console()
 
@@ -21,7 +23,7 @@ async def export_data(
     from todopro_cli.services.data_service import DataService
 
     storage_strategy_context = get_storage_strategy_context()
-    data_service = DataService(factory)
+    data_service = DataService(storage_strategy_context)  # noqa: F821
 
     await data_service.export_data(output_file, compress=compress)
     format_success(f"Data exported to: {output_file}")
@@ -36,7 +38,7 @@ async def export_stats(
     from todopro_cli.services.focus_service import FocusService
 
     storage_strategy_context = get_storage_strategy_context()
-    focus_repo = factory.get_focus_session_repository()
+    focus_repo = storage_strategy_context.focus_session_repository  # noqa: F821
     service = FocusService(focus_repo)
 
     await service.export_stats(output_file)
@@ -52,7 +54,7 @@ async def export_analytics(
     from todopro_cli.services.analytics_service import AnalyticsService
 
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     service = AnalyticsService(task_repo)
 
     await service.export_analytics(output_file)

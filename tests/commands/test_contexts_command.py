@@ -6,7 +6,6 @@ Patches: todopro_cli.commands.contexts.APIClient
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.contexts import app
@@ -143,9 +142,8 @@ class TestListContexts:
     def test_list_location_flag_geocoder_import_error(self):
         """--location flag with missing geocoder shows a helpful message."""
         client = _make_client(get=[])
-        with _patch_client(client):
-            with patch.dict("sys.modules", {"geocoder": None}):
-                result = runner.invoke(app, ["list", "--location"])
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": None}):
+            result = runner.invoke(app, ["list", "--location"])
         assert result.exit_code == 0
         # Either geocoder not installed message or empty list
         assert "geocoder" in result.output.lower() or "no contexts" in result.output.lower()
@@ -158,9 +156,8 @@ class TestListContexts:
         mock_geo.latlng = [51.5, -0.1]
         mock_geocoder = MagicMock()
         mock_geocoder.ip.return_value = mock_geo
-        with _patch_client(client):
-            with patch.dict("sys.modules", {"geocoder": mock_geocoder}):
-                result = runner.invoke(app, ["list", "--location"])
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": mock_geocoder}):
+            result = runner.invoke(app, ["list", "--location"])
         assert result.exit_code == 0
         assert "51." in result.output or "@home" in result.output
 
@@ -227,9 +224,8 @@ class TestCreateContext:
         mock_geo.latlng = [51.5, -0.1]
         mock_geocoder = MagicMock()
         mock_geocoder.ip.return_value = mock_geo
-        with _patch_client(client):
-            with patch.dict("sys.modules", {"geocoder": mock_geocoder}):
-                result = runner.invoke(app, ["create", "@here", "--geo", "--radius", "100"])
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": mock_geocoder}):
+            result = runner.invoke(app, ["create", "@here", "--geo", "--radius", "100"])
         assert result.exit_code == 0
         call_data = client.post.call_args[0][1]
         assert call_data["radius"] == 100
@@ -415,9 +411,8 @@ class TestCheckAvailable:
         mock_geo.latlng = [51.5, -0.1]
         mock_geocoder = MagicMock()
         mock_geocoder.ip.return_value = mock_geo
-        with _patch_client(client):
-            with patch.dict("sys.modules", {"geocoder": mock_geocoder}):
-                result = runner.invoke(app, ["check"])
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": mock_geocoder}):
+            result = runner.invoke(app, ["check"])
         assert result.exit_code == 0
         assert "@home" in result.output
         assert "@office" in result.output
@@ -429,9 +424,8 @@ class TestCheckAvailable:
         mock_geo.latlng = [51.5, -0.1]
         mock_geocoder = MagicMock()
         mock_geocoder.ip.return_value = mock_geo
-        with _patch_client(client):
-            with patch.dict("sys.modules", {"geocoder": mock_geocoder}):
-                result = runner.invoke(app, ["check"])
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": mock_geocoder}):
+            result = runner.invoke(app, ["check"])
         assert result.exit_code == 0
         assert "no" in result.output.lower() or "geo" in result.output.lower()
 
@@ -443,9 +437,8 @@ class TestCheckAvailable:
         mock_geo.latlng = [51.5, -0.1]
         mock_geocoder = MagicMock()
         mock_geocoder.ip.return_value = mock_geo
-        with _patch_client(client):
-            with patch.dict("sys.modules", {"geocoder": mock_geocoder}):
-                result = runner.invoke(app, ["check"])
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": mock_geocoder}):
+            result = runner.invoke(app, ["check"])
         assert result.exit_code != 0
 
     def test_check_shows_location(self):
@@ -455,8 +448,7 @@ class TestCheckAvailable:
         mock_geo.latlng = [48.8566, 2.3522]
         mock_geocoder = MagicMock()
         mock_geocoder.ip.return_value = mock_geo
-        with _patch_client(client):
-            with patch.dict("sys.modules", {"geocoder": mock_geocoder}):
-                result = runner.invoke(app, ["check"])
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": mock_geocoder}):
+            result = runner.invoke(app, ["check"])
         assert result.exit_code == 0
         assert "48." in result.output or "2." in result.output

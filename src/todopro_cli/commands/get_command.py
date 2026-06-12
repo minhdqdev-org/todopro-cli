@@ -2,13 +2,15 @@
 
 import typer
 
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.label_service import LabelService
 from todopro_cli.services.project_service import ProjectService
 from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.task_helpers import resolve_task_id
 from todopro_cli.utils.typer_helpers import SuggestingGroup
-from todopro_cli.utils.ui.formatters import format_output
 from todopro_cli.utils.ui.console import get_console
+from todopro_cli.utils.ui.formatters import format_output
+
 from .decorators import command_wrapper
 
 app = typer.Typer(cls=SuggestingGroup, help="Get resource details")
@@ -23,7 +25,7 @@ async def get_task(
 ) -> None:
     """Get task details."""
     storage_strategy_context = get_storage_strategy_context()
-    task_repo = strategy_context.task_repository
+    task_repo = storage_strategy_context.task_repository
     task_service = TaskService(task_repo)
 
     resolved_id = await resolve_task_id(task_service, task_id)

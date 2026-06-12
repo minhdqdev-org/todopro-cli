@@ -13,7 +13,6 @@ import pytest
 
 from todopro_cli.services.api.client import APIClient, get_client
 
-
 # ---------------------------------------------------------------------------
 # Helpers & fixtures
 # ---------------------------------------------------------------------------
@@ -325,7 +324,7 @@ class TestRequest:
 
         call_count = 0
 
-        async def _failing_request(**kwargs):
+        async def _failing_request(**_kwargs):
             nonlocal call_count
             call_count += 1
             raise http_err
@@ -336,9 +335,8 @@ class TestRequest:
         mock_http.headers.update = MagicMock()
         client._client = mock_http
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            with pytest.raises(httpx.HTTPStatusError):
-                await client.request("GET", "/v1/error")
+        with patch("asyncio.sleep", new_callable=AsyncMock), pytest.raises(httpx.HTTPStatusError):
+            await client.request("GET", "/v1/error")
 
         assert call_count == 3  # initial + 2 retries
 
@@ -350,7 +348,7 @@ class TestRequest:
 
         call_count = 0
 
-        async def _fail(**kwargs):
+        async def _fail(**_kwargs):
             nonlocal call_count
             call_count += 1
             raise req_error
@@ -361,9 +359,8 @@ class TestRequest:
         mock_http.headers.update = MagicMock()
         client._client = mock_http
 
-        with patch("asyncio.sleep", new_callable=AsyncMock):
-            with pytest.raises(httpx.RequestError):
-                await client.request("POST", "/v1/retry")
+        with patch("asyncio.sleep", new_callable=AsyncMock), pytest.raises(httpx.RequestError):
+            await client.request("POST", "/v1/retry")
 
         assert call_count == 2
 
@@ -379,7 +376,7 @@ class TestRequest:
 
         call_count = 0
 
-        async def _request(**kwargs):
+        async def _request(**_kwargs):
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -417,9 +414,11 @@ class TestRequest:
         # No refresh_token to avoid console print branch
         client.config_manager.load_credentials.return_value = {"token": "expired"}
 
-        with patch("todopro_cli.services.api.client.get_console", return_value=MagicMock()):
-            with pytest.raises(httpx.HTTPStatusError):
-                await client.request("GET", "/v1/protected")
+        with (
+            patch("todopro_cli.services.api.client.get_console", return_value=MagicMock()),
+            pytest.raises(httpx.HTTPStatusError),
+        ):
+            await client.request("GET", "/v1/protected")
 
 
 # ---------------------------------------------------------------------------

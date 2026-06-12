@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.auth_app import app
@@ -24,7 +23,7 @@ class TestAuthLogin:
 
     def test_login_delegates_to_auth_login(self):
         with patch("todopro_cli.commands.auth_app.login") as mock_login:
-            result = _invoke("login")
+            _invoke("login")
             mock_login.assert_called_once()
 
     def test_login_passes_email(self):
@@ -64,7 +63,7 @@ class TestAuthLogout:
 
     def test_logout_delegates_to_auth_logout(self):
         with patch("todopro_cli.commands.auth_app.logout") as mock_logout:
-            result = _invoke("logout")
+            _invoke("logout")
             mock_logout.assert_called_once()
 
     def test_logout_passes_all_flag(self):

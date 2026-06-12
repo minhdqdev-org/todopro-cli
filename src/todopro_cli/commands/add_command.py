@@ -108,29 +108,85 @@ def add(
             # Check if project not found error
             if "error" in response:
                 error_msg = response["error"]
-                format_error(error_msg)
+                parsed_err = response.get("parsed", {})
+                unrecognized = parsed_err.get("project_name", "")
 
-                # Show suggestions if available
-                if "suggestions" in response:
-                    suggestions = response["suggestions"]
-                    if suggestions.get("create_project"):
-                        project_name = response.get("parsed", {}).get(
-                            "project_name", ""
-                        )
+                # If the error is specifically about a missing project, offer to create it
+                if unrecognized and ("project" in error_msg.lower() or "suggestions" in response):
+                    import sys
+
+                    from todopro_cli.services.api.projects import ProjectsAPI
+
+                    if sys.stdin.isatty():
                         console.print(
-                            "\n[yellow]Tip:[/yellow] Create the project first:"
+                            f"\n[yellow]Project '[bold]{unrecognized}[/bold]' not found.[/yellow]"
                         )
-                        console.print(f'  todopro projects add "{project_name}"')
+                        create_it = typer.confirm(
+                            f"  Create new project '{unrecognized}'?", default=True
+                        )
+                    else:
+                        create_it = False
 
-                    if suggestions.get("available_projects"):
-                        console.print("\n[cyan]Available projects:[/cyan]")
-                        for proj in suggestions["available_projects"]:
-                            console.print(f"  • {proj}")
+                    projects_api = ProjectsAPI(client)
+                    if create_it:
+                        await projects_api.create_project(unrecognized)
+                        console.print(f"[green]  ✓ Created project '{unrecognized}'[/green]")
+                        # Retry quick_add — project now exists
+                        response2 = await tasks_api.quick_add(text)
+                        if "error" not in response2:
+                            response.clear()
+                            response.update(response2)
+                        else:
+                            format_error(response2.get("error", "Failed to create task"))
+                            raise typer.Exit(1)
+                    else:
+                        # Retry without project name (strip #Project from text)
+                        import re
+                        stripped = re.sub(r"#\S+", "", text).strip()
+                        response2 = await tasks_api.quick_add(stripped or text)
+                        if "error" not in response2:
+                            response.clear()
+                            response.update(response2)
+                        else:
+                            format_error(response2.get("error", "Failed to create task"))
+                            raise typer.Exit(1)
+                else:
+                    format_error(error_msg)
 
-                raise typer.Exit(1)
+                    # Show suggestions if available
+                    if "suggestions" in response:
+                        suggestions = response["suggestions"]
+                        if suggestions.get("available_projects"):
+                            console.print("\n[cyan]Available projects:[/cyan]")
+                            for proj in suggestions["available_projects"]:
+                                console.print(f"  • {proj}")
+
+                    raise typer.Exit(1)
 
             task = response.get("task", {})
             parsed = response.get("parsed", {})
+
+            # If project_name was parsed but task has no project_id, the project wasn't found
+            import sys
+
+            if parsed.get("project_name") and not task.get("project_id") and sys.stdin.isatty():
+                unrecognized = parsed["project_name"]
+                from todopro_cli.services.api.projects import ProjectsAPI
+
+                console.print(
+                    f"\n[yellow]Project '[bold]{unrecognized}[/bold]' not found.[/yellow]"
+                )
+                create_it = typer.confirm(f"  Create new project '{unrecognized}'?", default=True)
+                projects_api = ProjectsAPI(client)
+                if create_it:
+                    new_proj_resp = await projects_api.create_project(unrecognized)
+                    console.print(f"[green]  ✓ Created project '{unrecognized}'[/green]")
+                    # Move the newly created task to the new project
+                    new_project_id = new_proj_resp.get("id") if isinstance(new_proj_resp, dict) else getattr(new_proj_resp, "id", None)
+                    if new_project_id and task.get("id"):
+                        updated = await tasks_api.update_task(task["id"], project_id=new_project_id)
+                        task.update(updated if isinstance(updated, dict) else updated.model_dump())
+                # If declined, task stays in Inbox (already assigned by backend)
 
             if output == "json":
                 import json as _json
@@ -144,17 +200,22 @@ def add(
             console.print("\n[bold green]✓[/bold green] Task created successfully!")
             console.print(f"\n[bold cyan]Task:[/bold cyan] {task.get('content', '')}")
 
-            # Show parsed details
+            # Show parsed details — use actual task data, not just parsed metadata
             details = []
             if parsed.get("due_date"):
                 due = datetime.fromisoformat(parsed["due_date"].replace("Z", "+00:00"))
                 details.append(f"📅 {due.strftime('%b %d, %Y at %I:%M %p')}")
 
-            if parsed.get("project_name"):
-                details.append(f"[magenta]📁 #{parsed['project_name']}[/magenta]")
+            # Show actual project from task, not the raw parsed project_name
+            if task.get("project_name") or task.get("project_id"):
+                proj_display = task.get("project_name") or parsed.get("project_name", "")
+                if proj_display:
+                    details.append(f"[magenta]📁 #{proj_display}[/magenta]")
+            elif not parsed.get("project_name"):
+                pass  # no project, don't show
 
             if parsed.get("labels"):
-                labels_str = " ".join([f"@{l}" for l in parsed["labels"]])
+                labels_str = " ".join([f"@{lbl}" for lbl in parsed["labels"]])
                 details.append(f"[yellow]🏷️  {labels_str}[/yellow]")
 
             priority_map = {
@@ -243,9 +304,30 @@ def _create_local_task(
                 project_id = proj.id
                 effective_project_name = proj.name
             else:
-                effective_project_name = parsed[
-                    "project_name"
-                ]  # will note it wasn't found
+                # Project not found — prompt the user
+                import sys
+
+                unrecognized = parsed["project_name"]
+                if sys.stdin.isatty():
+                    console.print(
+                        f"\n[yellow]Project '[bold]{unrecognized}[/bold]' not found.[/yellow]"
+                    )
+                    create_it = typer.confirm(f"  Create new project '{unrecognized}'?", default=True)
+                else:
+                    create_it = False
+
+                if create_it:
+                    new_proj = await project_service.create_project(unrecognized)
+                    project_id = new_proj.id
+                    effective_project_name = new_proj.name
+                    console.print(f"[green]  ✓ Created project '{unrecognized}'[/green]")
+                else:
+                    # Fall back to Inbox
+                    inbox = next((p for p in all_projects if p.name.lower() == "inbox"), None)
+                    if inbox:
+                        project_id = inbox.id
+                        effective_project_name = inbox.name
+                    # else leave project_id = None (backend default)
 
         # Create task with parsed metadata
         task_create = TaskCreate(

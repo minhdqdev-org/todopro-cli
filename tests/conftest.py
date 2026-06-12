@@ -5,7 +5,6 @@ Provides infrastructure to isolate tests from real filesystem/API state.
 
 from __future__ import annotations
 
-import os
 import re
 
 # ---------------------------------------------------------------------------
@@ -20,7 +19,7 @@ import re
 
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 
-from typer.testing import CliRunner as _CliRunner
+from typer.testing import CliRunner as _CliRunner  # noqa: E402
 
 _orig_invoke = _CliRunner.invoke
 
@@ -37,12 +36,11 @@ def _clean_invoke(self, *args, **kwargs):
 
 _CliRunner.invoke = _clean_invoke
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch  # noqa: E402
 
-import pytest
+import pytest  # noqa: E402
 
-from todopro_cli.models.config_models import AppConfig, Context
-
+from todopro_cli.models.config_models import AppConfig, Context  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Config isolation helpers
@@ -53,8 +51,7 @@ def _make_local_config(tmp_path) -> AppConfig:
     """Build a minimal AppConfig pointing at a tmp SQLite database."""
     db = str(tmp_path / "test.db")
     ctx = Context(name="default", type="local", source=db)
-    config = AppConfig(current_context_name="default", contexts=[ctx])
-    return config
+    return AppConfig(current_context_name="default", contexts=[ctx])
 
 
 @pytest.fixture()
@@ -68,12 +65,14 @@ def tmp_config(tmp_path):
 
     tmpdir = str(tmp_path)
     get_config_service.cache_clear()
-    with patch("todopro_cli.services.config_service.user_config_dir", return_value=tmpdir):
-        with patch("todopro_cli.services.config_service.user_data_dir", return_value=tmpdir):
-            from todopro_cli.services.config_service import ConfigService
+    with (
+        patch("todopro_cli.services.config_service.user_config_dir", return_value=tmpdir),
+        patch("todopro_cli.services.config_service.user_data_dir", return_value=tmpdir),
+    ):
+        from todopro_cli.services.config_service import ConfigService
 
-            svc = ConfigService()
-            yield svc
+        svc = ConfigService()
+        yield svc
     get_config_service.cache_clear()
 
 
@@ -108,12 +107,11 @@ def patch_config_service(mock_config_service):
     with patch(
         "todopro_cli.services.config_service.get_config_service",
         return_value=mock_config_service,
+    ), patch(
+        "todopro_cli.commands.decorators.get_config_service",
+        return_value=mock_config_service,
     ):
-        with patch(
-            "todopro_cli.commands.decorators.get_config_service",
-            return_value=mock_config_service,
-        ):
-            yield mock_config_service
+        yield mock_config_service
     get_config_service.cache_clear()
 
 

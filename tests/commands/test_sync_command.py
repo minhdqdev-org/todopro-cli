@@ -18,7 +18,6 @@ from contextlib import ExitStack
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.sync import _display_sync_result, app
@@ -32,22 +31,22 @@ runner = CliRunner()
 
 def _make_sync_result(**kwargs):
     """Build a minimal MagicMock that looks like a SyncResult."""
-    defaults = dict(
-        success=True,
-        error=None,
-        duration=1.23,
-        projects_fetched=2,
-        projects_new=1,
-        projects_updated=1,
-        labels_fetched=3,
-        labels_new=2,
-        labels_updated=1,
-        tasks_fetched=10,
-        tasks_new=5,
-        tasks_updated=3,
-        tasks_unchanged=2,
-        tasks_conflicts=0,
-    )
+    defaults = {
+        "success": True,
+        "error": None,
+        "duration": 1.23,
+        "projects_fetched": 2,
+        "projects_new": 1,
+        "projects_updated": 1,
+        "labels_fetched": 3,
+        "labels_new": 2,
+        "labels_updated": 1,
+        "tasks_fetched": 10,
+        "tasks_new": 5,
+        "tasks_updated": 3,
+        "tasks_unchanged": 2,
+        "tasks_conflicts": 0,
+    }
     defaults.update(kwargs)
     result = MagicMock()
     for k, v in defaults.items():
@@ -107,13 +106,13 @@ class TestSyncHelp:
 class TestDisplaySyncResult:
     """Tests for _display_sync_result() covering all output branches."""
 
-    def test_success_pull_shows_complete(self, capsys):
+    def test_success_pull_shows_complete(self, _capsys):
         result = _make_sync_result(success=True, duration=2.5, tasks_conflicts=0)
         _display_sync_result(result, "pull", dry_run=False)
         # No assertion on capsys here; the helper prints to Rich console.
         # Just confirm it doesn't raise.
 
-    def test_dry_run_shows_dry_run_header(self, capsys):
+    def test_dry_run_shows_dry_run_header(self, _capsys):
         """Dry run path should not raise."""
         result = _make_sync_result(success=True, duration=0.9)
         _display_sync_result(result, "pull", dry_run=True)
@@ -199,9 +198,8 @@ class TestStatusCommand:
 
         with patch(
             "todopro_cli.commands.sync.get_config_service", return_value=svc
-        ):
-            with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
-                result = runner.invoke(app, ["status"])
+        ), patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
+            result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 0
         assert "No sync history" in result.output
@@ -218,9 +216,8 @@ class TestStatusCommand:
 
         with patch(
             "todopro_cli.commands.sync.get_config_service", return_value=svc
-        ):
-            with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
-                result = runner.invoke(app, ["status"])
+        ), patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
+            result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 0
 
@@ -236,9 +233,8 @@ class TestStatusCommand:
 
         with patch(
             "todopro_cli.commands.sync.get_config_service", return_value=svc
-        ):
-            with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
-                result = runner.invoke(app, ["status"])
+        ), patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
+            result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 0
 
@@ -254,9 +250,8 @@ class TestStatusCommand:
 
         with patch(
             "todopro_cli.commands.sync.get_config_service", return_value=svc
-        ):
-            with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
-                result = runner.invoke(app, ["status"])
+        ), patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
+            result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 0
 
@@ -272,9 +267,8 @@ class TestStatusCommand:
 
         with patch(
             "todopro_cli.commands.sync.get_config_service", return_value=svc
-        ):
-            with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
-                result = runner.invoke(app, ["status"])
+        ), patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
+            result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 0
 
@@ -289,9 +283,8 @@ class TestStatusCommand:
 
         with patch(
             "todopro_cli.commands.sync.get_config_service", return_value=svc
-        ):
-            with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
-                result = runner.invoke(app, ["status"])
+        ), patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
+            result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 0
 
@@ -306,9 +299,8 @@ class TestStatusCommand:
 
         with patch(
             "todopro_cli.commands.sync.get_config_service", return_value=svc
-        ):
-            with patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
-                result = runner.invoke(app, ["status"])
+        ), patch("todopro_cli.commands.sync.SyncState", return_value=mock_state):
+            result = runner.invoke(app, ["status"])
 
         # unrelated entries are filtered – no table rows, but command succeeds
         assert result.exit_code == 0

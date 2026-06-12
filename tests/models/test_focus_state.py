@@ -11,10 +11,7 @@ Coverage strategy
 
 from __future__ import annotations
 
-import json
-import time
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -25,7 +22,6 @@ from todopro_cli.models.focus.state import (
     SessionStatus,
     SessionType,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -137,8 +133,7 @@ class TestSessionStateDatetimeProperties:
 
     def test_start_datetime_handles_z_suffix(self):
         """ISO strings ending with 'Z' are parsed correctly."""
-        from datetime import timezone
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         state = SessionState(
             session_id="id",
             task_id=None,

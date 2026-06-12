@@ -19,7 +19,9 @@ from todopro_cli.models import (
     ProjectFilters,
     ProjectUpdate,
     Task,
+    TaskCreate,
     TaskFilters,
+    TaskUpdate,
 )
 from todopro_cli.repositories import (
     LabelRepository,
@@ -199,7 +201,7 @@ class SyncPullService(SyncService):
                 context_key = SyncState.make_context_key(
                     source_context, target_context, "pull"
                 )
-                last_sync = (
+                (
                     None if full_sync else self.sync_state.get_last_sync(context_key)
                 )
 
@@ -397,7 +399,7 @@ class SyncPushService(SyncService):
         source_context: str,
         target_context: str,
         dry_run: bool = False,
-        full_sync: bool = False,
+        _full_sync: bool = False,
         strategy: Literal["local_wins", "remote_wins"] = "local_wins",
     ) -> SyncResult:
         """Push data from source to target.
@@ -520,7 +522,7 @@ class SyncPushService(SyncService):
             self.console.print(f"[red]Error pushing project {project.id}: {e}[/red]")
 
     async def _sync_label(
-        self, label: Label, result: SyncResult, strategy: str
+        self, label: Label, result: SyncResult, _strategy: str
     ) -> None:
         """Sync a single label to target."""
         try:

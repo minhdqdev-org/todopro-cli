@@ -115,6 +115,16 @@ class AppConfig(BaseModel):
     focus_goals: dict[str, dict] | None = None
     achievements: dict[str, dict] | None = None
 
+    @property
+    def current_context(self) -> str:
+        """Backward-compatible alias for the active context name."""
+        return self.current_context_name
+
+    @current_context.setter
+    def current_context(self, value: str) -> None:
+        """Keep legacy callers working with the renamed config field."""
+        self.current_context_name = value
+
     def get_context(self, name: str) -> Context:
         """Get context by name."""
         for ctx in self.contexts:

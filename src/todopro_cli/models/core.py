@@ -277,6 +277,7 @@ class TaskFilters(BaseModel):
 
     Attributes:
         id_prefix: Filter by ID prefix (for UUID resolution)
+        id_suffix: Filter by ID suffix (for short-ID resolution, e.g. last 3 chars)
         status: Filter by status ("active", "completed", "all")
         project_id: Filter by project ID
         priority: Filter by priority level
@@ -292,6 +293,7 @@ class TaskFilters(BaseModel):
     """
 
     id_prefix: str | None = None
+    id_suffix: str | None = None
     status: str | None = Field(default=None, pattern="^(active|completed|all)$")
     project_id: str | None = None
     priority: int | None = Field(default=None, ge=1, le=4)

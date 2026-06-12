@@ -22,7 +22,6 @@ from todopro_cli.utils.ui.board_view import (
     TaskViewModel,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -34,7 +33,7 @@ def _task_data(id_: str, content: str, *, due_date=None, is_completed=False):
 def _make_app(*task_ids, contents=None):
     """Build a BoardViewApp with N tasks in the default (no) section."""
     contents = contents or [f"Task {i}" for i in range(len(task_ids))]
-    tasks = [_task_data(tid, c) for tid, c in zip(task_ids, contents)]
+    tasks = [_task_data(tid, c) for tid, c in zip(task_ids, contents, strict=False)]
     return BoardViewApp(project_code="inbox", tasks_list=tasks)
 
 
@@ -474,7 +473,7 @@ class TestGetPreviousComponent:
     def test_second_section_task_card_navigates_back(self):
         """From task in section-1, move left to aligned task in section-0."""
         app = _make_app("t0", "t1")
-        s2 = _add_section(app, "s2", tasks=["S2 Task 0"])
+        _add_section(app, "s2", tasks=["S2 Task 0"])
         tc_s2 = app.task_card_map["s2_t0"]
         app.selected_component = tc_s2
         app.last_display_order = 0
@@ -638,8 +637,9 @@ class TestGoToComponent:
 
     def _goto(self, app, component):
         """Call go_to_component with query_one patched to avoid ScreenStackError."""
-        from textual.css.query import QueryError
         from unittest.mock import patch as _patch
+
+        from textual.css.query import QueryError
         with _patch.object(app, "query_one", side_effect=QueryError("suppressed")):
             app.go_to_component(component)
 
@@ -887,7 +887,7 @@ class TestGetPreviousComponentEmptyLeft:
 
     def test_task_card_previous_left_section_empty(self):
         app = _make_app()  # empty no-section
-        s2 = _add_section(app, "s2", tasks=["S2-T0"])
+        _add_section(app, "s2", tasks=["S2-T0"])
         tc_s2 = app.task_card_map["s2_t0"]
         app.selected_component = tc_s2
         add_btn = AddTaskButton(app.sections[0])
@@ -1213,7 +1213,9 @@ class TestRunBoardView:
     """Tests for run_board_view() with mocked services."""
 
     def test_run_board_view_calls_app_run(self):
-        from unittest.mock import AsyncMock, patch as _patch, MagicMock as MM
+        from unittest.mock import AsyncMock
+        from unittest.mock import MagicMock as MM
+        from unittest.mock import patch as _patch
 
         from todopro_cli.utils.ui.board_view import run_board_view
 
@@ -1227,20 +1229,24 @@ class TestRunBoardView:
         mock_tasks_api = MM()
         mock_tasks_api.list_tasks = AsyncMock(return_value=[])
 
-        with _patch("todopro_cli.services.config_service.get_config_service",
-                    return_value=mock_config_svc):
-            with _patch("todopro_cli.utils.ui.board_view.get_client",
-                        return_value=mock_client):
-                with _patch("todopro_cli.utils.ui.board_view.TasksAPI",
-                            return_value=mock_tasks_api):
-                    with _patch("todopro_cli.utils.ui.board_view.BoardViewApp") as MockApp:
-                        mock_app_instance = MM()
-                        MockApp.return_value = mock_app_instance
-                        run_board_view("inbox")
-                        mock_app_instance.run.assert_called_once()
+        with (
+            _patch("todopro_cli.services.config_service.get_config_service",
+                    return_value=mock_config_svc),
+            _patch("todopro_cli.utils.ui.board_view.get_client",
+                        return_value=mock_client),
+            _patch("todopro_cli.utils.ui.board_view.TasksAPI",
+                        return_value=mock_tasks_api),
+            _patch("todopro_cli.utils.ui.board_view.BoardViewApp") as MockApp,
+        ):
+            mock_app_instance = MM()
+            MockApp.return_value = mock_app_instance
+            run_board_view("inbox")
+            mock_app_instance.run.assert_called_once()
 
     def test_run_board_view_local_context_inbox(self):
-        from unittest.mock import AsyncMock, patch as _patch, MagicMock as MM
+        from unittest.mock import AsyncMock
+        from unittest.mock import MagicMock as MM
+        from unittest.mock import patch as _patch
 
         from todopro_cli.utils.ui.board_view import run_board_view
 
@@ -1256,19 +1262,23 @@ class TestRunBoardView:
         mock_task_svc = MM()
         mock_task_svc.list_tasks = AsyncMock(return_value=[mock_task])
 
-        with _patch("todopro_cli.services.config_service.get_config_service",
-                    return_value=mock_config_svc):
-            with _patch("todopro_cli.services.task_service.get_task_service",
-                        return_value=mock_task_svc):
-                with _patch("todopro_cli.utils.ui.board_view.BoardViewApp") as MockApp:
-                    mock_app_instance = MM()
-                    MockApp.return_value = mock_app_instance
-                    run_board_view("inbox")
-                    mock_app_instance.run.assert_called_once()
+        with (
+            _patch("todopro_cli.services.config_service.get_config_service",
+                    return_value=mock_config_svc),
+            _patch("todopro_cli.services.task_service.get_task_service",
+                        return_value=mock_task_svc),
+            _patch("todopro_cli.utils.ui.board_view.BoardViewApp") as MockApp,
+        ):
+            mock_app_instance = MM()
+            MockApp.return_value = mock_app_instance
+            run_board_view("inbox")
+            mock_app_instance.run.assert_called_once()
 
     def test_run_board_view_remote_dict_response(self):
         """When tasks_api returns a dict with 'tasks' key, tasks are extracted."""
-        from unittest.mock import AsyncMock, patch as _patch, MagicMock as MM
+        from unittest.mock import AsyncMock
+        from unittest.mock import MagicMock as MM
+        from unittest.mock import patch as _patch
 
         from todopro_cli.utils.ui.board_view import run_board_view
 
@@ -1284,17 +1294,19 @@ class TestRunBoardView:
             return_value={"tasks": [{"id": "t1", "content": "T", "is_completed": False}]}
         )
 
-        with _patch("todopro_cli.services.config_service.get_config_service",
-                    return_value=mock_config_svc):
-            with _patch("todopro_cli.utils.ui.board_view.get_client",
-                        return_value=mock_client):
-                with _patch("todopro_cli.utils.ui.board_view.TasksAPI",
-                            return_value=mock_tasks_api):
-                    with _patch("todopro_cli.utils.ui.board_view.BoardViewApp") as MockApp:
-                        mock_app_instance = MM()
-                        MockApp.return_value = mock_app_instance
-                        run_board_view("myproject")
-                        # App was created with non-empty tasks list from dict response
-                        MockApp.assert_called_once()
-                        args = MockApp.call_args[0]
-                        assert isinstance(args[1], list)
+        with (
+            _patch("todopro_cli.services.config_service.get_config_service",
+                    return_value=mock_config_svc),
+            _patch("todopro_cli.utils.ui.board_view.get_client",
+                        return_value=mock_client),
+            _patch("todopro_cli.utils.ui.board_view.TasksAPI",
+                        return_value=mock_tasks_api),
+            _patch("todopro_cli.utils.ui.board_view.BoardViewApp") as MockApp,
+        ):
+            mock_app_instance = MM()
+            MockApp.return_value = mock_app_instance
+            run_board_view("myproject")
+            # App was created with non-empty tasks list from dict response
+            MockApp.assert_called_once()
+            args = MockApp.call_args[0]
+            assert isinstance(args[1], list)

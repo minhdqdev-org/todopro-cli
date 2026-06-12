@@ -14,7 +14,9 @@ from pathlib import Path
 from platformdirs import user_data_dir
 
 from todopro_cli.adapters.sqlite.migrations.m001_initial_schema import initial_migration
-from todopro_cli.adapters.sqlite.migrations.m003_project_protected import project_protected_migration
+from todopro_cli.adapters.sqlite.migrations.m003_project_protected import (
+    project_protected_migration,
+)
 from todopro_cli.adapters.sqlite.migrations.runner import MigrationRunner
 
 

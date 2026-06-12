@@ -21,6 +21,7 @@ def transcribe_audio(audio_data: bytes, model_size: str = "base", language: str 
         raise RuntimeError("faster-whisper not installed. Run: pip install faster-whisper")
     
     import io
+
     from faster_whisper import WhisperModel
     
     model = WhisperModel(model_size, device="cpu", compute_type="int8")

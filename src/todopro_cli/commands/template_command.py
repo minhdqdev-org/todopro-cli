@@ -25,7 +25,7 @@ def create_template(
     priority: int = typer.Option(
         4, "--priority", "-p", help="Priority (1-4)", min=1, max=4
     ),
-    label: list[str] = typer.Option(
+    label: list[str] = typer.Option(  # noqa: B008
         None, "--label", "-l", help="Label names (repeatable)"
     ),
     recur: str = typer.Option(
@@ -143,7 +143,7 @@ def apply_template(
             raise
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
         finally:
             await client.close()
 

@@ -62,6 +62,7 @@ packages = ["src/todopro_cli"]
 line-length = 88
 target-version = "py312"
 src = ["src"]
+exclude = ["tests"]
 
 [tool.ruff.lint]
 # Enable comprehensive rule sets

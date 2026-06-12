@@ -22,7 +22,6 @@ from todopro_cli.models.focus.ui import (
     show_stopped_message,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -445,13 +444,15 @@ class TestRunTimer:
         mock_live = self._make_live_mock()
 
         from unittest.mock import patch as _patch
-        with _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
-                    return_value=mock_keyboard):
-            with _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live):
-                with _patch("todopro_cli.models.focus.ui.time") as mt:
-                    mt.time.return_value = 0.0
-                    mt.sleep = MagicMock()
-                    result = td.run_timer(session)
+        with (
+            _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
+                    return_value=mock_keyboard),
+            _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live),
+            _patch("todopro_cli.models.focus.ui.time") as mt,
+        ):
+            mt.time.return_value = 0.0
+            mt.sleep = MagicMock()
+            result = td.run_timer(session)
 
         assert result == "stopped"
         mock_keyboard.stop.assert_called_once()
@@ -464,13 +465,15 @@ class TestRunTimer:
         mock_live = self._make_live_mock()
 
         from unittest.mock import patch as _patch
-        with _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
-                    return_value=mock_keyboard):
-            with _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live):
-                with _patch("todopro_cli.models.focus.ui.time") as mt:
-                    mt.time.return_value = 0.0
-                    mt.sleep = MagicMock()
-                    result = td.run_timer(session)
+        with (
+            _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
+                    return_value=mock_keyboard),
+            _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live),
+            _patch("todopro_cli.models.focus.ui.time") as mt,
+        ):
+            mt.time.return_value = 0.0
+            mt.sleep = MagicMock()
+            result = td.run_timer(session)
 
         assert result == "stopped"
 
@@ -483,13 +486,15 @@ class TestRunTimer:
         on_stop = MagicMock()
 
         from unittest.mock import patch as _patch
-        with _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
-                    return_value=mock_keyboard):
-            with _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live):
-                with _patch("todopro_cli.models.focus.ui.time") as mt:
-                    mt.time.return_value = 0.0
-                    mt.sleep = MagicMock()
-                    td.run_timer(session, on_stop=on_stop)
+        with (
+            _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
+                    return_value=mock_keyboard),
+            _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live),
+            _patch("todopro_cli.models.focus.ui.time") as mt,
+        ):
+            mt.time.return_value = 0.0
+            mt.sleep = MagicMock()
+            td.run_timer(session, on_stop=on_stop)
 
         on_stop.assert_called_once()
 
@@ -502,13 +507,15 @@ class TestRunTimer:
         on_complete = MagicMock()
 
         from unittest.mock import patch as _patch
-        with _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
-                    return_value=mock_keyboard):
-            with _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live):
-                with _patch("todopro_cli.models.focus.ui.time") as mt:
-                    mt.time.return_value = 0.0
-                    mt.sleep = MagicMock()
-                    result = td.run_timer(session, on_complete=on_complete)
+        with (
+            _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
+                    return_value=mock_keyboard),
+            _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live),
+            _patch("todopro_cli.models.focus.ui.time") as mt,
+        ):
+            mt.time.return_value = 0.0
+            mt.sleep = MagicMock()
+            result = td.run_timer(session, on_complete=on_complete)
 
         assert result == "completed"
         on_complete.assert_called_once()
@@ -521,13 +528,15 @@ class TestRunTimer:
         mock_live = self._make_live_mock()
 
         from unittest.mock import patch as _patch
-        with _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
-                    return_value=mock_keyboard):
-            with _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live):
-                with _patch("todopro_cli.models.focus.ui.time") as mt:
-                    mt.time.return_value = 0.0
-                    mt.sleep = MagicMock()
-                    result = td.run_timer(session)
+        with (
+            _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
+                    return_value=mock_keyboard),
+            _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live),
+            _patch("todopro_cli.models.focus.ui.time") as mt,
+        ):
+            mt.time.return_value = 0.0
+            mt.sleep = MagicMock()
+            result = td.run_timer(session)
 
         assert result == "interrupted"
         mock_keyboard.stop.assert_called_once()
@@ -548,13 +557,15 @@ class TestRunTimer:
         on_pause = MagicMock()
 
         from unittest.mock import patch as _patch
-        with _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
-                    return_value=mock_keyboard):
-            with _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live):
-                with _patch("todopro_cli.models.focus.ui.time") as mt:
-                    mt.time.return_value = 100.0
-                    mt.sleep = MagicMock()
-                    result = td.run_timer(session, on_pause=on_pause)
+        with (
+            _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
+                    return_value=mock_keyboard),
+            _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live),
+            _patch("todopro_cli.models.focus.ui.time") as mt,
+        ):
+            mt.time.return_value = 100.0
+            mt.sleep = MagicMock()
+            result = td.run_timer(session, on_pause=on_pause)
 
         assert result == "stopped"
         on_pause.assert_called_once()
@@ -577,13 +588,15 @@ class TestRunTimer:
         on_resume = MagicMock()
 
         from unittest.mock import patch as _patch
-        with _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
-                    return_value=mock_keyboard):
-            with _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live):
-                with _patch("todopro_cli.models.focus.ui.time") as mt:
-                    mt.time.return_value = 100.0
-                    mt.sleep = MagicMock()
-                    result = td.run_timer(session, on_pause=on_pause, on_resume=on_resume)
+        with (
+            _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
+                    return_value=mock_keyboard),
+            _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live),
+            _patch("todopro_cli.models.focus.ui.time") as mt,
+        ):
+            mt.time.return_value = 100.0
+            mt.sleep = MagicMock()
+            result = td.run_timer(session, on_pause=on_pause, on_resume=on_resume)
 
         assert result == "stopped"
         on_pause.assert_called_once()
@@ -594,7 +607,6 @@ class TestRunTimer:
         session = self._make_active_session()
         td = TimerDisplay()
         call_count = [0]
-        time_values = [0.0, 0.0, 60.0, 60.0]  # simulate 60 seconds pause then quit
 
         def _get_key():
             c = call_count[0]
@@ -607,18 +619,20 @@ class TestRunTimer:
         layout_calls = []
 
         from unittest.mock import patch as _patch
-        with _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
-                    return_value=mock_keyboard):
-            with _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live):
-                with _patch("todopro_cli.models.focus.ui.time") as mt:
-                    mt.time.side_effect = [0.0, 0.0, 60.0, 60.0, 60.0]
-                    mt.sleep = MagicMock()
-                    with _patch.object(td, "create_layout",
-                                       wraps=td.create_layout) as mock_cl:
-                        td.run_timer(session)
-                        layout_calls.extend(
-                            c.kwargs.get("paused_for", c.args[1] if len(c.args) > 1 else 0)
-                            for c in mock_cl.call_args_list
-                        )
+        with (
+            _patch("todopro_cli.models.focus.keyboard.KeyboardHandler",
+                    return_value=mock_keyboard),
+            _patch("todopro_cli.models.focus.ui.Live", return_value=mock_live),
+            _patch("todopro_cli.models.focus.ui.time") as mt,
+        ):
+            mt.time.side_effect = [0.0, 0.0, 60.0, 60.0, 60.0]
+            mt.sleep = MagicMock()
+            with _patch.object(td, "create_layout",
+                               wraps=td.create_layout) as mock_cl:
+                td.run_timer(session)
+                layout_calls.extend(
+                    c.kwargs.get("paused_for", c.args[1] if len(c.args) > 1 else 0)
+                    for c in mock_cl.call_args_list
+                )
         # At least one call should have paused_for > 0 while paused
         assert any(pf >= 0 for pf in layout_calls)

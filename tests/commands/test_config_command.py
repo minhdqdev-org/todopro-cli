@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.config_command import app
@@ -273,7 +272,7 @@ class TestCurrentContext:
         svc.config.contexts = []  # empty → should trigger init
         p = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         with p:
-            result = runner.invoke(app, ["current-context"])
+            runner.invoke(app, ["current-context"])
         svc.init_default_contexts.assert_called_once()
 
 
@@ -321,7 +320,7 @@ class TestGetContexts:
         svc.config.contexts = []
         p = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         with p:
-            result = runner.invoke(app, ["get-contexts"])
+            runner.invoke(app, ["get-contexts"])
         svc.init_default_contexts.assert_called_once()
 
 
@@ -378,7 +377,7 @@ class TestSetContext:
         svc.config.contexts = []
         p = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         with p:
-            result = runner.invoke(
+            runner.invoke(
                 app, ["set-context", "new", "--endpoint", "https://new.example.com"]
             )
         svc.init_default_contexts.assert_called_once()
@@ -439,13 +438,13 @@ class TestCurrentContextTableOutput:
 class TestDeleteContext:
     """Lines 231-241: delete-context command."""
 
-    def test_delete_context_yes_flag_profile_undefined(self):
-        """delete-context --yes calls get_config_service(profile) but profile undefined → exit 1."""
+    def test_delete_context_yes_flag_succeeds(self):
+        """delete-context --yes calls get_config_service() and deletes context."""
         svc = _mock_svc()
         p = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         with p:
             result = runner.invoke(app, ["delete-context", "staging", "--yes"])
-        assert result.exit_code != 0
+        assert result.exit_code == 0
 
     def test_delete_context_user_cancels(self):
         """User cancels deletion (n) → exits 0 without deleting."""
@@ -467,7 +466,7 @@ class TestDeleteContext:
         svc.remove_context.assert_called_once_with("staging")
 
 
-class TestCurrentContextTableOutput:
+class TestCurrentContextTableOutputExplicit:
     """Lines 161-169: current-context --output table shows Rich table."""
 
     def test_current_context_explicit_table_output(self):
@@ -502,6 +501,6 @@ class TestUseContextValueError:
         p_cfg = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         p_profile = patch("todopro_cli.commands.config_command.profile", "default", create=True)
         with p_cfg, p_profile:
-            result = runner.invoke(app, ["use-context", "default"])
+            runner.invoke(app, ["use-context", "default"])
         # init_default_contexts should have been called
         svc.init_default_contexts.assert_called_once()

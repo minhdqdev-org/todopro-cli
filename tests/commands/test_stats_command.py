@@ -11,12 +11,10 @@ from __future__ import annotations
 
 import json
 import sqlite3
-import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.stats import (
@@ -104,7 +102,7 @@ def _weekly_summary() -> dict:
     }
 
 
-def _monthly_summary(year: int = 2024, month: int = 6) -> dict:
+def _monthly_summary(_year: int = 2024, _month: int = 6) -> dict:
     return {
         "total_sessions": 60,
         "total_focus_minutes": 1500.0,
@@ -780,9 +778,11 @@ class TestShowQuality:
         mock_logger = MagicMock()
         mock_logger.db_path = str(db_path)
         mock_analytics = MagicMock()
-        with patch("todopro_cli.commands.stats.HistoryLogger", return_value=mock_logger):
-            with patch("todopro_cli.commands.stats.FocusAnalytics", return_value=mock_analytics):
-                return runner.invoke(app, ["quality"] + (args or []))
+        with (
+            patch("todopro_cli.commands.stats.HistoryLogger", return_value=mock_logger),
+            patch("todopro_cli.commands.stats.FocusAnalytics", return_value=mock_analytics),
+        ):
+            return runner.invoke(app, ["quality"] + (args or []))
 
     def test_quality_no_sessions(self, tmp_path):
         result = self._run_quality(tmp_path, [])

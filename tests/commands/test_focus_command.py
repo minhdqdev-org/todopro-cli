@@ -7,17 +7,14 @@ Goal: maximise line/branch coverage across all paths.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.focus import app
 from todopro_cli.models import Task
-from todopro_cli.models.config_models import AppConfig, Context
+from todopro_cli.models.config_models import Context
 from todopro_cli.models.focus.state import SessionState
 
 runner = CliRunner()
@@ -53,7 +50,7 @@ def _make_session(
     session_type="focus",
     pause_time=None,
 ) -> SessionState:
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     end = now + timedelta(minutes=duration)
     return SessionState(
         session_id="sess-0001",
@@ -89,7 +86,7 @@ def _patch_config_service(context_type="local"):
     return patch("todopro_cli.commands.focus.get_config_service", return_value=mock_cfg), mock_cfg
 
 
-def _patch_state_manager(session=None, load_return=None):
+def _patch_state_manager(_session=None, load_return=None):
     mock_sm = MagicMock()
     mock_sm.load.return_value = load_return
     mock_sm.save = MagicMock()
@@ -144,10 +141,15 @@ class TestStartFocus:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
         p_td, mock_td = _patch_timer_display("completed")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                with patch("todopro_cli.commands.focus.HistoryLogger") as mock_hist:
-                    result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=False),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
         assert "Focus session started" in strip_ansi(result.stdout)
@@ -161,10 +163,15 @@ class TestStartFocus:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("completed")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=True):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=True),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
         mock_svc.complete_task.assert_awaited_once()
@@ -177,10 +184,15 @@ class TestStartFocus:
         p_sm, _ = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("completed")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=True):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=True),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
         assert "Warning" in strip_ansi(result.stdout)
@@ -192,13 +204,14 @@ class TestStartFocus:
         p_sm, _ = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("completed")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                with patch(
-                    "todopro_cli.commands.focus.HistoryLogger",
-                    side_effect=Exception("disk error"),
-                ):
-                    result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm, p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=False),patch(
+            "todopro_cli.commands.focus.HistoryLogger",
+            side_effect=Exception("disk error"),
+        )
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
         assert "Could not log to history" in strip_ansi(result.stdout)
@@ -210,10 +223,15 @@ class TestStartFocus:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("stopped")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.HistoryLogger"):
-                with patch("todopro_cli.commands.focus.show_stopped_message") as mock_stop_msg:
-                    result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+            patch("todopro_cli.commands.focus.show_stopped_message") as mock_stop_msg,
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
         mock_stop_msg.assert_called_once()
@@ -226,12 +244,11 @@ class TestStartFocus:
         p_sm, _ = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("stopped")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch(
-                "todopro_cli.commands.focus.HistoryLogger",
-                side_effect=Exception("err"),
-            ):
-                result = runner.invoke(app, ["start", "task-abc12345"])
+        with p_ts, p_cfg, p_sm, p_td, patch(
+            "todopro_cli.commands.focus.HistoryLogger",
+            side_effect=Exception("err"),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
         assert "Could not log to history" in strip_ansi(result.stdout)
@@ -295,10 +312,16 @@ class TestStartFocus:
         p_sm, _ = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("completed")
 
-        with p_tm, p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["start", "task-abc12345", "--template", "deep_work"])
+        with (
+            p_tm,
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=False),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345", "--template", "deep_work"])
 
         assert result.exit_code == 0
         assert "deep_work" in strip_ansi(result.stdout)
@@ -312,10 +335,16 @@ class TestStartFocus:
         p_sm, _ = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("completed")
 
-        with p_tm, p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["start", "task-abc12345", "--template", "nonexistent"])
+        with (
+            p_tm,
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=False),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345", "--template", "nonexistent"])
 
         assert result.exit_code == 0
         assert "not found" in strip_ansi(result.stdout)
@@ -327,10 +356,15 @@ class TestStartFocus:
         p_sm, _ = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("completed")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["start", "task-abc12345", "--duration", "45"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=False),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345", "--duration", "45"])
 
         assert result.exit_code == 0
         assert "45 minutes" in strip_ansi(result.stdout)
@@ -353,16 +387,15 @@ class TestResumeFocus:
 
     def test_session_expired_user_declines_completion(self):
         """Expired session — user declines task completion."""
-        past_end = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).isoformat()
+        past_end = (datetime.now(tz=UTC) - timedelta(minutes=5)).isoformat()
         session = _make_session(status="active")
         session.end_time = past_end  # force expired
 
         p_sm, mock_sm = _patch_state_manager(load_return=session)
         p_cfg, _ = _patch_config_service()
 
-        with p_sm, p_cfg:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                result = runner.invoke(app, ["resume"])
+        with p_sm, p_cfg, patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
         assert "expired" in strip_ansi(result.stdout).lower()
@@ -370,7 +403,7 @@ class TestResumeFocus:
 
     def test_session_expired_user_confirms_completion(self):
         """Expired session — user confirms task completion."""
-        past_end = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).isoformat()
+        past_end = (datetime.now(tz=UTC) - timedelta(minutes=5)).isoformat()
         session = _make_session(status="active")
         session.end_time = past_end
 
@@ -378,16 +411,15 @@ class TestResumeFocus:
         p_ts, mock_svc = _patch_task_service()
         p_cfg, _ = _patch_config_service()
 
-        with p_sm, p_ts, p_cfg:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=True):
-                result = runner.invoke(app, ["resume"])
+        with p_sm, p_ts, p_cfg, patch("todopro_cli.commands.focus.Confirm.ask", return_value=True):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
         mock_svc.complete_task.assert_awaited_once()
 
     def test_session_expired_complete_task_error(self):
         """Expired session — complete_task raises, silently ignored."""
-        past_end = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).isoformat()
+        past_end = (datetime.now(tz=UTC) - timedelta(minutes=5)).isoformat()
         session = _make_session(status="active")
         session.end_time = past_end
 
@@ -396,26 +428,29 @@ class TestResumeFocus:
         mock_svc.complete_task = AsyncMock(side_effect=Exception("err"))
         p_cfg, _ = _patch_config_service()
 
-        with p_sm, p_ts, p_cfg:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=True):
-                result = runner.invoke(app, ["resume"])
+        with p_sm, p_ts, p_cfg, patch("todopro_cli.commands.focus.Confirm.ask", return_value=True):
+            result = runner.invoke(app, ["resume"])
 
         # Should still exit cleanly (error is silently swallowed)
         assert result.exit_code == 0
 
     def test_resume_paused_session_timer_completes_no_task(self):
         """Paused session: resume, timer completes, user says task not done."""
-        pause_time = (datetime.now(tz=timezone.utc) - timedelta(minutes=2)).isoformat()
+        pause_time = (datetime.now(tz=UTC) - timedelta(minutes=2)).isoformat()
         session = _make_session(status="paused", pause_time=pause_time)
 
         p_sm, mock_sm = _patch_state_manager(load_return=session)
         p_cfg, _ = _patch_config_service()
         p_td, _ = _patch_timer_display("completed")
 
-        with p_sm, p_cfg, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["resume"])
+        with (
+            p_sm,
+            p_cfg,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=False),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
         assert "Resuming focus session" in strip_ansi(result.stdout)
@@ -423,7 +458,7 @@ class TestResumeFocus:
 
     def test_resume_paused_session_timer_completes_with_task(self):
         """Paused session: timer completes, user confirms task done."""
-        pause_time = (datetime.now(tz=timezone.utc) - timedelta(minutes=2)).isoformat()
+        pause_time = (datetime.now(tz=UTC) - timedelta(minutes=2)).isoformat()
         session = _make_session(status="paused", pause_time=pause_time)
 
         p_sm, _ = _patch_state_manager(load_return=session)
@@ -431,10 +466,15 @@ class TestResumeFocus:
         p_td, _ = _patch_timer_display("completed")
         p_ts, mock_svc = _patch_task_service()
 
-        with p_sm, p_cfg, p_td, p_ts:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=True):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["resume"])
+        with (
+            p_sm,
+            p_cfg,
+            p_td,
+            p_ts,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=True),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
         mock_svc.complete_task.assert_awaited_once()
@@ -447,13 +487,17 @@ class TestResumeFocus:
         p_cfg, _ = _patch_config_service()
         p_td, _ = _patch_timer_display("completed")
 
-        with p_sm, p_cfg, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                with patch(
-                    "todopro_cli.commands.focus.HistoryLogger",
-                    side_effect=Exception("disk error"),
-                ):
-                    result = runner.invoke(app, ["resume"])
+        with (
+            p_sm,
+            p_cfg,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=False),
+            patch(
+                "todopro_cli.commands.focus.HistoryLogger",
+                side_effect=Exception("disk error"),
+            ),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
         assert "Could not log to history" in strip_ansi(result.stdout)
@@ -465,10 +509,14 @@ class TestResumeFocus:
         p_cfg, _ = _patch_config_service()
         p_td, _ = _patch_timer_display("stopped")
 
-        with p_sm, p_cfg, p_td:
-            with patch("todopro_cli.commands.focus.HistoryLogger"):
-                with patch("todopro_cli.commands.focus.show_stopped_message") as mock_msg:
-                    result = runner.invoke(app, ["resume"])
+        with (
+            p_sm,
+            p_cfg,
+            p_td,
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+            patch("todopro_cli.commands.focus.show_stopped_message") as mock_msg,
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
         mock_msg.assert_called_once()
@@ -481,12 +529,11 @@ class TestResumeFocus:
         p_cfg, _ = _patch_config_service()
         p_td, _ = _patch_timer_display("stopped")
 
-        with p_sm, p_cfg, p_td:
-            with patch(
-                "todopro_cli.commands.focus.HistoryLogger",
-                side_effect=Exception("err"),
-            ):
-                result = runner.invoke(app, ["resume"])
+        with p_sm, p_cfg, p_td, patch(
+            "todopro_cli.commands.focus.HistoryLogger",
+            side_effect=Exception("err"),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
         assert "Could not log to history" in strip_ansi(result.stdout)
@@ -512,10 +559,14 @@ class TestResumeFocus:
         p_cfg, _ = _patch_config_service()
         p_td, _ = _patch_timer_display("completed")
 
-        with p_sm, p_cfg, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=False):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["resume"])
+        with (
+            p_sm,
+            p_cfg,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=False),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
 
@@ -540,9 +591,8 @@ class TestStopFocus:
         session = _make_session(status="active")
         p_sm, mock_sm = _patch_state_manager(load_return=session)
 
-        with p_sm:
-            with patch("todopro_cli.commands.focus.HistoryLogger"):
-                result = runner.invoke(app, ["stop"])
+        with p_sm, patch("todopro_cli.commands.focus.HistoryLogger"):
+            result = runner.invoke(app, ["stop"])
 
         assert result.exit_code == 0
         assert "Stopping focus session" in strip_ansi(result.stdout)
@@ -554,12 +604,11 @@ class TestStopFocus:
         session = _make_session(status="active")
         p_sm, _ = _patch_state_manager(load_return=session)
 
-        with p_sm:
-            with patch(
-                "todopro_cli.commands.focus.HistoryLogger",
-                side_effect=Exception("disk error"),
-            ):
-                result = runner.invoke(app, ["stop"])
+        with p_sm, patch(
+            "todopro_cli.commands.focus.HistoryLogger",
+            side_effect=Exception("disk error"),
+        ):
+            result = runner.invoke(app, ["stop"])
 
         assert result.exit_code == 0
         assert "Could not log to history" in strip_ansi(result.stdout)
@@ -595,7 +644,7 @@ class TestFocusStatus:
     def test_expired_session_shows_expired(self):
         """Session with no time remaining shows expired."""
         session = _make_session(status="active")
-        session.end_time = (datetime.now(tz=timezone.utc) - timedelta(minutes=1)).isoformat()
+        session.end_time = (datetime.now(tz=UTC) - timedelta(minutes=1)).isoformat()
         p_sm, _ = _patch_state_manager(load_return=session)
 
         with p_sm:
@@ -725,9 +774,8 @@ class TestAutoCycle:
         p_sm, _ = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("stopped")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.HistoryLogger"):
-                result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with p_ts, p_cfg, p_sm, p_td, patch("todopro_cli.commands.focus.HistoryLogger"):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
         assert "stopped" in strip_ansi(result.stdout).lower()
@@ -767,10 +815,15 @@ class TestAutoCycle:
 
         answers = iter([False, False])  # "Did you complete task?" → No; "Continue?" → No
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", side_effect=answers):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", side_effect=answers),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
         assert "stopped" in strip_ansi(result.stdout).lower()
@@ -791,10 +844,16 @@ class TestAutoCycle:
         # "Did you complete task?" → Yes; "Continue?" → No
         answers = iter([True, False])
 
-        with p_ts, p_cfg, p_sm, p_td, p_se:
-            with patch("todopro_cli.commands.focus.Confirm.ask", side_effect=answers):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            p_se,
+            patch("todopro_cli.commands.focus.Confirm.ask", side_effect=answers),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
         mock_svc.complete_task.assert_awaited_once()
@@ -810,10 +869,16 @@ class TestAutoCycle:
 
         answers = iter([True, False])
 
-        with p_ts, p_cfg, p_sm, p_td, p_se:
-            with patch("todopro_cli.commands.focus.Confirm.ask", side_effect=answers):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            p_se,
+            patch("todopro_cli.commands.focus.Confirm.ask", side_effect=answers),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -844,10 +909,16 @@ class TestAutoCycle:
         p_td, _ = _patch_timer_display("stopped")
         p_se, _ = _patch_suggestion_engine(suggestions=suggestions)
 
-        with p_ts, p_cfg, p_sm, p_td, p_se:
-            with patch("todopro_cli.commands.focus.Prompt.ask", return_value="1"):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["cycle"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            p_se,
+            patch("todopro_cli.commands.focus.Prompt.ask", return_value="1"),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["cycle"])
 
         assert result.exit_code == 0
 
@@ -863,9 +934,8 @@ class TestAutoCycle:
         p_cfg, _ = _patch_config_service()
         p_se, _ = _patch_suggestion_engine(suggestions=suggestions)
 
-        with p_ts, p_cfg, p_se:
-            with patch("todopro_cli.commands.focus.Prompt.ask", return_value="999"):
-                result = runner.invoke(app, ["cycle"])
+        with p_ts, p_cfg, p_se, patch("todopro_cli.commands.focus.Prompt.ask", return_value="999"):
+            result = runner.invoke(app, ["cycle"])
 
         assert result.exit_code == 1
         assert "Invalid selection" in strip_ansi(result.stdout)
@@ -882,9 +952,8 @@ class TestAutoCycle:
         p_cfg, _ = _patch_config_service()
         p_se, _ = _patch_suggestion_engine(suggestions=suggestions)
 
-        with p_ts, p_cfg, p_se:
-            with patch("todopro_cli.commands.focus.Prompt.ask", return_value="abc"):
-                result = runner.invoke(app, ["cycle"])
+        with p_ts, p_cfg, p_se, patch("todopro_cli.commands.focus.Prompt.ask", return_value="abc"):
+            result = runner.invoke(app, ["cycle"])
 
         assert result.exit_code == 1
 
@@ -908,13 +977,12 @@ class TestAutoCycle:
         p_sm, _ = _patch_state_manager(load_return=None)
         p_td, _ = _patch_timer_display("stopped")
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.HistoryLogger"):
-                result = runner.invoke(
-                    app,
-                    ["cycle", "task-abc12345", "--work", "30", "--short-break", "10",
-                     "--long-break", "20", "--cycles", "3"],
-                )
+        with p_ts, p_cfg, p_sm, p_td, patch("todopro_cli.commands.focus.HistoryLogger"):
+            result = runner.invoke(
+                app,
+                ["cycle", "task-abc12345", "--work", "30", "--short-break", "10",
+                 "--long-break", "20", "--cycles", "3"],
+            )
 
         assert result.exit_code == 0
 
@@ -929,10 +997,15 @@ class TestAutoCycle:
 
         answers = iter([True, False])
 
-        with p_ts, p_cfg, p_sm, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", side_effect=answers):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", side_effect=answers),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         # Error is caught; loop should still stop when user says no
         assert result.exit_code == 0
@@ -953,7 +1026,7 @@ def _make_callback_invoking_display(phase_callbacks_to_invoke):
                 on_pause()
             elif cb_name == "on_resume_with_pause":
                 # Simulate pause was set before resume
-                session.pause_time = (datetime.now(tz=timezone.utc) - timedelta(seconds=30)).isoformat()
+                session.pause_time = (datetime.now(tz=UTC) - timedelta(seconds=30)).isoformat()
                 on_pause()
                 on_resume()
             elif cb_name == "on_resume_no_pause":
@@ -978,9 +1051,11 @@ class TestStartFocusCallbacks:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
 
         mock_display = _make_callback_invoking_display(["on_pause"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
         # save was called at least once (initial save) + once for on_pause
@@ -993,9 +1068,11 @@ class TestStartFocusCallbacks:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
 
         mock_display = _make_callback_invoking_display(["on_resume_with_pause"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1006,9 +1083,11 @@ class TestStartFocusCallbacks:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
 
         mock_display = _make_callback_invoking_display(["on_resume_no_pause"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1019,9 +1098,11 @@ class TestStartFocusCallbacks:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
 
         mock_display = _make_callback_invoking_display(["on_stop"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1032,9 +1113,11 @@ class TestStartFocusCallbacks:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
 
         mock_display = _make_callback_invoking_display(["on_complete"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["start", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["start", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1049,9 +1132,11 @@ class TestResumeFocusCallbacks:
         p_cfg, _ = _patch_config_service()
 
         mock_display = _make_callback_invoking_display(["on_pause"])
-        with p_sm, p_cfg:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["resume"])
+        with (
+            p_sm, p_cfg,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
 
@@ -1062,9 +1147,11 @@ class TestResumeFocusCallbacks:
         p_cfg, _ = _patch_config_service()
 
         mock_display = _make_callback_invoking_display(["on_resume_with_pause"])
-        with p_sm, p_cfg:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["resume"])
+        with (
+            p_sm, p_cfg,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
 
@@ -1075,9 +1162,11 @@ class TestResumeFocusCallbacks:
         p_cfg, _ = _patch_config_service()
 
         mock_display = _make_callback_invoking_display(["on_resume_no_pause"])
-        with p_sm, p_cfg:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["resume"])
+        with (
+            p_sm, p_cfg,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
 
@@ -1088,9 +1177,11 @@ class TestResumeFocusCallbacks:
         p_cfg, _ = _patch_config_service()
 
         mock_display = _make_callback_invoking_display(["on_stop"])
-        with p_sm, p_cfg:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["resume"])
+        with (
+            p_sm, p_cfg,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
 
@@ -1101,9 +1192,11 @@ class TestResumeFocusCallbacks:
         p_cfg, _ = _patch_config_service()
 
         mock_display = _make_callback_invoking_display(["on_complete"])
-        with p_sm, p_cfg:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["resume"])
+        with (
+            p_sm, p_cfg,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         assert result.exit_code == 0
 
@@ -1116,10 +1209,15 @@ class TestResumeFocusCallbacks:
         mock_svc.complete_task = AsyncMock(side_effect=Exception("API error"))
         p_td, _ = _patch_timer_display("completed")
 
-        with p_sm, p_cfg, p_ts, p_td:
-            with patch("todopro_cli.commands.focus.Confirm.ask", return_value=True):
-                with patch("todopro_cli.commands.focus.HistoryLogger"):
-                    result = runner.invoke(app, ["resume"])
+        with (
+            p_sm,
+            p_cfg,
+            p_ts,
+            p_td,
+            patch("todopro_cli.commands.focus.Confirm.ask", return_value=True),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["resume"])
 
         # Error silently swallowed — still exits 0
         assert result.exit_code == 0
@@ -1139,7 +1237,7 @@ class TestAutoCycleCallbacks:
                     on_pause()
                 elif cb_name == "on_resume_with_pause":
                     session.pause_time = (
-                        datetime.now(tz=timezone.utc) - timedelta(seconds=30)
+                        datetime.now(tz=UTC) - timedelta(seconds=30)
                     ).isoformat()
                     on_pause()
                     on_resume()
@@ -1162,9 +1260,11 @@ class TestAutoCycleCallbacks:
         p_sm, mock_sm = _patch_state_manager(load_return=None)
 
         mock_display = self._make_cycle_callback_display(["on_pause"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1175,9 +1275,11 @@ class TestAutoCycleCallbacks:
         p_sm, _ = _patch_state_manager(load_return=None)
 
         mock_display = self._make_cycle_callback_display(["on_resume_with_pause"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1188,9 +1290,11 @@ class TestAutoCycleCallbacks:
         p_sm, _ = _patch_state_manager(load_return=None)
 
         mock_display = self._make_cycle_callback_display(["on_resume_no_pause"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1201,9 +1305,11 @@ class TestAutoCycleCallbacks:
         p_sm, _ = _patch_state_manager(load_return=None)
 
         mock_display = self._make_cycle_callback_display(["on_stop"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1214,9 +1320,11 @@ class TestAutoCycleCallbacks:
         p_sm, _ = _patch_state_manager(load_return=None)
 
         mock_display = self._make_cycle_callback_display(["on_complete"])
-        with p_ts, p_cfg, p_sm:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts, p_cfg, p_sm,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
 
@@ -1231,18 +1339,23 @@ class TestAutoCycleCallbacks:
         # Timer returns "completed" on first call (focus), then "stopped" on second (short_break)
         timer_results = iter(["completed", "stopped"])
         mock_display = MagicMock()
-        mock_display.run_timer.side_effect = lambda *a, **kw: next(timer_results)
+        mock_display.run_timer.side_effect = lambda *_a, **_kw: next(timer_results)
 
         # First Confirm: "Did you complete task?" → No
         # Second Confirm: "Continue to Short Break?" → Yes
         # (then stopped on short_break, so 3rd Confirm.ask not needed)
         confirm_answers = iter([False, True])
 
-        with p_ts, p_cfg, p_sm, p_se:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                with patch("todopro_cli.commands.focus.Confirm.ask", side_effect=confirm_answers):
-                    with patch("todopro_cli.commands.focus.HistoryLogger"):
-                        result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_se,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+            patch("todopro_cli.commands.focus.Confirm.ask", side_effect=confirm_answers),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
         # run_timer should have been called twice (focus + short_break)
@@ -1263,19 +1376,24 @@ class TestAutoCycleCallbacks:
         # To simplify: use cycles=1 so first focus → long_break
         timer_results = iter(["completed", "stopped"])
         mock_display = MagicMock()
-        mock_display.run_timer.side_effect = lambda *a, **kw: next(timer_results)
+        mock_display.run_timer.side_effect = lambda *_a, **_kw: next(timer_results)
 
         # "Did you complete task?" → No; "Continue to Long Break?" → Yes
         confirm_answers = iter([False, True])
 
-        with p_ts, p_cfg, p_sm, p_se:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                with patch("todopro_cli.commands.focus.Confirm.ask", side_effect=confirm_answers):
-                    with patch("todopro_cli.commands.focus.HistoryLogger"):
-                        result = runner.invoke(
-                            app,
-                            ["cycle", "task-abc12345", "--cycles", "1"],
-                        )
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_se,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+            patch("todopro_cli.commands.focus.Confirm.ask", side_effect=confirm_answers),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(
+                app,
+                ["cycle", "task-abc12345", "--cycles", "1"],
+            )
 
         assert result.exit_code == 0
         assert mock_display.run_timer.call_count == 2
@@ -1297,16 +1415,21 @@ class TestAutoCycleCallbacks:
 
         timer_results = iter(["completed", "stopped"])
         mock_display = MagicMock()
-        mock_display.run_timer.side_effect = lambda *a, **kw: next(timer_results)
+        mock_display.run_timer.side_effect = lambda *_a, **_kw: next(timer_results)
 
         # "Did you complete task?" → Yes; "Continue?" → Yes; (2nd timer stopped)
         confirm_answers = iter([True, True])
 
-        with p_ts, p_cfg, p_sm, p_se:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                with patch("todopro_cli.commands.focus.Confirm.ask", side_effect=confirm_answers):
-                    with patch("todopro_cli.commands.focus.HistoryLogger"):
-                        result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_se,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+            patch("todopro_cli.commands.focus.Confirm.ask", side_effect=confirm_answers),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0
         mock_svc.complete_task.assert_awaited_once()
@@ -1371,15 +1494,20 @@ class TestFactoryFunctions:
 
         timer_results = iter(["completed", "stopped"])
         mock_display = MagicMock()
-        mock_display.run_timer.side_effect = lambda *a, **kw: next(timer_results)
+        mock_display.run_timer.side_effect = lambda *_a, **_kw: next(timer_results)
 
         # "Did you complete task?" → Yes; "Continue?" → Yes
         confirm_answers = iter([True, True])
 
-        with p_ts, p_cfg, p_sm, p_se:
-            with patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display):
-                with patch("todopro_cli.commands.focus.Confirm.ask", side_effect=confirm_answers):
-                    with patch("todopro_cli.commands.focus.HistoryLogger"):
-                        result = runner.invoke(app, ["cycle", "task-abc12345"])
+        with (
+            p_ts,
+            p_cfg,
+            p_sm,
+            p_se,
+            patch("todopro_cli.commands.focus.TimerDisplay", return_value=mock_display),
+            patch("todopro_cli.commands.focus.Confirm.ask", side_effect=confirm_answers),
+            patch("todopro_cli.commands.focus.HistoryLogger"),
+        ):
+            result = runner.invoke(app, ["cycle", "task-abc12345"])
 
         assert result.exit_code == 0

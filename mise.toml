@@ -1,0 +1,88 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.help]
+description = "Show available tasks"
+run = "mise tasks"
+quiet = true
+
+[tasks.install]
+description = "Install all dependencies including dev with uv"
+run = "uv sync --all-groups"
+
+[tasks.install-prod]
+description = "Install production dependencies only"
+run = "uv sync --no-dev"
+
+[tasks.clean]
+description = "Remove cache files and build artifacts"
+run = [
+  "find . -type f -name '*.pyc' -delete",
+  "find . -type d -name '__pycache__' -delete",
+  "find . -type d -name '*.egg-info' -exec rm -rf {} +",
+  "rm -rf build/ dist/ .coverage htmlcov/ .pytest_cache/ .ruff_cache/ .mypy_cache/",
+]
+
+[tasks.format]
+description = "Format code with black and ruff"
+run = ["uv run black src tests", "uv run ruff check --select I --fix src tests"]
+
+[tasks.lint]
+description = "Run linting checks"
+run = ["uv run ruff check src tests", "uv run black --check src tests"]
+
+[tasks.type-check]
+description = "Run static type checking with mypy"
+run = "uv run mypy src --ignore-missing-imports"
+
+[tasks.test]
+description = "Run tests"
+run = "uv run pytest tests --verbose"
+
+[tasks.test-cov]
+description = "Run tests with coverage report"
+run = "uv run pytest tests --verbose --cov=src --cov-report=html --cov-report=term-missing"
+
+[tasks.test-fast]
+description = "Run tests without verbose output"
+run = "uv run pytest tests -q"
+
+[tasks.generate-man]
+description = "Generate man pages from the CLI app definition"
+run = ["PYTHONPATH=src uv run scripts/generate_man.py", "echo 'Man pages written to man/man1/'"]
+
+[tasks.install-man]
+description = "Generate and install man pages"
+depends = ["generate-man"]
+run = """
+install -d "${DESTDIR:-}/usr/share/man/man1"
+for f in man/man1/*.1; do
+  install -m 644 "$f" "${DESTDIR:-}/usr/share/man/man1/"
+  gzip -f "${DESTDIR:-}/usr/share/man/man1/$(basename "$f")"
+done
+ln -sf todopro.1.gz "${DESTDIR:-}/usr/share/man/man1/tp.1.gz"
+mandb 2>/dev/null || true
+echo "Man pages installed. Run: man todopro"
+"""
+
+[tasks.check]
+description = "Run all checks"
+depends = ["lint", "test"]
+
+[tasks.ci]
+description = "Run the full CI pipeline"
+depends = ["install", "lint", "test-cov"]
+
+[tasks.build]
+description = "Build distribution packages"
+depends = ["clean"]
+run = "uv build"
+
+[tasks.publish]
+description = "Publish package to PyPI"
+depends = ["build"]
+run = "uv publish"

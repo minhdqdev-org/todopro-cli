@@ -10,7 +10,10 @@ from typing import Literal
 import typer
 from rich.table import Table
 
-from todopro_cli.services.config_service import get_config_service, get_storage_strategy_context
+from todopro_cli.services.config_service import (
+    get_config_service,
+    get_storage_strategy_context,
+)
 from todopro_cli.services.sync_service import SyncPullService, SyncPushService
 from todopro_cli.services.sync_state import SyncState
 from todopro_cli.utils.ui.console import get_console

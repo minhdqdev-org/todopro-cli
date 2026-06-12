@@ -184,7 +184,7 @@ def show_recovery(
 
     except Exception as e:
         console.print(f"\n[red]❌ Error: {e}[/red]\n")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
 
 @app.command("recover")
@@ -231,10 +231,10 @@ def recover():
     except TodoProCryptoError as e:
         console.print(f"\n[bold red]❌ Recovery failed: {e}[/bold red]")
         console.print("   Make sure you entered the correct 12-word phrase.\n")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
     except Exception as e:
         console.print(f"\n[bold red]❌ Unexpected error: {e}[/bold red]\n")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
 
 @app.command("rotate-key")

@@ -3,7 +3,6 @@
 Tests `todopro show today/week/month/streak/score` which uses FocusAnalytics.
 """
 
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -80,7 +79,7 @@ def mock_analytics():
 class TestShowToday:
     """Tests for the show today command."""
 
-    def test_show_today_output(self, mock_analytics):
+    def test_show_today_output(self, _mock_analytics):
         """Test show today produces expected output."""
         result = runner.invoke(app, ["today"])
         assert result.exit_code == 0
@@ -101,7 +100,7 @@ class TestShowToday:
 class TestShowWeek:
     """Tests for the show week command."""
 
-    def test_show_week_output(self, mock_analytics):
+    def test_show_week_output(self, _mock_analytics):
         """Test show week produces expected output."""
         result = runner.invoke(app, ["week"])
         assert result.exit_code == 0
@@ -122,7 +121,7 @@ class TestShowWeek:
 class TestShowStreak:
     """Tests for the show streak command."""
 
-    def test_show_streak_output(self, mock_analytics):
+    def test_show_streak_output(self, _mock_analytics):
         """Test show streak produces expected output."""
         result = runner.invoke(app, ["streak"])
         assert result.exit_code == 0
@@ -156,7 +155,7 @@ class TestShowStreak:
 class TestShowScore:
     """Tests for the show score command."""
 
-    def test_show_score_output(self, mock_analytics):
+    def test_show_score_output(self, _mock_analytics):
         """Test show score produces expected output."""
         result = runner.invoke(app, ["score"])
         assert result.exit_code == 0

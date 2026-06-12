@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import sqlite3
 
-import pytest
-
 from todopro_cli.adapters.sqlite.migrations.m002_sync_compat import (
     SyncCompatibilityMigration,
 )
 from todopro_cli.adapters.sqlite.migrations.runner import Migration
-
 
 # ---------------------------------------------------------------------------
 # Helpers (same v1 schema as test_migration_v2)

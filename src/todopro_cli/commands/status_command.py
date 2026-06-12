@@ -11,7 +11,7 @@ console = get_console()
 
 @app.command("focus")
 def status_focus(
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    _output: str = typer.Option("table", "--_output", "-o", help="Output format"),
 ) -> None:
     """Show current focus session status."""
     from todopro_cli.commands.focus import focus_status as _impl

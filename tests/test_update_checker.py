@@ -31,7 +31,7 @@ def mock_cache_dir(tmp_path):
         yield cache_dir
 
 
-def test_check_for_updates_with_newer_version(mock_cache_dir, capsys):
+def test_check_for_updates_with_newer_version(_mock_cache_dir, capsys):
     """Test that update notification is shown when newer version is available."""
     mock_response = Mock()
     mock_response.status_code = 200
@@ -48,7 +48,7 @@ def test_check_for_updates_with_newer_version(mock_cache_dir, capsys):
     assert "uv tool upgrade todopro-cli" in captured.out
 
 
-def test_check_for_updates_with_same_version(mock_cache_dir, capsys):
+def test_check_for_updates_with_same_version(_mock_cache_dir, capsys):
     """Test that no notification is shown when version is the same."""
     mock_response = Mock()
     mock_response.status_code = 200
@@ -63,7 +63,7 @@ def test_check_for_updates_with_same_version(mock_cache_dir, capsys):
     assert "New version available" not in captured.out
 
 
-def test_check_for_updates_with_older_version(mock_cache_dir, capsys):
+def test_check_for_updates_with_older_version(_mock_cache_dir, capsys):
     """Test that no notification is shown when PyPI has older version."""
     mock_response = Mock()
     mock_response.status_code = 200
@@ -78,7 +78,7 @@ def test_check_for_updates_with_older_version(mock_cache_dir, capsys):
     assert "New version available" not in captured.out
 
 
-def test_check_for_updates_network_error(mock_cache_dir, capsys):
+def test_check_for_updates_network_error(_mock_cache_dir, capsys):
     """Test that network errors are handled silently."""
     with patch(
         "todopro_cli.utils.update_checker.httpx.get",
@@ -150,7 +150,7 @@ def test_check_for_updates_creates_cache_file(mock_cache_dir):
     assert cache_data["latest_version"] == "99.99.99"
 
 
-def test_check_for_updates_timeout(mock_cache_dir, capsys):
+def test_check_for_updates_timeout(_mock_cache_dir, _capsys):
     """Test that timeout is properly set to avoid blocking."""
     with patch("todopro_cli.utils.update_checker.httpx.get") as mock_get:
         mock_response = Mock()
@@ -167,7 +167,7 @@ def test_check_for_updates_timeout(mock_cache_dir, capsys):
         assert call_kwargs["timeout"] == 0.5
 
 
-def test_get_latest_version_success(mock_cache_dir):
+def test_get_latest_version_success(_mock_cache_dir):
     """Test getting latest version from PyPI."""
     mock_response = Mock()
     mock_response.status_code = 200
@@ -180,7 +180,7 @@ def test_get_latest_version_success(mock_cache_dir):
         assert version == "2.0.0"
 
 
-def test_get_latest_version_network_error(mock_cache_dir):
+def test_get_latest_version_network_error(_mock_cache_dir):
     """Test that network errors return None."""
     with patch(
         "todopro_cli.utils.update_checker.httpx.get",
@@ -205,7 +205,7 @@ def test_get_latest_version_uses_cache(mock_cache_dir):
         assert version == "3.0.0"
 
 
-def test_is_update_available_newer_version(mock_cache_dir):
+def test_is_update_available_newer_version(_mock_cache_dir):
     """Test is_update_available returns True when newer version exists."""
     mock_response = Mock()
     mock_response.status_code = 200
@@ -219,7 +219,7 @@ def test_is_update_available_newer_version(mock_cache_dir):
         assert latest == "99.99.99"
 
 
-def test_is_update_available_same_version(mock_cache_dir):
+def test_is_update_available_same_version(_mock_cache_dir):
     """Test is_update_available returns False when version is same."""
     mock_response = Mock()
     mock_response.status_code = 200
@@ -233,7 +233,7 @@ def test_is_update_available_same_version(mock_cache_dir):
         assert latest == __version__
 
 
-def test_is_update_available_network_error(mock_cache_dir):
+def test_is_update_available_network_error(_mock_cache_dir):
     """Test is_update_available handles network errors gracefully."""
     with patch(
         "todopro_cli.utils.update_checker.httpx.get",
@@ -244,7 +244,7 @@ def test_is_update_available_network_error(mock_cache_dir):
         assert latest is None
 
 
-def test_get_backend_url_from_env_var(mock_cache_dir):
+def test_get_backend_url_from_env_var(_mock_cache_dir):
     """Test that environment variable has highest priority."""
     with patch.dict(os.environ, {"TODOPRO_BACKEND_URL": "http://localhost:8000/api"}):
         url = get_backend_url()
@@ -270,7 +270,7 @@ def test_get_backend_url_from_cache(mock_cache_dir):
         assert url == "https://cached.backend.com/api"
 
 
-def test_get_backend_url_from_pypi(mock_cache_dir):
+def test_get_backend_url_from_pypi(_mock_cache_dir):
     """Test fetching backend URL from PyPI metadata."""
     mock_response = Mock()
     mock_response.status_code = 200
@@ -288,7 +288,7 @@ def test_get_backend_url_from_pypi(mock_cache_dir):
         assert url == "https://pypi.backend.com/api"
 
 
-def test_get_backend_url_fallback_to_default(mock_cache_dir):
+def test_get_backend_url_fallback_to_default(_mock_cache_dir):
     """Test fallback to default URL when all else fails."""
     with patch(
         "todopro_cli.utils.update_checker.httpx.get",
@@ -298,7 +298,7 @@ def test_get_backend_url_fallback_to_default(mock_cache_dir):
         assert url == DEFAULT_BACKEND_URL
 
 
-def test_get_backend_url_strips_trailing_slash(mock_cache_dir):
+def test_get_backend_url_strips_trailing_slash(_mock_cache_dir):
     """Test that trailing slashes are removed."""
     with patch.dict(os.environ, {"TODOPRO_BACKEND_URL": "http://localhost:8000/api/"}):
         url = get_backend_url()

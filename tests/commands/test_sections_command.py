@@ -65,7 +65,7 @@ def _invoke(args, svc):
 
 
 # Cleaner helper that applies all patches at once
-from contextlib import ExitStack
+from contextlib import ExitStack  # noqa: E402
 
 
 def invoke(args, svc):

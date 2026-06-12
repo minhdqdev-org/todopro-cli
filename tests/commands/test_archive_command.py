@@ -6,7 +6,6 @@ group), so we invoke it WITHOUT the subcommand name prefix.
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.archive_command import app
@@ -43,13 +42,12 @@ def _invoke_archive(args, project=None, resolve_uuid_result=None):
     with patch(
         "todopro_cli.commands.archive_command.get_project_service",
         return_value=mock_service,
+    ), patch(
+        "todopro_cli.commands.archive_command.resolve_project_uuid",
+        new_callable=AsyncMock,
+        return_value=resolved_id,
     ):
-        with patch(
-            "todopro_cli.commands.archive_command.resolve_project_uuid",
-            new_callable=AsyncMock,
-            return_value=resolved_id,
-        ):
-            return runner.invoke(app, args)
+        return runner.invoke(app, args)
 
 
 # ---------------------------------------------------------------------------
@@ -77,13 +75,12 @@ class TestArchiveProject:
         with patch(
             "todopro_cli.commands.archive_command.get_project_service",
             return_value=mock_service,
+        ), patch(
+            "todopro_cli.commands.archive_command.resolve_project_uuid",
+            new_callable=AsyncMock,
+            return_value="proj-xyz",
         ):
-            with patch(
-                "todopro_cli.commands.archive_command.resolve_project_uuid",
-                new_callable=AsyncMock,
-                return_value="proj-xyz",
-            ):
-                runner.invoke(app, ["proj-xyz"])
+            runner.invoke(app, ["proj-xyz"])
         mock_service.archive_project.assert_awaited_once_with("proj-xyz")
 
     def test_archive_project_resolves_uuid(self):
@@ -95,12 +92,11 @@ class TestArchiveProject:
         with patch(
             "todopro_cli.commands.archive_command.get_project_service",
             return_value=mock_service,
+        ), patch(
+            "todopro_cli.commands.archive_command.resolve_project_uuid",
+            resolve_mock,
         ):
-            with patch(
-                "todopro_cli.commands.archive_command.resolve_project_uuid",
-                resolve_mock,
-            ):
-                runner.invoke(app, ["proj-short"])
+            runner.invoke(app, ["proj-short"])
         resolve_mock.assert_awaited_once_with("proj-short", mock_service.repository)
 
     def test_archive_project_default_output_format(self):
@@ -119,13 +115,12 @@ class TestArchiveProject:
         with patch(
             "todopro_cli.commands.archive_command.get_project_service",
             return_value=mock_service,
+        ), patch(
+            "todopro_cli.commands.archive_command.resolve_project_uuid",
+            new_callable=AsyncMock,
+            return_value="proj-abc",
         ):
-            with patch(
-                "todopro_cli.commands.archive_command.resolve_project_uuid",
-                new_callable=AsyncMock,
-                return_value="proj-abc",
-            ):
-                result = runner.invoke(app, ["proj-abc"])
+            result = runner.invoke(app, ["proj-abc"])
         assert result.exit_code != 0
 
     def test_archive_project_missing_id_exits_nonzero(self):

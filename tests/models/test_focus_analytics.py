@@ -20,7 +20,6 @@ import pytest
 from todopro_cli.models.focus.analytics import FocusAnalytics
 from todopro_cli.models.focus.history import HistoryLogger
 
-
 # ---------------------------------------------------------------------------
 # Fixtures & helpers
 # ---------------------------------------------------------------------------
@@ -926,7 +925,7 @@ class TestGetProductivityScore:
         assert result["score"] <= 100
 
     def test_grade_thresholds(
-        self, analytics: FocusAnalytics, db_conn: sqlite3.Connection
+        self, analytics: FocusAnalytics, _db_conn: sqlite3.Connection
     ) -> None:
         """Verify that grade boundaries map correctly to letter grades."""
         # We'll test different session counts to produce varying scores
@@ -949,7 +948,6 @@ class TestGetProductivityScore:
             def get_current_streak(self):
                 return {"current_streak": 7}
 
-        import sqlite3 as _sqlite3
 
         fa = _PatchedAnalytics(history_logger=analytics.logger)
         result = fa.get_productivity_score()
@@ -1424,13 +1422,12 @@ class TestProductivityScoreGrades:
                     "total_minutes": 200,
                     "completed_task_count": 2,
                 },
+            ), patch.object(
+                analytics,
+                "get_streak_data",
+                return_value={"current_streak": 7, "longest_streak": 7},
             ):
-                with patch.object(
-                    analytics,
-                    "get_streak_data",
-                    return_value={"current_streak": 7, "longest_streak": 7},
-                ):
-                    pass
+                pass
             # Return total directly by patching the scorer
             return total
 
@@ -1479,20 +1476,22 @@ class TestProductivityScoreGradesMocked:
         # sessions=10(max 30), minutes=300/60=5h(max 25), streak=7(max 20): 30+25+0+20=75 → C
         # Let's use sessions=10(30) + hours≥5(25) + completion=100%(25) + streak=7(20) = 100 → A
         # For B: score 80-89: sessions=10(30) + hours≥5(25) + completion=50%(12.5) + streak=7(20) = 87.5 → B
-        with patch.object(
+        with (
+            patch.object(
             analytics,
             "get_weekly_summary",
             return_value=self._make_weekly_summary(10, 300),  # 10 sessions, 5h
-        ):
-            with patch.object(
+        ),
+            patch.object(
                 analytics,
                 "get_current_streak",
                 return_value={"current_streak": 7},
-            ):
-                # completion_rate=0 → score = 30+25+0+20=75 → C
-                # We need to add tasks to hit B
-                result = analytics.get_productivity_score()
-                assert result["grade"] in ("A", "B", "C", "D", "F")
+            ),
+        ):
+            # completion_rate=0 → score = 30+25+0+20=75 → C
+            # We need to add tasks to hit B
+            result = analytics.get_productivity_score()
+            assert result["grade"] in ("A", "B", "C", "D", "F")
 
     def test_grade_b_score_80_to_89(self, analytics: FocusAnalytics):
         """Directly verify grade B computation (line 417)."""
@@ -1506,7 +1505,8 @@ class TestProductivityScoreGradesMocked:
         ]
         daily = [{"sessions": task_sessions}] + [{"sessions": []}] * 6
 
-        with patch.object(
+        with (
+            patch.object(
             analytics,
             "get_weekly_summary",
             return_value={
@@ -1514,16 +1514,17 @@ class TestProductivityScoreGradesMocked:
                 "total_focus_minutes": 300,  # 5h = max time_score=25
                 "daily_summaries": daily,
             },
-        ):
-            with patch.object(
+        ),
+            patch.object(
                 analytics,
                 "get_current_streak",
                 return_value={"current_streak": 5},  # streak_score = 5/7*20 ≈ 14.3
-            ):
-                result = analytics.get_productivity_score()
-                # 30 + 25 + 25 + 14.3 = 94.3 → likely A, but may be B
-                # The important thing is the code runs
-                assert result["grade"] in ("A", "B")
+            ),
+        ):
+            result = analytics.get_productivity_score()
+            # 30 + 25 + 25 + 14.3 = 94.3 → likely A, but may be B
+            # The important thing is the code runs
+            assert result["grade"] in ("A", "B")
 
     def test_grade_d_score_60_to_69(self, analytics: FocusAnalytics):
         """Directly verify grade D computation (line 421)."""
@@ -1536,7 +1537,8 @@ class TestProductivityScoreGradesMocked:
         all_task_sessions = task_sessions + [{"task_id": "t2", "completed_task": False}]
         daily = [{"sessions": all_task_sessions}] + [{"sessions": []}] * 6
 
-        with patch.object(
+        with (
+            patch.object(
             analytics,
             "get_weekly_summary",
             return_value={
@@ -1544,15 +1546,16 @@ class TestProductivityScoreGradesMocked:
                 "total_focus_minutes": 180,  # 3h
                 "daily_summaries": daily,
             },
-        ):
-            with patch.object(
+        ),
+            patch.object(
                 analytics,
                 "get_current_streak",
                 return_value={"current_streak": 2},
-            ):
-                result = analytics.get_productivity_score()
-                # 30 + 15 + 12.5 + 5.7 ≈ 63 → D
-                assert result["grade"] in ("C", "D")
+            ),
+        ):
+            result = analytics.get_productivity_score()
+            # 30 + 15 + 12.5 + 5.7 ≈ 63 → D
+            assert result["grade"] in ("C", "D")
 
 
 class TestProductivityScoreGradeB:
@@ -1569,7 +1572,8 @@ class TestProductivityScoreGradeB:
         ]
         daily = [{"sessions": task_sessions}] + [{"sessions": []}] * 6
 
-        with patch.object(
+        with (
+            patch.object(
             analytics,
             "get_weekly_summary",
             return_value={
@@ -1577,13 +1581,14 @@ class TestProductivityScoreGradeB:
                 "total_focus_minutes": 300,  # 5 hours
                 "daily_summaries": daily,
             },
-        ):
-            with patch.object(
+        ),
+            patch.object(
                 analytics,
                 "get_current_streak",
                 return_value={"current_streak": 6},  # streak_score ≈ 17.14
-            ):
-                result = analytics.get_productivity_score()
-                # 30 + 25 + 12.5 + 17.14 ≈ 84.6 → round = 85 → B
-                assert result["grade"] == "B"
-                assert result["score"] == 85
+            ),
+        ):
+            result = analytics.get_productivity_score()
+            # 30 + 25 + 12.5 + 17.14 ≈ 84.6 → round = 85 → B
+            assert result["grade"] == "B"
+            assert result["score"] == 85

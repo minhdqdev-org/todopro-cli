@@ -14,7 +14,6 @@ from todopro_cli.models.crypto.exceptions import (
 from todopro_cli.models.crypto.keys import KEY_SIZE, MasterKey, generate_salt
 from todopro_cli.models.crypto.mnemonic import RecoveryPhrase
 
-
 # ===========================================================================
 # MasterKey tests
 # ===========================================================================
@@ -322,6 +321,5 @@ class TestRecoveryPhraseToMasterKeyEdgeCases:
         phrase = RecoveryPhrase.generate()
         with patch.object(
             phrase._mnemonic, "to_entropy", side_effect=ValueError("bad entropy")
-        ):
-            with pytest.raises(InvalidMnemonicError, match="Failed to derive key"):
-                phrase.to_master_key()
+        ), pytest.raises(InvalidMnemonicError, match="Failed to derive key"):
+            phrase.to_master_key()

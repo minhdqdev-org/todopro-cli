@@ -8,7 +8,6 @@ with proper mocking where feasible.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.show_command import app
@@ -185,8 +184,8 @@ class TestShowRecoveryKey:
 # patch.dict(sys.modules, ...).
 #
 
-from contextlib import contextmanager
-from unittest.mock import AsyncMock
+from contextlib import contextmanager  # noqa: E402
+from unittest.mock import AsyncMock  # noqa: E402
 
 
 def _make_module_mocks():

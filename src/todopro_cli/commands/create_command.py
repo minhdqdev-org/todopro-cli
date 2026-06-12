@@ -1,6 +1,7 @@
 """Create command - Create new resources."""
 
 import typer
+from rich.text import Text
 
 from todopro_cli.services.api.client import get_client
 from todopro_cli.services.api.filters import FiltersAPI
@@ -45,7 +46,7 @@ async def create_task(
 
     label_list = None
     if labels:
-        label_list = [l.strip() for l in labels.split(",")]
+        label_list = [lbl.strip() for lbl in labels.split(",")]
 
     # Resolve recurrence pattern to RRULE
     recurrence_rule = None
@@ -103,8 +104,13 @@ async def create_project(
         format_output({"project": project.model_dump()}, "json")
         return
 
-    format_success(f"Project created: {project.name}")
-    console.print(f"\n[bold cyan]ID:[/bold cyan] {project.id}")
+    success_line = Text()
+    success_line.append("Success: ", style="bold green")
+    success_line.append("Project ")
+    success_line.append(project.name, style="bold cyan")
+    success_line.append(" is created!")
+    console.print(success_line)
+    console.print(f"[dim]Project ID: {project.id}[/dim]")
 
 
 @app.command("label")
@@ -196,10 +202,10 @@ async def create_filter(
             console.print(
                 "[red]Error: Priority must be comma-separated integers (1-4)[/red]"
             )
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
     project_ids = [p.strip() for p in project.split(",")] if project else None
-    label_ids = [l.strip() for l in label.split(",")] if label else None
+    label_ids = [lbl.strip() for lbl in label.split(",")] if label else None
 
     client = get_client()
     api = FiltersAPI(client)

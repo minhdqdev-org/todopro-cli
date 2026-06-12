@@ -97,10 +97,10 @@ class TestUpdateLabelNoUpdates:
 # Tests with strategy context mocked (cover the actual command bodies)
 # ---------------------------------------------------------------------------
 
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime  # noqa: E402
+from unittest.mock import AsyncMock, MagicMock, patch  # noqa: E402
 
-from todopro_cli.models import Label, Project, Task
+from todopro_cli.models import Label, Project, Task  # noqa: E402
 
 
 class TestUpdateTaskWithChanges:

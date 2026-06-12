@@ -42,7 +42,7 @@ async def test_list_tasks_with_filters(mock_client):
     mock_client.get.return_value = mock_response
 
     tasks_api = TasksAPI(mock_client)
-    result = await tasks_api.list_tasks(
+    await tasks_api.list_tasks(
         status="open",
         project_id="proj-123",
         priority=2,
@@ -102,7 +102,7 @@ async def test_create_task_full(mock_client):
     mock_client.post.return_value = mock_response
 
     tasks_api = TasksAPI(mock_client)
-    result = await tasks_api.create_task(
+    await tasks_api.create_task(
         "New task",
         description="Task description",
         project_id="proj-123",

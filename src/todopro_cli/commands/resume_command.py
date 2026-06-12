@@ -11,7 +11,7 @@ console = get_console()
 
 @app.command("focus")
 def resume_focus(
-    output: str = typer.Option("table", "--output", "-o", help="Output format"),
+    _output: str = typer.Option("table", "--_output", "-o", help="Output format"),
 ):
     """Resume a paused focus session."""
     from todopro_cli.commands.focus import resume_focus as _impl

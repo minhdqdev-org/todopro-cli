@@ -5,7 +5,6 @@ Tests `todopro start focus` which delegates to focus.py's start_focus().
 
 from unittest.mock import patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.start_command import app
@@ -18,7 +17,7 @@ class TestStartFocus:
 
     def test_start_focus_delegates_to_impl(self):
         """Test that start focus calls focus.start_focus implementation."""
-        with patch("todopro_cli.commands.start_command.app") as mock_app:
+        with patch("todopro_cli.commands.start_command.app"):
             # Verify the app was registered
             assert app is not None
 
@@ -43,7 +42,7 @@ class TestStartFocus:
         """Test that invoking start focus runs the focus start implementation."""
         with patch("todopro_cli.commands.focus.start_focus") as mock_impl:
             mock_impl.return_value = None
-            result = runner.invoke(app, ["task-123"])
+            runner.invoke(app, ["task-123"])
             mock_impl.assert_called_once_with(
                 task_id="task-123", duration=25, template=None
             )
@@ -52,7 +51,7 @@ class TestStartFocus:
         """Test start focus with custom duration."""
         with patch("todopro_cli.commands.focus.start_focus") as mock_impl:
             mock_impl.return_value = None
-            result = runner.invoke(app, ["task-123", "--duration", "45"])
+            runner.invoke(app, ["task-123", "--duration", "45"])
             mock_impl.assert_called_once_with(
                 task_id="task-123", duration=45, template=None
             )
@@ -61,7 +60,7 @@ class TestStartFocus:
         """Test start focus with template name."""
         with patch("todopro_cli.commands.focus.start_focus") as mock_impl:
             mock_impl.return_value = None
-            result = runner.invoke(app, ["task-123", "--template", "deep_work"])
+            runner.invoke(app, ["task-123", "--template", "deep_work"])
             mock_impl.assert_called_once_with(
                 task_id="task-123", duration=25, template="deep_work"
             )

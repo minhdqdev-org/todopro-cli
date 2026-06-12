@@ -9,7 +9,6 @@ import pytest
 
 from todopro_cli.adapters.sqlite.e2ee import E2EEHandler, get_e2ee_handler
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -26,8 +25,7 @@ def _make_enabled_handler() -> E2EEHandler:
     svc.is_enabled.return_value = True
     svc.encrypt.side_effect = lambda text: {"ciphertext": text[::-1], "nonce": "aaa"}
     svc.decrypt.side_effect = lambda d: d["ciphertext"][::-1]
-    handler = E2EEHandler(encryption_service=svc)
-    return handler
+    return E2EEHandler(encryption_service=svc)
 
 
 # ---------------------------------------------------------------------------

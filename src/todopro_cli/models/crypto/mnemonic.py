@@ -1,8 +1,15 @@
 """BIP39 mnemonic (recovery phrase) generation and validation."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from mnemonic import Mnemonic
 
 from .exceptions import InvalidMnemonicError, InvalidRecoveryPhraseError
+
+if TYPE_CHECKING:
+    from .keys import MasterKey
 
 LANGUAGE = "english"
 # BIP39 generates 24 words for 256-bit entropy (32 bytes = 256 bits)
@@ -21,7 +28,7 @@ class RecoveryPhrase:
             raise InvalidRecoveryPhraseError("Invalid recovery phrase")
 
     @classmethod
-    def generate(cls) -> "RecoveryPhrase":
+    def generate(cls) -> RecoveryPhrase:
         """Generate a new random recovery phrase."""
         mnemonic = Mnemonic(LANGUAGE)
         words_str = mnemonic.generate(strength=128)
@@ -29,7 +36,7 @@ class RecoveryPhrase:
         return cls(words)
 
     @classmethod
-    def from_words(cls, words_str: str) -> "RecoveryPhrase":
+    def from_words(cls, words_str: str) -> RecoveryPhrase:
         """Create recovery phrase from space-separated words."""
         words = words_str.strip().lower().split()
 
@@ -43,7 +50,7 @@ class RecoveryPhrase:
         return cls(words)
 
     @classmethod
-    def from_master_key(cls, master_key: "MasterKey") -> "RecoveryPhrase":
+    def from_master_key(cls, master_key: MasterKey) -> RecoveryPhrase:
         """Generate recovery phrase from existing master key."""
 
         mnemonic = Mnemonic(LANGUAGE)
@@ -63,7 +70,7 @@ class RecoveryPhrase:
         """Convert to space-separated string."""
         return " ".join(self.words)
 
-    def to_master_key(self) -> "MasterKey":
+    def to_master_key(self) -> MasterKey:
         """Derive master key from recovery phrase."""
         from todopro_cli.models.crypto.keys import MasterKey
 

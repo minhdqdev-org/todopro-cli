@@ -19,7 +19,6 @@ import pytest
 from todopro_cli.models import Project, ProjectUpdate
 from todopro_cli.services.project_service import ProjectService
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

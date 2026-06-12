@@ -158,7 +158,6 @@ class TimerDisplay:
 
         keyboard = KeyboardHandler()
         paused_since = None
-        last_status = session.status
 
         try:
             with Live(

@@ -13,13 +13,11 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.encryption_command import app
 from todopro_cli.models.crypto.exceptions import (
     InvalidRecoveryPhraseError,
-    TodoProCryptoError,
 )
 
 runner = CliRunner()
@@ -332,13 +330,12 @@ class TestSetupCommand:
         with patch(
             "todopro_cli.commands.encryption_command.get_encryption_service",
             return_value=svc,
+        ), patch(
+            "todopro_cli.services.config_service.get_config_service",
+            create=True,
         ):
-            with patch(
-                "todopro_cli.services.config_service.get_config_service",
-                create=True,
-            ):
-                # "Have you written down your recovery phrase?" → N
-                result = runner.invoke(app, ["setup"], input="n\n")
+            # "Have you written down your recovery phrase?" → N
+            result = runner.invoke(app, ["setup"], input="n\n")
         assert result.exit_code == 0
         assert "cancelled" in result.output.lower() or "Setup cancelled" in result.output
         svc.save_manager.assert_not_called()
@@ -353,13 +350,12 @@ class TestSetupCommand:
         with patch(
             "todopro_cli.commands.encryption_command.get_encryption_service",
             return_value=svc,
+        ), patch(
+            "todopro_cli.services.config_service.get_config_service",
+            create=True,
         ):
-            with patch(
-                "todopro_cli.services.config_service.get_config_service",
-                create=True,
-            ):
-                # Written-down confirm → Y, then wrong phrase
-                result = runner.invoke(app, ["setup"], input="y\nwrong phrase here\n")
+            # Written-down confirm → Y, then wrong phrase
+            result = runner.invoke(app, ["setup"], input="y\nwrong phrase here\n")
         assert result.exit_code == 1
         assert "doesn't match" in result.output or "❌" in result.output
         svc.save_manager.assert_not_called()
@@ -377,13 +373,12 @@ class TestSetupCommand:
         with patch(
             "todopro_cli.commands.encryption_command.get_encryption_service",
             return_value=svc,
+        ), patch(
+            "todopro_cli.services.config_service.get_config_service",
+            return_value=mock_cfg_svc,
         ):
-            with patch(
-                "todopro_cli.services.config_service.get_config_service",
-                return_value=mock_cfg_svc,
-            ):
-                # Confirm written → Y, verify phrase (correct)
-                result = runner.invoke(app, ["setup"], input=f"y\n{phrase}\n")
+            # Confirm written → Y, verify phrase (correct)
+            result = runner.invoke(app, ["setup"], input=f"y\n{phrase}\n")
         assert result.exit_code == 0
         assert "complete" in result.output.lower() or "✅" in result.output
         svc.save_manager.assert_called_once_with(mock_manager)
@@ -400,12 +395,11 @@ class TestSetupCommand:
         with patch(
             "todopro_cli.commands.encryption_command.get_encryption_service",
             return_value=svc,
+        ), patch(
+            "todopro_cli.services.config_service.get_config_service",
+            return_value=mock_cfg_svc,
         ):
-            with patch(
-                "todopro_cli.services.config_service.get_config_service",
-                return_value=mock_cfg_svc,
-            ):
-                # Replace existing key → Y, written down → Y, correct phrase
-                result = runner.invoke(app, ["setup"], input=f"y\ny\n{phrase}\n")
+            # Replace existing key → Y, written down → Y, correct phrase
+            result = runner.invoke(app, ["setup"], input=f"y\ny\n{phrase}\n")
         # Should proceed to phrase verification stage at minimum
         assert result.exit_code in (0, 1)

@@ -334,7 +334,7 @@ def test_get_last_sync_naive_iso_string(temp_config_dir):
     assert result.tzinfo is not None
 
 
-def test_get_all_sync_times_with_none_value(temp_config_dir):
+def test_get_all_sync_times_with_none_value_fixture(temp_config_dir):
     """Test get_all_sync_times handles None values in state."""
     state = SyncState(config_dir=temp_config_dir)
     # Directly inject a None value

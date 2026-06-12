@@ -189,8 +189,7 @@ class EncryptionService:
             InvalidRecoveryPhraseError: If phrase is invalid
         """
         try:
-            manager = EncryptionManager.from_recovery_phrase(recovery_phrase)
-            return manager
+            return EncryptionManager.from_recovery_phrase(recovery_phrase)
         except Exception as e:
             raise InvalidRecoveryPhraseError(
                 f"Failed to recover key from phrase: {str(e)}"
@@ -264,7 +263,7 @@ class EncryptionService:
         return manager.decrypt_dict(encrypted_data)
 
     def rotate_key(
-        self, old_password: str | None = None
+        self, _old_password: str | None = None
     ) -> tuple[EncryptionManager, str]:
         """
         Rotate encryption key (generate new key).

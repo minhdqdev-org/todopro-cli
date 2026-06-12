@@ -5,6 +5,7 @@ import typer
 from todopro_cli.services.api.client import get_client
 from todopro_cli.services.api.filters import FiltersAPI
 from todopro_cli.services.api.tasks import TasksAPI
+from todopro_cli.services.config_service import get_storage_strategy_context
 from todopro_cli.services.label_service import LabelService
 from todopro_cli.services.project_service import get_project_service
 from todopro_cli.services.task_service import get_task_service
@@ -117,7 +118,7 @@ async def delete_location_context(
     from todopro_cli.services.location_context_service import LocationContextService
 
     storage_strategy_context = get_storage_strategy_context()
-    repo = factory.get_location_context_repository()
+    repo = storage_strategy_context.location_context_repository
     service = LocationContextService(repo)
 
     if not force:

@@ -162,11 +162,10 @@ class TestCreateFilter:
         mock_api.create_filter = AsyncMock(return_value=filter_resp)
         with patch(
             "todopro_cli.commands.create_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
-            ):
-                result = runner.invoke(app, ["filter", "urgent"])
+            result = runner.invoke(app, ["filter", "urgent"])
         assert result.exit_code == 0
         mock_api.create_filter.assert_awaited_once()
         assert "urgent" in result.stdout
@@ -185,13 +184,12 @@ class TestCreateFilter:
         mock_api.create_filter = AsyncMock(return_value=filter_resp)
         with patch(
             "todopro_cli.commands.create_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
-            ):
-                result = runner.invoke(
-                    app, ["filter", "high-prio", "--priority", "3,4"]
-                )
+            result = runner.invoke(
+                app, ["filter", "high-prio", "--priority", "3,4"]
+            )
         assert result.exit_code == 0
         call_kwargs = mock_api.create_filter.call_args.kwargs
         assert call_kwargs.get("priority") == [3, 4]
@@ -204,11 +202,10 @@ class TestCreateFilter:
         mock_api.create_filter = AsyncMock()
         with patch(
             "todopro_cli.commands.create_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
-            ):
-                result = runner.invoke(app, ["filter", "test", "--priority", "high"])
+            result = runner.invoke(app, ["filter", "test", "--priority", "high"])
         assert result.exit_code != 0
 
     def test_create_filter_with_due_within(self):
@@ -225,11 +222,10 @@ class TestCreateFilter:
         mock_api.create_filter = AsyncMock(return_value=filter_resp)
         with patch(
             "todopro_cli.commands.create_command.get_client", return_value=mock_client
+        ), patch(
+            "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
         ):
-            with patch(
-                "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
-            ):
-                result = runner.invoke(app, ["filter", "soon", "--due-within", "7"])
+            result = runner.invoke(app, ["filter", "soon", "--due-within", "7"])
         assert result.exit_code == 0
         call_kwargs = mock_api.create_filter.call_args.kwargs
         assert call_kwargs.get("due_within_days") == 7

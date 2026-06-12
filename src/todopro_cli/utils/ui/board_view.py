@@ -101,7 +101,7 @@ class TaskCardContainer(Vertical):
         yield Static(f"{self.model.content}")
         yield Static(f"\u1f4c5: {self.model.due_date or 'N/A'}")
 
-    def on_click(self, event):
+    def on_click(self, _event):
         # select the task card when clicked
         self.app.go_to_component(self.app.task_card_map[self.model.id])
 
