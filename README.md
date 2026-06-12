@@ -445,39 +445,12 @@ This project uses automated GitHub Actions workflows for testing and releasing.
 
 3. **Users can install:** Once released, users can install directly from the release URL or via the one-liner command.
 
-### Workflow Details
-
-- **On Push to `main`:** Runs tests to ensure code quality
-- **On Tag Push (`v*`):** Runs tests + builds and publishes release artifacts
-
 ## Documentation
 
-- 🔄 [Migration Guide](docs/migration-guide.md) - **Upgrading from v1.x to v2.0**
 - 📝 [CHANGELOG](CHANGELOG.md) - What's new in v2.0
 - 🚀 [Release Process](docs/RELEASE.md) - How to create and publish releases
-- 💡 [Package Ideas](docs/PACKAGE_IDEA.md) - Original implementation ideas and rationale
-- 🤖 [AI Agent Integration](docs/AI_AGENT_INTEGRATION.md) - Guide for automation and AI agents
-- 📋 [Specifications](../docs/specs/) - Detailed technical specifications
-  - [README](../docs/specs/README.md) - Specification index and roadmap
-  - [01: Repository Abstraction](../docs/specs/01-repository-abstraction.md) - Hexagonal architecture
-  - [03: Context Switching](../docs/specs/03-context-switching.md) - Multi-environment support
-  - [10-14: Architecture Stabilization](../docs/specs/README.md#-architecture-stabilization-specs-10-15--new) - **Recent refactoring (2026-02-18)**
-
-### Recent Architecture Improvements (Feb 2026)
-
-The CLI recently underwent a major architecture stabilization effort (Specs 10-14):
-
-- ✅ Fixed 38+ broken import paths
-- ✅ Migrated all commands to Strategy Pattern (from Factory Pattern)
-- ✅ Cleaned up configuration layer (ConfigService as single source of truth)
-- ✅ Implemented REST API location context adapter
-- ✅ Enhanced package exports for better IDE support
 
 See [implementation summaries](../docs/specs/) for details.
-
-## License
-
-MIT License - See LICENSE file for details
 
 ## Contributing
 
