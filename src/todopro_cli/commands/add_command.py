@@ -112,7 +112,9 @@ def add(
                 unrecognized = parsed_err.get("project_name", "")
 
                 # If the error is specifically about a missing project, offer to create it
-                if unrecognized and ("project" in error_msg.lower() or "suggestions" in response):
+                if unrecognized and (
+                    "project" in error_msg.lower() or "suggestions" in response
+                ):
                     import sys
 
                     from todopro_cli.services.api.projects import ProjectsAPI
@@ -130,25 +132,32 @@ def add(
                     projects_api = ProjectsAPI(client)
                     if create_it:
                         await projects_api.create_project(unrecognized)
-                        console.print(f"[green]  ✓ Created project '{unrecognized}'[/green]")
+                        console.print(
+                            f"[green]  ✓ Created project '{unrecognized}'[/green]"
+                        )
                         # Retry quick_add — project now exists
                         response2 = await tasks_api.quick_add(text)
                         if "error" not in response2:
                             response.clear()
                             response.update(response2)
                         else:
-                            format_error(response2.get("error", "Failed to create task"))
+                            format_error(
+                                response2.get("error", "Failed to create task")
+                            )
                             raise typer.Exit(1)
                     else:
                         # Retry without project name (strip #Project from text)
                         import re
+
                         stripped = re.sub(r"#\S+", "", text).strip()
                         response2 = await tasks_api.quick_add(stripped or text)
                         if "error" not in response2:
                             response.clear()
                             response.update(response2)
                         else:
-                            format_error(response2.get("error", "Failed to create task"))
+                            format_error(
+                                response2.get("error", "Failed to create task")
+                            )
                             raise typer.Exit(1)
                 else:
                     format_error(error_msg)
@@ -169,23 +178,41 @@ def add(
             # If project_name was parsed but task has no project_id, the project wasn't found
             import sys
 
-            if parsed.get("project_name") and not task.get("project_id") and sys.stdin.isatty():
+            if (
+                parsed.get("project_name")
+                and not task.get("project_id")
+                and sys.stdin.isatty()
+            ):
                 unrecognized = parsed["project_name"]
                 from todopro_cli.services.api.projects import ProjectsAPI
 
                 console.print(
                     f"\n[yellow]Project '[bold]{unrecognized}[/bold]' not found.[/yellow]"
                 )
-                create_it = typer.confirm(f"  Create new project '{unrecognized}'?", default=True)
+                create_it = typer.confirm(
+                    f"  Create new project '{unrecognized}'?", default=True
+                )
                 projects_api = ProjectsAPI(client)
                 if create_it:
                     new_proj_resp = await projects_api.create_project(unrecognized)
-                    console.print(f"[green]  ✓ Created project '{unrecognized}'[/green]")
+                    console.print(
+                        f"[green]  ✓ Created project '{unrecognized}'[/green]"
+                    )
                     # Move the newly created task to the new project
-                    new_project_id = new_proj_resp.get("id") if isinstance(new_proj_resp, dict) else getattr(new_proj_resp, "id", None)
+                    new_project_id = (
+                        new_proj_resp.get("id")
+                        if isinstance(new_proj_resp, dict)
+                        else getattr(new_proj_resp, "id", None)
+                    )
                     if new_project_id and task.get("id"):
-                        updated = await tasks_api.update_task(task["id"], project_id=new_project_id)
-                        task.update(updated if isinstance(updated, dict) else updated.model_dump())
+                        updated = await tasks_api.update_task(
+                            task["id"], project_id=new_project_id
+                        )
+                        task.update(
+                            updated
+                            if isinstance(updated, dict)
+                            else updated.model_dump()
+                        )
                 # If declined, task stays in Inbox (already assigned by backend)
 
             if output == "json":
@@ -208,7 +235,9 @@ def add(
 
             # Show actual project from task, not the raw parsed project_name
             if task.get("project_name") or task.get("project_id"):
-                proj_display = task.get("project_name") or parsed.get("project_name", "")
+                proj_display = task.get("project_name") or parsed.get(
+                    "project_name", ""
+                )
                 if proj_display:
                     details.append(f"[magenta]📁 #{proj_display}[/magenta]")
             elif not parsed.get("project_name"):
@@ -278,8 +307,11 @@ def _create_local_task(
             from todopro_cli.commands.edit_command import _resolve_project_name
 
             try:
-                project_id = await _resolve_project_name(project_override, storage_strategy_context)
+                project_id = await _resolve_project_name(
+                    project_override, storage_strategy_context
+                )
                 from todopro_cli.services.project_service import ProjectService
+
                 proj_repo = storage_strategy_context.project_repository
                 proj = await ProjectService(proj_repo).get_project(project_id)
                 effective_project_name = proj.name
@@ -312,7 +344,9 @@ def _create_local_task(
                     console.print(
                         f"\n[yellow]Project '[bold]{unrecognized}[/bold]' not found.[/yellow]"
                     )
-                    create_it = typer.confirm(f"  Create new project '{unrecognized}'?", default=True)
+                    create_it = typer.confirm(
+                        f"  Create new project '{unrecognized}'?", default=True
+                    )
                 else:
                     create_it = False
 
@@ -320,10 +354,14 @@ def _create_local_task(
                     new_proj = await project_service.create_project(unrecognized)
                     project_id = new_proj.id
                     effective_project_name = new_proj.name
-                    console.print(f"[green]  ✓ Created project '{unrecognized}'[/green]")
+                    console.print(
+                        f"[green]  ✓ Created project '{unrecognized}'[/green]"
+                    )
                 else:
                     # Fall back to Inbox
-                    inbox = next((p for p in all_projects if p.name.lower() == "inbox"), None)
+                    inbox = next(
+                        (p for p in all_projects if p.name.lower() == "inbox"), None
+                    )
                     if inbox:
                         project_id = inbox.id
                         effective_project_name = inbox.name
@@ -335,6 +373,7 @@ def _create_local_task(
             description="",
             priority=priority,
             due_date=parsed.get("due_date"),
+            recurrence_rule=parsed.get("recurrence_rule"),
             project_id=project_id,
         )
 
@@ -370,6 +409,10 @@ def _create_local_task(
         if parsed.get("labels"):
             labels_str = " ".join([f"@{label}" for label in parsed["labels"]])
             details.append(f"[yellow]🏷️  {labels_str}[/yellow]")
+
+        if parsed.get("recurrence_rule"):
+            rec_label = parsed.get("recurrence_label") or "Recurring"
+            details.append(f"[green]🔄 {rec_label}[/green]")
 
         if details:
             console.print()

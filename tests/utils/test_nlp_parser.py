@@ -235,6 +235,127 @@ class TestSimpleDateParse:
 
 
 # ---------------------------------------------------------------------------
+# Date abbreviations and extended keywords
+# ---------------------------------------------------------------------------
+
+
+class TestExtendedDateKeywords:
+    def test_tom_abbreviation(self):
+        from datetime import timedelta
+
+        result = parse_natural_language("Buy milk tom")
+        assert result["due_date"] is not None
+        assert result["due_date"].date() == (datetime.now() + timedelta(days=1)).date()
+        assert "tom" not in result["content"].lower()
+
+    def test_weekday_abbreviation(self):
+        result = parse_natural_language("Report due fri")
+        assert result["due_date"] is not None
+        assert result["due_date"].weekday() == 4  # Friday
+        assert "fri" not in result["content"].lower()
+
+    def test_yesterday(self):
+        from datetime import timedelta
+
+        result = parse_natural_language("Missed call yesterday")
+        assert result["due_date"] is not None
+        assert result["due_date"].date() == (datetime.now() - timedelta(days=1)).date()
+
+    def test_tonight_defaults_to_evening(self):
+        result = parse_natural_language("Dinner tonight")
+        assert result["due_date"] is not None
+        assert result["due_date"].date() == datetime.now().date()
+        assert result["due_date"].hour == 20
+
+    def test_next_month(self):
+        result = parse_natural_language("Renew domain next month")
+        assert result["due_date"] is not None
+        now = datetime.now()
+        expected_month = (now.month % 12) + 1
+        assert result["due_date"].month == expected_month
+
+    def test_ordinal_day_of_month(self):
+        result = parse_natural_language("Submit taxes on the 24th")
+        assert result["due_date"] is not None
+        assert result["due_date"].day == 24
+        assert "24th" not in result["content"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Recurrence detection
+# ---------------------------------------------------------------------------
+
+
+class TestRecurrenceParsing:
+    def test_daily(self):
+        result = parse_natural_language("Standup daily")
+        assert result["recurrence_rule"] == "FREQ=DAILY;INTERVAL=1"
+        assert result["recurrence_label"] == "Daily"
+        assert "daily" not in result["content"].lower()
+
+    def test_everyday(self):
+        result = parse_natural_language("Review PR everyday")
+        assert result["recurrence_rule"] == "FREQ=DAILY;INTERVAL=1"
+
+    def test_weekly(self):
+        result = parse_natural_language("Team sync weekly")
+        assert result["recurrence_rule"] == "FREQ=WEEKLY;INTERVAL=1"
+
+    def test_monthly(self):
+        result = parse_natural_language("Pay bills monthly")
+        assert result["recurrence_rule"] == "FREQ=MONTHLY;INTERVAL=1"
+
+    def test_every_weekday(self):
+        result = parse_natural_language("Gym every monday")
+        assert result["recurrence_rule"] == "FREQ=WEEKLY;BYDAY=MO"
+        assert result["recurrence_label"] == "Every Monday"
+
+    def test_every_weekday_abbreviated(self):
+        result = parse_natural_language("Standup every wed")
+        assert result["recurrence_rule"] == "FREQ=WEEKLY;BYDAY=WE"
+
+    def test_every_n_days(self):
+        result = parse_natural_language("Water plants every 3 days")
+        assert result["recurrence_rule"] == "FREQ=DAILY;INTERVAL=3"
+        assert result["recurrence_label"] == "Every 3 days"
+
+    def test_every_other_week(self):
+        result = parse_natural_language("Backup every other week")
+        assert result["recurrence_rule"] == "FREQ=WEEKLY;INTERVAL=2"
+
+    def test_every_nth_of_month(self):
+        result = parse_natural_language("Pay rent every 1st of month")
+        assert result["recurrence_rule"] == "FREQ=MONTHLY;BYMONTHDAY=1"
+        assert result["recurrence_label"] == "Monthly on the 1st"
+
+    def test_every_month_on_the_nth(self):
+        result = parse_natural_language("Sprint planning every month on the 15th")
+        assert result["recurrence_rule"] == "FREQ=MONTHLY;BYMONTHDAY=15"
+
+    def test_recurrence_does_not_set_due_date(self):
+        """'every monday' is recurrence, not a one-off weekday due date."""
+        result = parse_natural_language("Gym every monday")
+        assert result["due_date"] is None
+
+    def test_plain_weekday_is_not_recurrence(self):
+        """A bare weekday (no 'every') stays a one-off due date."""
+        result = parse_natural_language("Meet team monday")
+        assert result["recurrence_rule"] is None
+        assert result["due_date"] is not None
+
+    def test_recurrence_with_time_anchor(self):
+        result = parse_natural_language("Standup every day at 9am")
+        assert result["recurrence_rule"] == "FREQ=DAILY;INTERVAL=1"
+        assert result["due_date"] is not None
+        assert result["due_date"].hour == 9
+
+    def test_no_recurrence(self):
+        result = parse_natural_language("Fix login bug")
+        assert result["recurrence_rule"] is None
+        assert result["recurrence_label"] is None
+
+
+# ---------------------------------------------------------------------------
 # Date removal from content
 # ---------------------------------------------------------------------------
 

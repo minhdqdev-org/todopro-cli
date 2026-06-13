@@ -62,7 +62,7 @@ class TestCreateTaskRecurrence:
         service_mock.add_task.assert_awaited_once()
         call_kwargs = service_mock.add_task.call_args.kwargs
         assert call_kwargs.get("is_recurring") is True
-        assert call_kwargs.get("recurrence_rule") == "FREQ=DAILY"
+        assert call_kwargs.get("recurrence_rule") == "FREQ=DAILY;INTERVAL=1"
 
     def test_create_task_weekly_recur(self, mock_strategy, mock_task):
         mock_strat_ctx, service_mock = mock_strategy
@@ -70,7 +70,7 @@ class TestCreateTaskRecurrence:
         result = runner.invoke(app, ["task", "Weekly review", "--recur", "weekly"])
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
-        assert call_kwargs.get("recurrence_rule") == "FREQ=WEEKLY"
+        assert call_kwargs.get("recurrence_rule") == "FREQ=WEEKLY;INTERVAL=1"
 
     def test_create_task_weekdays_recur(self, mock_strategy, mock_task):
         mock_strat_ctx, service_mock = mock_strategy
@@ -83,9 +83,7 @@ class TestCreateTaskRecurrence:
     def test_create_task_biweekly_recur(self, mock_strategy, mock_task):
         mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        result = runner.invoke(
-            app, ["task", "Biweekly sync", "--recur", "bi-weekly"]
-        )
+        result = runner.invoke(app, ["task", "Biweekly sync", "--recur", "bi-weekly"])
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
         assert call_kwargs.get("recurrence_rule") == "FREQ=WEEKLY;INTERVAL=2"
@@ -93,12 +91,10 @@ class TestCreateTaskRecurrence:
     def test_create_task_monthly_recur(self, mock_strategy, mock_task):
         mock_strat_ctx, service_mock = mock_strategy
         service_mock.add_task = AsyncMock(return_value=mock_task)
-        result = runner.invoke(
-            app, ["task", "Monthly report", "--recur", "monthly"]
-        )
+        result = runner.invoke(app, ["task", "Monthly report", "--recur", "monthly"])
         assert result.exit_code == 0
         call_kwargs = service_mock.add_task.call_args.kwargs
-        assert call_kwargs.get("recurrence_rule") == "FREQ=MONTHLY"
+        assert call_kwargs.get("recurrence_rule") == "FREQ=MONTHLY;INTERVAL=1"
 
     def test_create_task_invalid_recur_exits(self, mock_strategy):
         """Invalid --recur value should exit with non-zero and error message."""
@@ -160,10 +156,14 @@ class TestCreateFilter:
         }
         mock_api = MagicMock()
         mock_api.create_filter = AsyncMock(return_value=filter_resp)
-        with patch(
-            "todopro_cli.commands.create_command.get_client", return_value=mock_client
-        ), patch(
-            "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
+        with (
+            patch(
+                "todopro_cli.commands.create_command.get_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
+            ),
         ):
             result = runner.invoke(app, ["filter", "urgent"])
         assert result.exit_code == 0
@@ -182,14 +182,16 @@ class TestCreateFilter:
         }
         mock_api = MagicMock()
         mock_api.create_filter = AsyncMock(return_value=filter_resp)
-        with patch(
-            "todopro_cli.commands.create_command.get_client", return_value=mock_client
-        ), patch(
-            "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
+        with (
+            patch(
+                "todopro_cli.commands.create_command.get_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
+            ),
         ):
-            result = runner.invoke(
-                app, ["filter", "high-prio", "--priority", "3,4"]
-            )
+            result = runner.invoke(app, ["filter", "high-prio", "--priority", "3,4"])
         assert result.exit_code == 0
         call_kwargs = mock_api.create_filter.call_args.kwargs
         assert call_kwargs.get("priority") == [3, 4]
@@ -200,10 +202,14 @@ class TestCreateFilter:
         mock_client.close = AsyncMock()
         mock_api = MagicMock()
         mock_api.create_filter = AsyncMock()
-        with patch(
-            "todopro_cli.commands.create_command.get_client", return_value=mock_client
-        ), patch(
-            "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
+        with (
+            patch(
+                "todopro_cli.commands.create_command.get_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
+            ),
         ):
             result = runner.invoke(app, ["filter", "test", "--priority", "high"])
         assert result.exit_code != 0
@@ -220,10 +226,14 @@ class TestCreateFilter:
         }
         mock_api = MagicMock()
         mock_api.create_filter = AsyncMock(return_value=filter_resp)
-        with patch(
-            "todopro_cli.commands.create_command.get_client", return_value=mock_client
-        ), patch(
-            "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
+        with (
+            patch(
+                "todopro_cli.commands.create_command.get_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "todopro_cli.commands.create_command.FiltersAPI", return_value=mock_api
+            ),
         ):
             result = runner.invoke(app, ["filter", "soon", "--due-within", "7"])
         assert result.exit_code == 0
