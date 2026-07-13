@@ -1,0 +1,46 @@
+#!/usr/bin/env sh
+#
+# GitNexus auto-reindex on commit.
+# Installed by Claude Code for the TodoPro repos.
+#
+# Design notes:
+#   * Runs `gitnexus analyze` DETACHED so `git commit` returns instantly
+#     (a full analyze can take ~120s and must never block the commit).
+#   * Single-flight via flock: overlapping analyze runs can corrupt the
+#     KuzuDB index, and a vm101 process auto-commits these repos, so a
+#     second commit while one is running just skips instead of racing.
+#   * No-ops unless the repo already has a .gitnexus/ index — this hook
+#     refreshes an existing index, it does not create one.
+#   * Everything is written under the gitignored .gitnexus/ dir.
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -d "$ROOT/.gitnexus" ] || exit 0
+
+# Resolve a runner: pinned project-local runner first, then global CLI, then npx.
+if [ -f "$ROOT/.gitnexus/run.cjs" ]; then
+  RUN="node \"$ROOT/.gitnexus/run.cjs\" analyze"
+elif command -v gitnexus >/dev/null 2>&1; then
+  RUN="gitnexus analyze"
+else
+  RUN="npx --yes gitnexus analyze"
+fi
+
+LOG="$ROOT/.gitnexus/analyze.log"
+LOCK="$ROOT/.gitnexus/analyze.lock"
+
+# Detach: redirect all fds and background so the commit doesn't wait on us.
+(
+  if command -v flock >/dev/null 2>&1; then
+    exec 9>"$LOCK"
+    if ! flock -n 9; then
+      echo "$(date -Iseconds) skip: analyze already running" >>"$LOG"
+      exit 0
+    fi
+  fi
+  cd "$ROOT" || exit 0
+  echo "===== $(date -Iseconds) gitnexus analyze start ($(git rev-parse --short HEAD 2>/dev/null)) =====" >>"$LOG"
+  eval "$RUN" >>"$LOG" 2>&1
+  echo "===== $(date -Iseconds) gitnexus analyze done (exit $?) =====" >>"$LOG"
+) </dev/null >/dev/null 2>&1 &
+
+exit 0
