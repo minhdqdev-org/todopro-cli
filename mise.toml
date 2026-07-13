@@ -10,8 +10,13 @@ description = "Show available tasks"
 run = "mise tasks"
 quiet = true
 
+[tasks.hooks]
+description = "Point git at the tracked hooks dir (.githooks) so the post-commit gitnexus hook is active — idempotent"
+run = "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
+
 [tasks.install]
 description = "Install all dependencies including dev with uv"
+depends = ["hooks"]
 run = "uv sync --all-groups"
 
 [tasks.install-prod]
@@ -41,15 +46,15 @@ run = "uv run mypy src --ignore-missing-imports"
 
 [tasks.test]
 description = "Run tests"
-run = "uv run pytest tests --verbose"
+run = "uv run pytest tests --verbose -n auto"
 
 [tasks.test-cov]
 description = "Run tests with coverage report"
-run = "uv run pytest tests --verbose --cov=src --cov-report=html --cov-report=term-missing"
+run = "uv run pytest tests --verbose --cov=src --cov-report=html --cov-report=term-missing -n auto"
 
 [tasks.test-fast]
 description = "Run tests without verbose output"
-run = "uv run pytest tests -q"
+run = "uv run pytest tests -q -n auto"
 
 [tasks.generate-man]
 description = "Generate man pages from the CLI app definition"
