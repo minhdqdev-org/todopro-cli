@@ -1,15 +1,14 @@
 """API client for TodoPro."""
 
 import asyncio
+import os
 from typing import Any
 
 import httpx
 
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.ui.console import get_console
-from todopro_cli.utils.update_checker import get_backend_url
-
-console = get_console()
+from todopro_cli.utils.update_checker import DEFAULT_BACKEND_URL, get_backend_url
 
 
 class APIClient:
@@ -18,10 +17,35 @@ class APIClient:
     def __init__(self):
         self.config_manager = get_config_service()
         self.config = self.config_manager.config
-        # Use dynamic backend URL with fallback to config
-        self.base_url = get_backend_url()
+        self.base_url = self._resolve_base_url()
         self.timeout = self.config.api.timeout
         self._client: httpx.AsyncClient | None = None
+
+    def _resolve_base_url(self) -> str:
+        """Resolve the API base URL.
+
+        Priority:
+          1. ``TODOPRO_BACKEND_URL`` env var (dev/testing override)
+          2. the active **remote** context's ``source`` (the normal way users
+             select an environment via ``context use`` / ``context create``)
+          3. ``api.endpoint`` if explicitly changed from the default
+          4. cache / PyPI / hard-coded default (``get_backend_url``)
+        """
+        env_url = os.getenv("TODOPRO_BACKEND_URL")
+        if env_url:
+            return env_url.rstrip("/")
+        try:
+            ctx = self.config_manager.get_current_context()
+            if ctx is not None and ctx.type == "remote" and isinstance(ctx.source, str):
+                return ctx.source.rstrip("/")
+        except Exception:
+            pass
+        endpoint = getattr(self.config.api, "endpoint", None)
+        if isinstance(endpoint, str) and endpoint.rstrip(
+            "/"
+        ) != DEFAULT_BACKEND_URL.rstrip("/"):
+            return endpoint.rstrip("/")
+        return get_backend_url()
 
     async def __aenter__(self) -> "APIClient":
         """Enter the async context manager."""
@@ -37,6 +61,12 @@ class APIClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
+
+        # Identify this install so the backend's real-time layer can skip
+        # echoing a change back to the device that made it.
+        client_id = getattr(self.config_manager.config, "client_id", None)
+        if client_id:
+            headers["X-Client-Id"] = client_id
 
         # Add authentication token if available and not skipped
         if not skip_auth:
@@ -76,43 +106,6 @@ class APIClient:
             await self._client.aclose()
             self._client = None
 
-    async def _try_refresh_token(self) -> bool:
-        """
-        Try to refresh the access token using the refresh token.
-        Returns True if successful, False otherwise.
-        """
-        try:
-            credentials = self.config_manager.load_credentials()
-            if not credentials or "refresh_token" not in credentials:
-                return False
-
-            refresh_token = credentials["refresh_token"]
-
-            # Make refresh request without auth
-            response = await self.post(
-                "/v1/auth/refresh",
-                json={"refresh_token": refresh_token},
-                skip_auth=True,
-            )
-
-            data = response.json()
-            if "access_token" in data:
-                # Update stored credentials with new access token
-                credentials["token"] = data["access_token"]
-                if "refresh_token" in data:
-                    credentials["refresh_token"] = data["refresh_token"]
-
-                self.config_manager.save_credentials(
-                    credentials["token"], credentials.get("refresh_token")
-                )
-                console.print("[dim]Token refreshed automatically[/dim]")
-                return True
-
-            return False
-        except Exception:
-            # Refresh failed
-            return False
-
     async def request(
         self,
         method: str,
@@ -142,39 +135,19 @@ class APIClient:
                 response.raise_for_status()
                 return response
             except httpx.HTTPStatusError as e:
-                # Handle 401 Unauthorized - try to refresh token
+                # Knox tokens are validated server-side and auto-refresh on use;
+                # there is no client-side refresh endpoint. A 401 therefore means
+                # the stored token is expired, revoked, or otherwise invalid, and
+                # the user must authenticate again.
                 if e.response.status_code == 401 and not skip_auth:
-                    # Try to refresh the token
-                    refreshed = await self._try_refresh_token()
-                    if refreshed:
-                        # Retry the request with new token
-                        client = await self._get_client(skip_auth=skip_auth)
-                        try:
-                            response = await client.request(
-                                method=method,
-                                url=url,
-                                json=json,
-                                params=params,
-                            )
-                            response.raise_for_status()
-                            return response
-                        except httpx.HTTPStatusError:
-                            # If still fails after refresh, raise original error
-                            raise e from None
-                    else:
-                        # Refresh failed - provide helpful error message
-                        credentials = self.config_manager.load_credentials()
-                        if not credentials or "refresh_token" not in credentials:
-                            # No refresh token available
-
-                            rich_console = get_console()
-                            rich_console.print(
-                                "\n[yellow]⚠ Your session has expired and no refresh token is available.[/yellow]"
-                            )
-                            rich_console.print(
-                                "[dim]Please login again:[/dim] [cyan]todopro login[/cyan]\n"
-                            )
-                        raise e
+                    rich_console = get_console()
+                    rich_console.print(
+                        "\n[yellow]⚠ Your session has expired or is no longer valid.[/yellow]"
+                    )
+                    rich_console.print(
+                        "[dim]Please login again:[/dim] [cyan]todopro login[/cyan]\n"
+                    )
+                    raise
 
                 # Don't retry other client errors (4xx)
                 if 400 <= e.response.status_code < 500:

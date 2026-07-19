@@ -15,6 +15,7 @@ from todopro_cli.repositories import (
     LabelRepository,
     LocationContextRepository,
     ProjectRepository,
+    ScratchpadRepository,
     SectionRepository,
     TaskRepository,
 )
@@ -54,6 +55,10 @@ class StorageStrategy(ABC):
     @abstractmethod
     def get_section_repository(self) -> SectionRepository:
         """Get section repository implementation for this strategy."""
+
+    @abstractmethod
+    def get_scratchpad_repository(self) -> ScratchpadRepository:
+        """Get scratchpad repository implementation for this strategy."""
 
     @property
     @abstractmethod
@@ -114,6 +119,12 @@ class LocalStorageStrategy(StorageStrategy):
     def get_section_repository(self) -> SectionRepository:
         raise NotImplementedError("Section repository not yet implemented for local storage")
 
+    def get_scratchpad_repository(self) -> ScratchpadRepository:
+        raise NotImplementedError(
+            "Scratchpads are a remote-only feature. Switch to a remote context "
+            "first: 'todopro context use cloud'."
+        )
+
     @property
     def storage_type(self) -> str:
         return "local"
@@ -137,6 +148,7 @@ class RemoteStorageStrategy(StorageStrategy):
             RestApiLabelRepository,
             RestApiLocationContextRepository,
             RestApiProjectRepository,
+            RestApiScratchpadRepository,
             RestApiSectionRepository,
             RestApiTaskRepository,
         )  # type: ignore
@@ -146,6 +158,7 @@ class RemoteStorageStrategy(StorageStrategy):
         self._label_repo = RestApiLabelRepository()
         self._location_context_repo = RestApiLocationContextRepository()
         self._section_repo = RestApiSectionRepository()
+        self._scratchpad_repo = RestApiScratchpadRepository()
 
     def get_task_repository(self) -> TaskRepository:
         return self._task_repo
@@ -164,6 +177,9 @@ class RemoteStorageStrategy(StorageStrategy):
 
     def get_section_repository(self) -> SectionRepository:
         return self._section_repo
+
+    def get_scratchpad_repository(self) -> ScratchpadRepository:
+        return self._scratchpad_repo
 
     @property
     def storage_type(self) -> str:
@@ -230,6 +246,11 @@ class StorageStrategyContext:
     def section_repository(self) -> SectionRepository:
         """Get section repository from current strategy."""
         return self._strategy.get_section_repository()
+
+    @property
+    def scratchpad_repository(self) -> ScratchpadRepository:
+        """Get scratchpad repository from current strategy."""
+        return self._strategy.get_scratchpad_repository()
 
     @property
     def storage_type(self) -> str:

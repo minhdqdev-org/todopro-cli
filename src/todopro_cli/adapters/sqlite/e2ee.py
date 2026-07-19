@@ -63,26 +63,24 @@ class E2EEHandler:
 
     def prepare_task_for_storage(
         self, content: str, description: str | None = None
-    ) -> tuple[str, str, str | None, str | None]:
+    ) -> tuple[str, str | None, str | None, str | None]:
         """Prepare task content for storage.
+
+        ADR-0024 (drop zero-knowledge E2EE): the local SQLite store now
+        always writes plaintext, regardless of `self.enabled` — mirroring
+        `_encrypt_task_fields` in `adapters/rest_api.py` so local and remote
+        writes stay consistent. `extract_task_content` (the read/decrypt
+        path below) is left untouched so any already-encrypted rows can
+        still be read back.
 
         Args:
             content: Task content (plaintext)
             description: Task description (plaintext, optional)
 
         Returns:
-            Tuple of (content, content_encrypted, description, description_encrypted)
-            - If E2EE enabled: content is empty, encrypted fields contain data
-            - If E2EE disabled: content contains plaintext, encrypted fields are None
+            Tuple of (content, content_encrypted, description, description_encrypted).
+            `content_encrypted`/`description_encrypted` are always None now.
         """
-        if self.enabled:
-            # E2EE mode: encrypt and store in _encrypted fields
-            content_encrypted = self.encrypt_content(content)
-            description_encrypted = (
-                self.encrypt_content(description) if description else None
-            )
-            return "", content_encrypted, "", description_encrypted
-        # Plain mode: store in regular fields
         return content, None, description or "", None
 
     def extract_task_content(

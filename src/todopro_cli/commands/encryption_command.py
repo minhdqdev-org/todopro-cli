@@ -1,4 +1,12 @@
-"""Encryption management commands for TodoPro CLI."""
+"""Encryption management commands for TodoPro CLI.
+
+Deprecated: end-to-end encryption was dropped per ADR-0024
+(`docs/adr/ADR-0024-drop-e2ee.md`). `setup` no longer generates a key or
+enables encryption, and `status` reports the feature as discontinued. The
+commands stay registered (so scripts/`--help` don't break), and the
+recovery/rotate commands are left as dormant, unreachable code paths since
+nothing can enable encryption anymore.
+"""
 
 import typer
 from rich.panel import Panel
@@ -20,122 +28,43 @@ def get_encryption_service() -> EncryptionService:
 @app.command("setup")
 def setup():
     """
-    Set up end-to-end encryption for the first time.
+    [Discontinued] End-to-end encryption setup (ADR-0024).
 
-    This will:
-    1. Generate a new master encryption key
-    2. Display your 24-word recovery phrase (SAVE THIS!)
-    3. Verify you saved the recovery phrase
-    4. Store the key locally and backup to server
+    E2EE has been dropped as a shipped feature. This command no longer
+    generates a key, displays a recovery phrase, or enables encryption —
+    it only prints a notice. See `docs/adr/ADR-0024-drop-e2ee.md`.
     """
-    console.print("\n[bold cyan]🔐 TodoPro Encryption Setup[/bold cyan]\n")
-
-    service = get_encryption_service()
-    status = service.get_status()
-
-    # Check if already set up
-    if status.key_file_exists:
-        console.print("[yellow]⚠️  Encryption is already set up![/yellow]")
-        console.print(f"   Key file: {status.key_file_path}\n")
-
-        if not typer.confirm(
-            "Do you want to set up a new key? (This will replace your current key)"
-        ):
-            console.print("[dim]Setup cancelled.[/dim]")
-            raise typer.Exit()
-
-    # Generate master key and recovery phrase
-    console.print("[dim]Generating master encryption key...[/dim]")
-    manager, recovery_phrase = service.setup()
-
-    # Count words in recovery phrase
-    word_count = len(recovery_phrase.split())
-
-    # Display recovery phrase
-    console.print()
     console.print(
-        Panel.fit(
-            Text(recovery_phrase, style="bold yellow", justify="center"),
-            title=f"[bold red]⚠️  YOUR {word_count}-WORD RECOVERY PHRASE[/bold red]",
-            border_style="red",
-            padding=(1, 2),
-        )
+        "\n[yellow]End-to-end encryption has been discontinued (ADR-0024).[/yellow]"
     )
-    console.print()
-    console.print("[bold red]IMPORTANT:[/bold red]")
-    console.print(f"  • Write down these {word_count} words on paper")
-    console.print("  • Store them in a safe place")
     console.print(
-        "  • This is the [bold]ONLY[/bold] way to recover your data if you lose your device"
+        "Your tasks now sync as plaintext; no encryption key is needed.\n"
     )
-    console.print("  • Never share your recovery phrase with anyone")
-    console.print()
-
-    # Confirm user saved it
-    if not typer.confirm("Have you written down your recovery phrase?"):
-        console.print(
-            "\n[yellow]Setup cancelled. Run 'todopro encryption setup' again when ready.[/yellow]"
-        )
-        raise typer.Exit()
-
-    # Verify phrase
-    console.print()
-    verify_phrase = typer.prompt(
-        "Type your recovery phrase to verify", hide_input=False
-    )
-
-    if verify_phrase.strip().lower() != recovery_phrase.lower():
-        console.print("\n[bold red]❌ Recovery phrase doesn't match![/bold red]")
-        console.print("   Setup failed. Please try again.\n")
-        raise typer.Exit(code=1)
-
-    # Save key locally
-    console.print("\n[dim]Saving encryption key...[/dim]")
-    service.save_manager(manager)
-
-    # Enable E2EE in config
-    from todopro_cli.services.config_service import get_config_service
-
-    config_service = get_config_service()
-    config_service.config.e2ee.enabled = True
-    config_service.save_config()
-
-    # TODO: Send encrypted backup to server via API
-    # This would call POST /api/auth/setup-encryption with the encrypted backup
-    console.print("[dim]Uploading encrypted backup to server...[/dim]")
     console.print(
-        "[yellow]Note: Server backup not yet implemented (API integration needed)[/yellow]"
+        "[dim]If you have existing content stored under an old encrypted "
+        "setup, `todopro data export`/`import` can be used to re-save it as "
+        "plaintext — this is a manual, out-of-scope follow-up.[/dim]\n"
     )
-
-    console.print()
-    console.print("[bold green]✅ Encryption setup complete![/bold green]")
-    console.print(
-        f"   Key stored at: [cyan]{status.key_file_path or service.storage.key_file}[/cyan]"
-    )
-    console.print("   E2EE enabled in config")
-    console.print()
 
 
 @app.command("status")
 def status():
-    """Check encryption status."""
+    """[Discontinued] Report encryption status (ADR-0024)."""
     console.print()
+    console.print(
+        "[bold yellow]End-to-end encryption has been discontinued (ADR-0024).[/bold yellow]"
+    )
+    console.print("Status: [yellow]discontinued[/yellow] — tasks sync as plaintext.")
+
+    # Informational only: a legacy key file may still exist on disk from
+    # before the feature was dropped, but it is no longer used for writes.
     service = get_encryption_service()
     enc_status = service.get_status()
-
-    if enc_status.enabled:
-        console.print("[bold green]✅ Encryption is enabled[/bold green]")
-        console.print(f"   Key file: [cyan]{enc_status.key_file_path}[/cyan]")
-        console.print("   Status: [green]Valid key loaded[/green]")
-    elif enc_status.key_file_exists:
+    if enc_status.key_file_exists:
         console.print(
-            "[bold yellow]⚠️  Encryption key exists but is invalid[/bold yellow]"
+            f"   [dim]Legacy key file still present at: {enc_status.key_file_path} "
+            "(unused, dormant)[/dim]"
         )
-        console.print(f"   Key file: [cyan]{enc_status.key_file_path}[/cyan]")
-        console.print(f"   Error: [red]{enc_status.error}[/red]")
-    else:
-        console.print("[bold red]❌ Encryption is not set up[/bold red]")
-        console.print("   Run: [cyan]todopro encryption setup[/cyan]")
 
     console.print()
 

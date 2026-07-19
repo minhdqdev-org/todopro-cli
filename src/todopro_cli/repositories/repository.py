@@ -18,6 +18,9 @@ from todopro_cli.models import (
     ProjectCreate,
     ProjectFilters,
     ProjectUpdate,
+    Scratchpad,
+    ScratchpadCreate,
+    ScratchpadUpdate,
     Section,
     SectionCreate,
     SectionUpdate,
@@ -676,4 +679,89 @@ class SectionRepository(ABC):
         """
         raise NotImplementedError(
             "SectionRepository.reorder() must be implemented by adapter"
+        )
+
+
+class ScratchpadRepository(ABC):
+    """Abstract base class for scratchpad persistence operations.
+
+    Scratchpads are project-scoped notes. They are a remote-only concept, so the
+    local SQLite adapter does not implement this port.
+    """
+
+    @abstractmethod
+    async def list_all(self, project_id: str) -> list[Scratchpad]:
+        """List all scratchpads for a project.
+
+        Args:
+            project_id: Project ID to list scratchpads for
+
+        Returns:
+            List of Scratchpad objects ordered by display_order
+        """
+        raise NotImplementedError(
+            "ScratchpadRepository.list_all() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def get(self, scratchpad_id: str) -> Scratchpad:
+        """Get a specific scratchpad by ID.
+
+        Args:
+            scratchpad_id: Unique identifier for the scratchpad
+
+        Returns:
+            Scratchpad object
+
+        Raises:
+            NotFoundError: If scratchpad does not exist
+        """
+        raise NotImplementedError(
+            "ScratchpadRepository.get() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def create(
+        self, project_id: str, scratchpad_data: ScratchpadCreate
+    ) -> Scratchpad:
+        """Create a new scratchpad within a project.
+
+        Args:
+            project_id: Parent project ID
+            scratchpad_data: ScratchpadCreate object with note details
+
+        Returns:
+            Created Scratchpad object
+        """
+        raise NotImplementedError(
+            "ScratchpadRepository.create() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def update(self, scratchpad_id: str, updates: ScratchpadUpdate) -> Scratchpad:
+        """Update an existing scratchpad.
+
+        Args:
+            scratchpad_id: Unique identifier for the scratchpad
+            updates: ScratchpadUpdate object with fields to update
+
+        Returns:
+            Updated Scratchpad object
+        """
+        raise NotImplementedError(
+            "ScratchpadRepository.update() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def delete(self, scratchpad_id: str) -> bool:
+        """Delete a scratchpad.
+
+        Args:
+            scratchpad_id: Unique identifier for the scratchpad
+
+        Returns:
+            True if deletion was successful
+        """
+        raise NotImplementedError(
+            "ScratchpadRepository.delete() must be implemented by adapter"
         )

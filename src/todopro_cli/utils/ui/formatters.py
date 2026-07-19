@@ -760,7 +760,12 @@ def is_today(date_str: str | None) -> bool:
 
 
 def is_overdue(due_date: str | datetime | None) -> bool:
-    """Check if task is overdue."""
+    """Check if task is overdue.
+
+    Compares local calendar dates, not exact instants: a due date with no
+    explicit time is stored as midnight rather than end-of-day, so a task
+    due today must not be overdue until today has passed.
+    """
     if not due_date:
         return False
     try:
@@ -773,8 +778,9 @@ def is_overdue(due_date: str | datetime | None) -> bool:
         if due.tzinfo is None:
             due = due.replace(tzinfo=UTC)
 
-        now = datetime.now(UTC)
-        return due < now
+        due_local_date = due.astimezone().date()
+        today_local_date = datetime.now().astimezone().date()
+        return due_local_date < today_local_date
     except Exception:  # pylint: disable=broad-exception-catch
         return False
 

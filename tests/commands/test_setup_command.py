@@ -1,7 +1,9 @@
 """Unit tests for setup_command.py.
 
-Single-command Typer app (command registered as 'encryption').
-Invoke WITHOUT repeating the command name.
+ADR-0024 dropped end-to-end encryption: `setup encryption` is discontinued —
+it no longer generates a key or calls EncryptionService.setup(), it only
+prints a notice. Single-command Typer app (command registered as
+'encryption'). Invoke WITHOUT repeating the command name.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -39,8 +41,15 @@ class TestSetupCommandHelp:
         assert "output" in result.output.lower() or "Usage" in result.output
 
 
-class TestSetupCommandInvocation:
-    def test_setup_with_passphrase_succeeds(self):
+class TestSetupCommandDiscontinued:
+    """ADR-0024: command is a no-op that only prints a discontinued notice."""
+
+    def test_setup_prints_discontinued_notice(self):
+        result = runner.invoke(app, ["--passphrase", "mypassphrase"])
+        assert result.exit_code == 0
+        assert "discontinued" in result.output.lower()
+
+    def test_setup_does_not_call_encryption_service(self):
         mock_svc = _make_encryption_service()
         with patch(
             "todopro_cli.services.encryption_service.EncryptionService",
@@ -48,54 +57,16 @@ class TestSetupCommandInvocation:
         ):
             result = runner.invoke(app, ["--passphrase", "mypassphrase"])
         assert result.exit_code == 0
-        mock_svc.setup.assert_awaited_once_with("mypassphrase")
+        mock_svc.setup.assert_not_awaited()
 
-    def test_setup_shows_success_message(self):
-        mock_svc = _make_encryption_service("KEY-SETUP-SUCCESS")
-        with patch(
-            "todopro_cli.services.encryption_service.EncryptionService",
-            return_value=mock_svc,
-        ):
-            result = runner.invoke(app, ["--passphrase", "p"])
+    def test_setup_does_not_prompt_when_passphrase_missing(self):
+        # No stdin supplied: if the command still prompted, this would
+        # raise/hang instead of exiting cleanly with the notice.
+        result = runner.invoke(app, [], input="")
         assert result.exit_code == 0
-        assert "complete" in result.output.lower() or "success" in result.output.lower()
+        assert "discontinued" in result.output.lower()
 
-    def test_setup_shows_recovery_key(self):
-        mock_svc = _make_encryption_service("MY-RECOVERY-KEY-12345")
-        with patch(
-            "todopro_cli.services.encryption_service.EncryptionService",
-            return_value=mock_svc,
-        ):
-            result = runner.invoke(app, ["--passphrase", "p"])
+    def test_setup_json_output_still_discontinued(self):
+        result = runner.invoke(app, ["--passphrase", "p", "--output", "json"])
         assert result.exit_code == 0
-        assert "MY-RECOVERY-KEY-12345" in result.output
-
-    def test_setup_prompts_when_passphrase_not_provided(self):
-        mock_svc = _make_encryption_service("PROMPTED-KEY")
-        with patch(
-            "todopro_cli.services.encryption_service.EncryptionService",
-            return_value=mock_svc,
-        ), patch("typer.prompt", return_value="prompted-pass"):
-            result = runner.invoke(app, [])
-        assert result.exit_code == 0
-        mock_svc.setup.assert_awaited_once_with("prompted-pass")
-
-    def test_setup_json_output(self):
-        mock_svc = _make_encryption_service("KEY-JSON")
-        with patch(
-            "todopro_cli.services.encryption_service.EncryptionService",
-            return_value=mock_svc,
-        ):
-            result = runner.invoke(app, ["--passphrase", "p", "--output", "json"])
-        assert result.exit_code == 0
-
-    def test_setup_service_error_exits_nonzero(self):
-        mock_svc = _make_encryption_service(
-            setup_side_effect=Exception("encryption init failed")
-        )
-        with patch(
-            "todopro_cli.services.encryption_service.EncryptionService",
-            return_value=mock_svc,
-        ):
-            result = runner.invoke(app, ["--passphrase", "p"])
-        assert result.exit_code != 0
+        assert "discontinued" in result.output.lower()

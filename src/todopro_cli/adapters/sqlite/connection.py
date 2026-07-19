@@ -17,6 +17,9 @@ from todopro_cli.adapters.sqlite.migrations.m001_initial_schema import initial_m
 from todopro_cli.adapters.sqlite.migrations.m003_project_protected import (
     project_protected_migration,
 )
+from todopro_cli.adapters.sqlite.migrations.m004_add_deadline_recurrence_from_completion import (  # noqa: E501
+    deadline_recurrence_from_completion_migration,
+)
 from todopro_cli.adapters.sqlite.migrations.runner import MigrationRunner
 
 
@@ -114,6 +117,7 @@ class DatabaseConnection:
         migrations = [
             initial_migration,
             project_protected_migration,
+            deadline_recurrence_from_completion_migration,
         ]
 
         # Run migrations

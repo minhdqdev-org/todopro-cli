@@ -36,20 +36,6 @@ async def test_login(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_refresh_token(mock_client):
-    """Test refreshing token."""
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"token": "new_token"}
-    mock_client.post.return_value = mock_response
-
-    auth_api = AuthAPI(mock_client)
-    result = await auth_api.refresh_token("old_refresh_token")
-
-    assert result["token"] == "new_token"
-    mock_client.post.assert_called_once()
-
-
-@pytest.mark.asyncio
 async def test_get_profile(mock_client):
     """Test getting current user profile."""
     mock_response = MagicMock()

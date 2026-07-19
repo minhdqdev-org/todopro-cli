@@ -19,12 +19,14 @@ from .commands.encryption_command import app as encryption_app
 from .commands.focus import app as focus_app
 from .commands.github_command import app as github_app
 from .commands.goals import app as goals_app
+from .commands.hub_command import app as hub_app
 from .commands.import_command import app as import_app
 from .commands.labels import app as labels_app
 from .commands.projects import app as projects_app
 from .commands.ramble_command import app as ramble_app
 from .commands.reopen_command import app as reopen_app
 from .commands.reschedule_command import app as reschedule_command_app
+from .commands.scratchpad_command import app as scratchpad_app
 from .commands.sections import app as sections_app
 from .commands.stats import app as stats_app
 from .commands.sync import app as sync_app
@@ -65,6 +67,11 @@ app.add_typer(projects_app, name="project", help="Project operations — list, c
 app.add_typer(
     sections_app, name="section", help="Section operations — list, create, reorder, …"
 )
+app.add_typer(
+    scratchpad_app,
+    name="scratchpad",
+    help="Scratchpad operations — list, create, update, … (remote-only)",
+)
 app.add_typer(labels_app, name="label", help="Label operations — list, create, …")
 app.add_typer(context_app, name="context", help="Context operations — list, use, …")
 app.add_typer(config_app, name="config", help="Configuration — view, get, set, reset")
@@ -82,6 +89,7 @@ app.add_typer(data_app, name="data", help="Data — export and import")
 app.add_typer(encryption_app, name="encryption", help="End-to-end encryption")
 app.add_typer(template_app, name="template", help="Task templates")
 app.add_typer(github_app, name="github", help="GitHub Issues integration")
+app.add_typer(hub_app, name="hub", help="Productivity hub — unified external items")
 app.add_typer(import_app, name="import", help="Import data — Todoist, JSON, …")
 app.add_typer(calendar_app, name="calendar", help="Google Calendar integration")
 

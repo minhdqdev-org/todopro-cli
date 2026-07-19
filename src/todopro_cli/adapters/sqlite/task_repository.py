@@ -239,6 +239,13 @@ class SqliteTaskRepository(TaskRepository):
         ):
             data["due_date"] = data["due_date"].isoformat()
 
+        if (
+            "deadline" in data
+            and data["deadline"] is not None
+            and isinstance(data["deadline"], datetime)
+        ):
+            data["deadline"] = data["deadline"].isoformat()
+
         # Prepare content for storage (with E2EE if enabled)
         content, content_encrypted, description, description_encrypted = (
             self.e2ee.prepare_task_for_storage(data["content"], data.get("description"))
@@ -248,9 +255,10 @@ class SqliteTaskRepository(TaskRepository):
         self.connection.execute(
             """INSERT INTO tasks (
                 id, content, description, content_encrypted, description_encrypted,
-                project_id, due_date, priority, is_completed, user_id, 
+                project_id, due_date, deadline, priority, is_completed, user_id,
+                recurrence_rule, recurrence_from_completion,
                 created_at, updated_at, version
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 task_id,
                 content,
@@ -259,9 +267,12 @@ class SqliteTaskRepository(TaskRepository):
                 description_encrypted,
                 data.get("project_id"),
                 data.get("due_date"),
+                data.get("deadline"),
                 data.get("priority", 4),
                 False,
                 user_id,
+                data.get("recurrence_rule"),
+                data.get("recurrence_from_completion", False),
                 now,
                 now,
                 1,
@@ -300,6 +311,13 @@ class SqliteTaskRepository(TaskRepository):
             and isinstance(update_dict["due_date"], datetime)
         ):
             update_dict["due_date"] = update_dict["due_date"].isoformat()
+
+        if (
+            "deadline" in update_dict
+            and update_dict["deadline"] is not None
+            and isinstance(update_dict["deadline"], datetime)
+        ):
+            update_dict["deadline"] = update_dict["deadline"].isoformat()
 
         # Handle E2EE for content and description updates
         if "content" in update_dict or "description" in update_dict:

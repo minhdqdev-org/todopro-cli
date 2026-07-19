@@ -89,7 +89,9 @@ class TestEncryptionHelp:
 
 
 class TestStatusCommand:
-    def test_status_enabled(self):
+    """ADR-0024: status now always reports the feature as discontinued."""
+
+    def test_status_reports_discontinued(self):
         svc = _make_service(key_exists=True, enabled=True, key_file_path="/path/key")
         with patch(
             "todopro_cli.commands.encryption_command.get_encryption_service",
@@ -97,9 +99,9 @@ class TestStatusCommand:
         ):
             result = runner.invoke(app, ["status"])
         assert result.exit_code == 0
-        assert "enabled" in result.output.lower() or "✅" in result.output
+        assert "discontinued" in result.output.lower()
 
-    def test_status_not_set_up(self):
+    def test_status_discontinued_even_when_no_key(self):
         svc = _make_service(key_exists=False, enabled=False)
         with patch(
             "todopro_cli.commands.encryption_command.get_encryption_service",
@@ -107,9 +109,9 @@ class TestStatusCommand:
         ):
             result = runner.invoke(app, ["status"])
         assert result.exit_code == 0
-        assert "not set up" in result.output.lower() or "❌" in result.output
+        assert "discontinued" in result.output.lower()
 
-    def test_status_key_exists_but_invalid(self):
+    def test_status_mentions_legacy_key_file_when_present(self):
         svc = _make_service(
             key_exists=True, enabled=False, error="Key corrupted"
         )
@@ -119,8 +121,7 @@ class TestStatusCommand:
         ):
             result = runner.invoke(app, ["status"])
         assert result.exit_code == 0
-        # Should mention key exists but is invalid
-        assert "invalid" in result.output.lower() or "⚠️" in result.output or "exists" in result.output.lower()
+        assert "legacy key file" in result.output.lower()
 
 
 # ---------------------------------------------------------------------------
@@ -306,100 +307,22 @@ class TestRotateKeyCommand:
 
 
 class TestSetupCommand:
-    def test_setup_already_configured_user_declines(self):
-        """User declines to replace existing key – setup is cancelled."""
-        svc = _make_service(key_exists=True)
+    """ADR-0024: `setup` is discontinued — no key generation, no prompts."""
 
+    def test_setup_prints_discontinued_notice(self):
+        result = runner.invoke(app, ["setup"])
+        assert result.exit_code == 0
+        assert "discontinued" in result.output.lower()
+
+    def test_setup_does_not_generate_a_key_or_prompt(self):
+        svc = _make_service(key_exists=False)
         with patch(
             "todopro_cli.commands.encryption_command.get_encryption_service",
             return_value=svc,
         ):
-            # First confirm: "Do you want to set up a new key?" → N
-            result = runner.invoke(app, ["setup"], input="n\n")
+            # No stdin input supplied: if the command still prompted for
+            # confirmation, this would raise/hang instead of exiting cleanly.
+            result = runner.invoke(app, ["setup"], input="")
         assert result.exit_code == 0
-        assert "cancelled" in result.output.lower() or "Setup cancelled" in result.output
         svc.setup.assert_not_called()
-
-    def test_setup_fresh_user_declines_after_viewing_phrase(self):
-        """User declines to confirm they wrote down the phrase – setup cancelled."""
-        svc = _make_service(key_exists=False)
-        mock_manager = MagicMock()
-        phrase = "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima november oscar papa quebec romeo sierra tango uniform victor whiskey xray yankee"
-        svc.setup.return_value = (mock_manager, phrase)
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ), patch(
-            "todopro_cli.services.config_service.get_config_service",
-            create=True,
-        ):
-            # "Have you written down your recovery phrase?" → N
-            result = runner.invoke(app, ["setup"], input="n\n")
-        assert result.exit_code == 0
-        assert "cancelled" in result.output.lower() or "Setup cancelled" in result.output
         svc.save_manager.assert_not_called()
-
-    def test_setup_fresh_phrase_mismatch_exits_with_code_1(self):
-        """Incorrect phrase verification causes exit code 1."""
-        svc = _make_service(key_exists=False)
-        mock_manager = MagicMock()
-        phrase = "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
-        svc.setup.return_value = (mock_manager, phrase)
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ), patch(
-            "todopro_cli.services.config_service.get_config_service",
-            create=True,
-        ):
-            # Written-down confirm → Y, then wrong phrase
-            result = runner.invoke(app, ["setup"], input="y\nwrong phrase here\n")
-        assert result.exit_code == 1
-        assert "doesn't match" in result.output or "❌" in result.output
-        svc.save_manager.assert_not_called()
-
-    def test_setup_fresh_success(self):
-        """Happy-path: fresh setup with correct phrase verification."""
-        svc = _make_service(key_exists=False)
-        mock_manager = MagicMock()
-        phrase = "correct horse battery staple foo bar baz qux alpha beta gamma delta"
-        svc.setup.return_value = (mock_manager, phrase)
-
-        mock_cfg_svc = MagicMock()
-        mock_cfg_svc.config.e2ee.enabled = False
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ), patch(
-            "todopro_cli.services.config_service.get_config_service",
-            return_value=mock_cfg_svc,
-        ):
-            # Confirm written → Y, verify phrase (correct)
-            result = runner.invoke(app, ["setup"], input=f"y\n{phrase}\n")
-        assert result.exit_code == 0
-        assert "complete" in result.output.lower() or "✅" in result.output
-        svc.save_manager.assert_called_once_with(mock_manager)
-
-    def test_setup_already_configured_user_accepts_replacement(self):
-        """User replaces existing key – setup proceeds."""
-        svc = _make_service(key_exists=True)
-        mock_manager = MagicMock()
-        phrase = "test phrase one two three four five six seven eight nine ten eleven"
-        svc.setup.return_value = (mock_manager, phrase)
-
-        mock_cfg_svc = MagicMock()
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ), patch(
-            "todopro_cli.services.config_service.get_config_service",
-            return_value=mock_cfg_svc,
-        ):
-            # Replace existing key → Y, written down → Y, correct phrase
-            result = runner.invoke(app, ["setup"], input=f"y\ny\n{phrase}\n")
-        # Should proceed to phrase verification stage at minimum
-        assert result.exit_code in (0, 1)

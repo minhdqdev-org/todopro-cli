@@ -25,14 +25,6 @@ class AuthAPI:
         with contextlib.suppress(Exception):
             await self.client.post("/v1/auth/logout")
 
-    async def refresh_token(self, refresh_token: str) -> dict:
-        """Refresh access token."""
-        response = await self.client.post(
-            "/v1/auth/refresh",
-            json={"refresh_token": refresh_token},
-        )
-        return response.json()
-
     async def get_profile(self) -> dict:
         """Get current user profile."""
         response = await self.client.get("/v1/auth/profile")

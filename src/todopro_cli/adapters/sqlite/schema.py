@@ -7,7 +7,7 @@ to ensure data compatibility and enable future sync capabilities.
 from __future__ import annotations
 
 # Schema version tracking
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 4
 
 # Users table - local user profile
 CREATE_USERS_TABLE = """
@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT,
     is_completed BOOLEAN DEFAULT 0,
     due_date DATETIME,
+    deadline DATETIME,
     priority INTEGER DEFAULT 1,
     project_id TEXT,
     user_id TEXT NOT NULL,
@@ -108,6 +109,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     is_recurring BOOLEAN DEFAULT 0,
     recurrence_rule TEXT,
     recurrence_end DATETIME,
+    recurrence_from_completion BOOLEAN DEFAULT 0,
     next_occurrence DATETIME,
     parent_task_id TEXT,
     is_skipped BOOLEAN DEFAULT 0,
@@ -194,6 +196,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 # Tasks indexes
 CREATE_TASK_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date)",
+    "CREATE INDEX IF NOT EXISTS idx_tasks_deadline ON tasks(deadline)",
     "CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id)",
     "CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id)",
     "CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(is_completed, deleted_at)",

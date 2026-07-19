@@ -29,6 +29,11 @@ def add(
     project: str | None = typer.Option(
         None, "--project", "-p", help="Project name or ID (overrides #project in text)"
     ),
+    deadline: str | None = typer.Option(
+        None,
+        "--deadline",
+        help="Hard 'must finish by' date in natural language (overrides parsed deadline)",
+    ),
     output: str = typer.Option(
         "pretty", "--output", "-o", help="Output format (pretty/json/table)"
     ),
@@ -43,13 +48,16 @@ def add(
       todopro add "Review PR tomorrow at 2pm #Work p1 @urgent"
       todopro add "Buy groceries every Friday @Shopping"
       todopro add "Team standup every monday at 9am #Work"
+      todopro add "File taxes" --deadline "April 15"
 
     Syntax:
       #ProjectName - Assign to project
       @label - Add label
       p1-p4 or !!1-!!4 - Set priority (p1/!!1=urgent, p4/!!4=low)
       Natural dates - tomorrow, next monday, at 3pm
-      Recurrence - every day/week/monday, etc.
+      Recurrence - every day/week/monday, etc. ("every!" re-anchors to completion)
+      Reminder - "!30m before" / "!6pm" / "!tmr 3pm" / "!every sat 9am" (or "remind …")
+      --deadline - Hard "must finish by" date (does not advance on recurrence)
 
     Note: Natural language parsing requires cloud context.
     For local context, creates a simple task with the text as content.
@@ -92,7 +100,12 @@ def add(
 
     # For local context, use simple task creation
     if current_context.type == "local":
-        _create_local_task(text, project_override=project, output=output)
+        _create_local_task(
+            text,
+            project_override=project,
+            deadline_override=deadline,
+            output=output,
+        )
         return
 
     # For remote context, use NLP parsing
@@ -260,7 +273,52 @@ def add(
                 details.append(f"[red]⚡ {priority_display}[/red]")
 
             if parsed.get("recurrence_rule"):
-                details.append("[green]🔄 Recurring[/green]")
+                rec_label = "Recurring"
+                if parsed.get("recurrence_from_completion"):
+                    rec_label = f"{rec_label} (from completion)"
+                details.append(f"[green]🔄 {rec_label}[/green]")
+
+            created_reminders = parsed.get("reminders_created") or []
+            for rc in created_reminders:
+                label = rc.get("label") or rc.get("type", "reminder")
+                when = ""
+                if rc.get("reminder_date"):
+                    try:
+                        rdt = datetime.fromisoformat(
+                            str(rc["reminder_date"]).replace("Z", "+00:00")
+                        )
+                        when = f" ({rdt.strftime('%b %d, %Y at %I:%M %p')})"
+                    except (ValueError, TypeError):
+                        pass
+                details.append(f"[blue]⏰ Reminder: {label}{when}[/blue]")
+            pro_fields = parsed.get("pro_required_fields") or []
+            if "reminder" in pro_fields:
+                details.append(
+                    "[yellow]🔒 Date & recurring reminders are Pro — upgrade to enable[/yellow]"
+                )
+            elif parsed.get("reminders") and not created_reminders:
+                # Relative reminders parsed but not created (task has no due date).
+                details.append(
+                    "[yellow]⏰ Reminder ignored — add a due date for it to apply[/yellow]"
+                )
+
+            if parsed.get("deadline") or task.get("deadline"):
+                deadline_raw = task.get("deadline") or parsed.get("deadline")
+                try:
+                    dl = datetime.fromisoformat(
+                        str(deadline_raw).replace("Z", "+00:00")
+                    )
+                    details.append(
+                        f"[red]🎯 Deadline: {dl.strftime('%b %d, %Y at %I:%M %p')}[/red]"
+                    )
+                except (ValueError, TypeError):
+                    pass
+
+            # Backend drops the deadline for non-Pro users (it's a Pro feature).
+            if "deadline" in (parsed.get("pro_required_fields") or []):
+                details.append(
+                    "[yellow]🔒 Deadline ignored — upgrade to Pro to set deadlines[/yellow]"
+                )
 
             if details:
                 console.print()
@@ -277,7 +335,10 @@ def add(
 
 
 def _create_local_task(
-    text: str, project_override: str | None = None, output: str = "pretty"
+    text: str,
+    project_override: str | None = None,
+    deadline_override: str | None = None,
+    output: str = "pretty",
 ) -> None:
     """Create a task in local context with NLP parsing."""
     import asyncio
@@ -290,6 +351,11 @@ def _create_local_task(
 
         # Parse the text for metadata
         parsed = parse_natural_language(text)
+
+        # Resolve deadline: --deadline flag overrides any parsed deadline
+        deadline = parsed.get("deadline")
+        if deadline_override:
+            deadline = parse_natural_language(deadline_override).get("due_date")
 
         # Ensure priority is an integer, default to 4 if None
         priority = parsed.get("priority")
@@ -373,7 +439,9 @@ def _create_local_task(
             description="",
             priority=priority,
             due_date=parsed.get("due_date"),
+            deadline=deadline,
             recurrence_rule=parsed.get("recurrence_rule"),
+            recurrence_from_completion=parsed.get("recurrence_from_completion", False),
             project_id=project_id,
         )
 
@@ -391,6 +459,11 @@ def _create_local_task(
         if parsed.get("due_date"):
             due = parsed["due_date"]
             details.append(f"📅 Due: {due.strftime('%b %d, %Y at %H:%M')}")
+
+        if deadline:
+            details.append(
+                f"[red]🎯 Deadline: {deadline.strftime('%b %d, %Y at %H:%M')}[/red]"
+            )
 
         if priority < 4:
             priority_map = {
@@ -412,7 +485,16 @@ def _create_local_task(
 
         if parsed.get("recurrence_rule"):
             rec_label = parsed.get("recurrence_label") or "Recurring"
+            if parsed.get("recurrence_from_completion"):
+                rec_label = f"{rec_label} (from completion)"
             details.append(f"[green]🔄 {rec_label}[/green]")
+
+        if parsed.get("reminders"):
+            # Local tasks have no reminder delivery (that runs server-side), so the
+            # parsed reminder is recognised but not scheduled.
+            details.append(
+                "[yellow]⏰ Reminders are only available in remote context[/yellow]"
+            )
 
         if details:
             console.print()

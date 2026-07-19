@@ -43,7 +43,7 @@ def login(
 
         # Update endpoint if provided
         if endpoint:
-            config_service.set("api.endpoint", endpoint)
+            config_service.set_endpoint(endpoint)
 
         # Prompt for credentials if not provided
         if not email:
@@ -63,16 +63,16 @@ def login(
             try:
                 result = await auth_api.login(email, password)  # type: ignore
 
-                # Save credentials
-                token = result.get("access_token") or result.get("token")
-                refresh_token = result.get("refresh_token")
+                # Save credentials. Knox returns a single opaque token (no
+                # refresh token); it auto-refreshes server-side on use.
+                token = result.get("token") or result.get("access_token")
 
                 if not token:
                     format_error("Invalid response from server: no token received")
                     raise typer.Exit(1)
 
                 # Save credentials for current context
-                config_service.save_credentials(token, refresh_token, context_name)
+                config_service.save_credentials(token, context_name=context_name)
 
                 # Get user profile
                 user = await auth_api.get_profile()
@@ -125,7 +125,7 @@ def signup(
 
         # Update endpoint if provided
         if endpoint:
-            config_service.set("api.endpoint", endpoint)
+            config_service.set_endpoint(endpoint)
 
         # Prompt for credentials if not provided
         if not email:
@@ -179,15 +179,14 @@ def signup(
                     console.print("\n[dim]Logging in...[/dim]")
                     login_result = await auth_api.login(email, password)  # type: ignore
 
-                    # Save credentials
-                    token = login_result.get("access_token") or login_result.get(
-                        "token"
+                    # Save credentials (Knox: single opaque token, no refresh)
+                    token = login_result.get("token") or login_result.get(
+                        "access_token"
                     )
-                    refresh_token = login_result.get("refresh_token")
 
                     if token:
                         config_service.save_credentials(
-                            token, refresh_token, context_name
+                            token, context_name=context_name
                         )
                         format_success(f"Logged in as {user_email}")
                     else:

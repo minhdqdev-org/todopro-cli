@@ -51,6 +51,23 @@ async def test_get_headers_without_auth(mock_config_manager):
 
 
 @pytest.mark.asyncio
+async def test_get_headers_includes_stable_client_id(mock_config_manager):
+    """X-Client-Id is always present and stable across calls."""
+    with patch(
+        "todopro_cli.services.api.client.get_config_service",
+        return_value=mock_config_manager,
+    ):
+        client = APIClient()
+        headers_a = client._get_headers(skip_auth=True)
+        headers_b = client._get_headers()
+
+        assert headers_a["X-Client-Id"]
+        # Same per-install id regardless of auth / repeated calls.
+        assert headers_a["X-Client-Id"] == headers_b["X-Client-Id"]
+        assert headers_a["X-Client-Id"] == mock_config_manager.config.client_id
+
+
+@pytest.mark.asyncio
 async def test_get_headers_with_auth(mock_config_manager):
     """Test getting headers with authentication."""
     from todopro_cli.models.config_models import Context
@@ -411,200 +428,23 @@ async def test_get_headers_context_creds_missing_falls_back_to_default(
 
 
 # ===========================================================================
-# _try_refresh_token
-# ===========================================================================
-
-
-@pytest.mark.asyncio
-async def test_try_refresh_token_no_credentials_returns_false(mock_config_manager):
-    """Lines 86-87: no credentials → return False immediately."""
-    mock_config_manager.load_credentials = lambda: None
-    with patch(
-        "todopro_cli.services.api.client.get_config_service",
-        return_value=mock_config_manager,
-    ):
-        client = APIClient()
-        result = await client._try_refresh_token()
-    assert result is False
-
-
-@pytest.mark.asyncio
-async def test_try_refresh_token_no_refresh_token_returns_false(mock_config_manager):
-    """Lines 86-87: credentials exist but no refresh_token → return False."""
-    mock_config_manager.load_credentials = lambda: {"token": "access-token"}
-    with patch(
-        "todopro_cli.services.api.client.get_config_service",
-        return_value=mock_config_manager,
-    ):
-        client = APIClient()
-        result = await client._try_refresh_token()
-    assert result is False
-
-
-@pytest.mark.asyncio
-async def test_try_refresh_token_success_returns_true(mock_config_manager):
-    """Lines 89-109: refresh succeeds → updates credentials, returns True."""
-    mock_config_manager.load_credentials = lambda: {
-        "token": "old-access",
-        "refresh_token": "valid-refresh",
-    }
-    save_called = []
-    mock_config_manager.save_credentials = (
-        lambda tok, _ref=None, **_kw: save_called.append(tok)
-    )
-
-    mock_response = MagicMock()
-    mock_response.json.return_value = {
-        "access_token": "new-access",
-        "refresh_token": "new-refresh",
-    }
-
-    with patch(
-        "todopro_cli.services.api.client.get_config_service",
-        return_value=mock_config_manager,
-    ):
-        client = APIClient()
-        with patch.object(
-            client, "post", new_callable=AsyncMock, return_value=mock_response
-        ):
-            result = await client._try_refresh_token()
-
-    assert result is True
-    assert save_called == ["new-access"]
-
-
-@pytest.mark.asyncio
-async def test_try_refresh_token_no_access_token_in_response_returns_false(
-    mock_config_manager,
-):
-    """Lines 99-111: refresh endpoint returns no access_token → return False."""
-    mock_config_manager.load_credentials = lambda: {
-        "token": "old",
-        "refresh_token": "refresh",
-    }
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"error": "invalid_grant"}  # no access_token
-
-    with patch(
-        "todopro_cli.services.api.client.get_config_service",
-        return_value=mock_config_manager,
-    ):
-        client = APIClient()
-        with patch.object(
-            client, "post", new_callable=AsyncMock, return_value=mock_response
-        ):
-            result = await client._try_refresh_token()
-
-    assert result is False
-
-
-@pytest.mark.asyncio
-async def test_try_refresh_token_post_exception_returns_false(mock_config_manager):
-    """Lines 112-113: any exception during refresh → return False (not raised)."""
-    mock_config_manager.load_credentials = lambda: {
-        "token": "old",
-        "refresh_token": "refresh",
-    }
-    with patch(
-        "todopro_cli.services.api.client.get_config_service",
-        return_value=mock_config_manager,
-    ):
-        client = APIClient()
-        with patch.object(
-            client,
-            "post",
-            new_callable=AsyncMock,
-            side_effect=Exception("network error"),
-        ):
-            result = await client._try_refresh_token()
-
-    assert result is False
-
-
-# ===========================================================================
 # 401 handling in request()
 # ===========================================================================
 
 
 @pytest.mark.asyncio
-async def test_request_401_with_successful_refresh_retries_and_succeeds(
-    mock_config_manager,
-):
-    """Lines 148-156: 401 → refresh succeeds → retry succeeds → response returned."""
+async def test_request_401_prints_relogin_hint_and_raises(mock_config_manager):
+    """A 401 on an authed request points the user at `todopro login`, then raises.
+
+    Knox tokens have no client-side refresh, so there is no refresh attempt.
+    """
     mock_error_response = MagicMock()
     mock_error_response.status_code = 401
     error_401 = httpx.HTTPStatusError(
         "Unauthorized", request=MagicMock(), response=mock_error_response
     )
 
-    success_response = MagicMock()
-    success_response.status_code = 200
-    success_response.raise_for_status = MagicMock()
-
-    with patch(
-        "todopro_cli.services.api.client.get_config_service",
-        return_value=mock_config_manager,
-    ):
-        client = APIClient()
-        # First call raises 401, second call (after refresh) succeeds
-        with patch.object(
-            httpx.AsyncClient,
-            "request",
-            new_callable=AsyncMock,
-            side_effect=[error_401, success_response],
-        ), patch.object(
-            client,
-            "_try_refresh_token",
-            new_callable=AsyncMock,
-            return_value=True,
-        ):
-            response = await client.request("GET", "/protected", retry=0)
-    assert response.status_code == 200
-
-
-@pytest.mark.asyncio
-async def test_request_401_with_successful_refresh_but_retry_fails(mock_config_manager):
-    """Lines 157-159: 401 → refresh succeeds → retry also fails → raises original error."""
-    mock_error_response = MagicMock()
-    mock_error_response.status_code = 401
-    error_401 = httpx.HTTPStatusError(
-        "Unauthorized", request=MagicMock(), response=mock_error_response
-    )
-
-    error_after_refresh = httpx.HTTPStatusError(
-        "Still 401", request=MagicMock(), response=mock_error_response
-    )
-
-    with patch(
-        "todopro_cli.services.api.client.get_config_service",
-        return_value=mock_config_manager,
-    ):
-        client = APIClient()
-        with patch.object(
-            httpx.AsyncClient,
-            "request",
-            new_callable=AsyncMock,
-            side_effect=[error_401, error_after_refresh],
-        ), patch.object(
-            client,
-            "_try_refresh_token",
-            new_callable=AsyncMock,
-            return_value=True,
-        ), pytest.raises(httpx.HTTPStatusError):
-            await client.request("GET", "/protected", retry=0)
-
-
-@pytest.mark.asyncio
-async def test_request_401_refresh_fails_no_refresh_token_in_creds(mock_config_manager):
-    """Lines 162-176: 401 → refresh fails → no refresh_token in creds → prints message → raises."""
-    mock_error_response = MagicMock()
-    mock_error_response.status_code = 401
-    error_401 = httpx.HTTPStatusError(
-        "Unauthorized", request=MagicMock(), response=mock_error_response
-    )
-
-    # load_credentials returns creds without refresh_token
-    mock_config_manager.load_credentials = lambda: {"token": "old-token"}
+    fake_console = MagicMock()
 
     with patch(
         "todopro_cli.services.api.client.get_config_service",
@@ -616,30 +456,28 @@ async def test_request_401_refresh_fails_no_refresh_token_in_creds(mock_config_m
             "request",
             new_callable=AsyncMock,
             side_effect=error_401,
-        ), patch.object(
-            client,
-            "_try_refresh_token",
-            new_callable=AsyncMock,
-            return_value=False,
+        ), patch(
+            "todopro_cli.services.api.client.get_console",
+            return_value=fake_console,
         ), pytest.raises(httpx.HTTPStatusError):
             await client.request("GET", "/secret", retry=0)
 
+    printed = " ".join(
+        str(c.args[0]) for c in fake_console.print.call_args_list if c.args
+    )
+    assert "todopro login" in printed
+
 
 @pytest.mark.asyncio
-async def test_request_401_refresh_fails_with_refresh_token_still_raises(
-    mock_config_manager,
-):
-    """Lines 162-177: 401 → refresh fails but creds have refresh_token → still raises."""
+async def test_request_401_skip_auth_raises_without_relogin_hint(mock_config_manager):
+    """A 401 on a skip_auth request (e.g. login) is a normal 4xx — no re-login hint."""
     mock_error_response = MagicMock()
     mock_error_response.status_code = 401
     error_401 = httpx.HTTPStatusError(
         "Unauthorized", request=MagicMock(), response=mock_error_response
     )
 
-    mock_config_manager.load_credentials = lambda: {
-        "token": "old",
-        "refresh_token": "r",
-    }
+    fake_console = MagicMock()
 
     with patch(
         "todopro_cli.services.api.client.get_config_service",
@@ -651,13 +489,15 @@ async def test_request_401_refresh_fails_with_refresh_token_still_raises(
             "request",
             new_callable=AsyncMock,
             side_effect=error_401,
-        ), patch.object(
-            client,
-            "_try_refresh_token",
-            new_callable=AsyncMock,
-            return_value=False,
+        ), patch(
+            "todopro_cli.services.api.client.get_console",
+            return_value=fake_console,
         ), pytest.raises(httpx.HTTPStatusError):
-            await client.request("GET", "/secret", retry=0)
+            await client.request(
+                "POST", "/v1/auth/login", retry=0, skip_auth=True
+            )
+
+    fake_console.print.assert_not_called()
 
 
 # ===========================================================================

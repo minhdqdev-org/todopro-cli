@@ -9,6 +9,8 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
+import httpx
+
 from todopro_cli.models import (
     Label,
     Project,
@@ -26,6 +28,7 @@ from todopro_cli.services.sync_service import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _mock_repo(**overrides) -> MagicMock:
     """Return a MagicMock that behaves like any repository."""
@@ -95,7 +98,9 @@ def _make_label(updated_at: str = "2024-01-01T00:00:00Z") -> MagicMock:
     return lb
 
 
-def _make_task(updated_at: str = "2024-01-01T00:00:00Z", *, status: str = "active") -> MagicMock:
+def _make_task(
+    updated_at: str = "2024-01-01T00:00:00Z", *, status: str = "active"
+) -> MagicMock:
     """Create a mock Task with necessary attributes."""
     t = MagicMock(spec=Task)
     t.id = "task-001"
@@ -107,13 +112,16 @@ def _make_task(updated_at: str = "2024-01-01T00:00:00Z", *, status: str = "activ
     t.due_date = None
     t.completed_at = None
     t.updated_at = updated_at
-    t.model_dump = MagicMock(return_value={"id": "task-001", "content": "Buy groceries"})
+    t.model_dump = MagicMock(
+        return_value={"id": "task-001", "content": "Buy groceries"}
+    )
     return t
 
 
 # ===========================================================================
 # SyncResult
 # ===========================================================================
+
 
 class TestSyncResult:
     """Tests for SyncResult dataclass."""
@@ -166,6 +174,7 @@ class TestSyncResult:
 # SyncService._should_update
 # ===========================================================================
 
+
 class TestShouldUpdate:
     """Tests for SyncService._should_update() conflict resolution logic."""
 
@@ -174,6 +183,7 @@ class TestShouldUpdate:
         from io import StringIO
 
         from rich.console import Console
+
         self.svc = SyncService(*repos, console=Console(file=StringIO(), no_color=True))
 
     # --- equal timestamps ---
@@ -225,12 +235,16 @@ class TestShouldUpdate:
     # --- None timestamps ---
 
     def test_none_local_remote_wins_returns_update(self):
-        update, reason = self.svc._should_update(None, "2024-01-01T00:00:00Z", "remote_wins")
+        update, reason = self.svc._should_update(
+            None, "2024-01-01T00:00:00Z", "remote_wins"
+        )
         assert update is True
         assert reason == "remote_newer"
 
     def test_none_remote_local_wins_returns_update(self):
-        update, reason = self.svc._should_update("2024-01-01T00:00:00Z", None, "local_wins")
+        update, reason = self.svc._should_update(
+            "2024-01-01T00:00:00Z", None, "local_wins"
+        )
         assert update is True
         assert reason == "local_newer"
 
@@ -244,6 +258,7 @@ class TestShouldUpdate:
 # SyncService._log_conflict
 # ===========================================================================
 
+
 class TestLogConflict:
     """Tests for SyncService._log_conflict()."""
 
@@ -252,10 +267,14 @@ class TestLogConflict:
         from io import StringIO
 
         from rich.console import Console
+
         self.svc = SyncService(*repos, console=Console(file=StringIO(), no_color=True))
         # Use real conflict tracker but point it at a temp dir
         from todopro_cli.services.sync_conflicts import SyncConflictTracker
-        self.svc.conflict_tracker = SyncConflictTracker(config_dir="/tmp/todopro_test_conflicts")
+
+        self.svc.conflict_tracker = SyncConflictTracker(
+            config_dir="/tmp/todopro_test_conflicts"
+        )
 
     def test_adds_conflict_to_tracker(self):
         self.svc._log_conflict(
@@ -292,6 +311,7 @@ class TestLogConflict:
 # SyncPullService._sync_project
 # ===========================================================================
 
+
 class TestSyncPullServiceSyncProject:
     """Unit tests for _sync_project in SyncPullService."""
 
@@ -299,9 +319,7 @@ class TestSyncPullServiceSyncProject:
         svc = _make_pull_service(get_by_id=None)
         project = _make_project()
         result = SyncResult()
-        asyncio.run(
-            svc._sync_project(project, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_project(project, result, "remote_wins"))
         assert result.projects_new == 1
         svc.target_project_repo.create.assert_called_once()
 
@@ -311,9 +329,7 @@ class TestSyncPullServiceSyncProject:
         svc = _make_pull_service()
         svc.target_project_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_project(incoming, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_project(incoming, result, "remote_wins"))
         assert result.projects_updated == 1
 
     def test_existing_project_local_newer_remote_wins_unchanged(self):
@@ -322,9 +338,7 @@ class TestSyncPullServiceSyncProject:
         svc = _make_pull_service()
         svc.target_project_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_project(incoming, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_project(incoming, result, "remote_wins"))
         assert result.projects_unchanged == 1
         svc.target_project_repo.update.assert_not_called()
 
@@ -335,25 +349,24 @@ class TestSyncPullServiceSyncProject:
         svc = _make_pull_service()
         svc.target_project_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_project(incoming, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_project(incoming, result, "remote_wins"))
         assert result.projects_unchanged == 1
 
     def test_exception_does_not_propagate(self):
         svc = _make_pull_service()
-        svc.target_project_repo.get_by_id = AsyncMock(side_effect=RuntimeError("DB error"))
+        svc.target_project_repo.get_by_id = AsyncMock(
+            side_effect=RuntimeError("DB error")
+        )
         result = SyncResult()
         # Should not raise
-        asyncio.run(
-            svc._sync_project(_make_project(), result, "remote_wins")
-        )
+        asyncio.run(svc._sync_project(_make_project(), result, "remote_wins"))
         assert result.projects_new == 0
 
 
 # ===========================================================================
 # SyncPullService._sync_label
 # ===========================================================================
+
 
 class TestSyncPullServiceSyncLabel:
     """Unit tests for _sync_label in SyncPullService."""
@@ -362,9 +375,7 @@ class TestSyncPullServiceSyncLabel:
         svc = _make_pull_service(get_by_id=None)
         label = _make_label()
         result = SyncResult()
-        asyncio.run(
-            svc._sync_label(label, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_label(label, result, "remote_wins"))
         assert result.labels_new == 1
         svc.target_label_repo.create.assert_called_once()
 
@@ -373,24 +384,21 @@ class TestSyncPullServiceSyncLabel:
         svc = _make_pull_service()
         svc.target_label_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_label(_make_label(), result, "remote_wins")
-        )
+        asyncio.run(svc._sync_label(_make_label(), result, "remote_wins"))
         assert result.labels_unchanged == 1
 
     def test_exception_does_not_propagate(self):
         svc = _make_pull_service()
         svc.target_label_repo.get_by_id = AsyncMock(side_effect=RuntimeError("error"))
         result = SyncResult()
-        asyncio.run(
-            svc._sync_label(_make_label(), result, "remote_wins")
-        )
+        asyncio.run(svc._sync_label(_make_label(), result, "remote_wins"))
         assert result.labels_new == 0
 
 
 # ===========================================================================
 # SyncPullService._sync_task
 # ===========================================================================
+
 
 class TestSyncPullServiceSyncTask:
     """Unit tests for _sync_task in SyncPullService."""
@@ -400,13 +408,12 @@ class TestSyncPullServiceSyncTask:
         svc = _make_pull_service(get_by_id=None)
         # Inject TaskCreate/TaskUpdate so the NameError is avoided
         import todopro_cli.services.sync_service as m
+
         m.TaskCreate = TaskCreate
         m.TaskUpdate = TaskUpdate
         task = _make_task()
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(task, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_task(task, result, "remote_wins"))
         assert result.tasks_new == 1
 
     def test_existing_task_equal_timestamps_unchanged(self):
@@ -416,9 +423,7 @@ class TestSyncPullServiceSyncTask:
         svc = _make_pull_service()
         svc.target_task_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(incoming, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_task(incoming, result, "remote_wins"))
         assert result.tasks_unchanged == 1
 
     def test_existing_task_local_newer_remote_wins_conflict(self):
@@ -427,9 +432,7 @@ class TestSyncPullServiceSyncTask:
         svc = _make_pull_service()
         svc.target_task_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(incoming, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_task(incoming, result, "remote_wins"))
         assert result.tasks_conflicts == 1
 
     def test_existing_task_remote_newer_remote_wins_updates(self):
@@ -438,27 +441,25 @@ class TestSyncPullServiceSyncTask:
         svc = _make_pull_service()
         svc.target_task_repo.get_by_id = AsyncMock(return_value=existing)
         import todopro_cli.services.sync_service as m
+
         m.TaskCreate = TaskCreate
         m.TaskUpdate = TaskUpdate
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(incoming, result, "remote_wins")
-        )
+        asyncio.run(svc._sync_task(incoming, result, "remote_wins"))
         assert result.tasks_updated == 1
 
     def test_exception_does_not_propagate(self):
         svc = _make_pull_service()
         svc.target_task_repo.get_by_id = AsyncMock(side_effect=RuntimeError("fail"))
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(_make_task(), result, "remote_wins")
-        )
+        asyncio.run(svc._sync_task(_make_task(), result, "remote_wins"))
         assert result.tasks_new == 0
 
 
 # ===========================================================================
 # SyncPullService.pull (integration-style)
 # ===========================================================================
+
 
 class TestSyncPullServicePull:
     """Integration-style tests for SyncPullService.pull()."""
@@ -472,9 +473,7 @@ class TestSyncPullServicePull:
         svc.source_label_repo.list_all = AsyncMock(return_value=[label])
         svc.source_task_repo.list_all = AsyncMock(return_value=[task])
 
-        result = asyncio.run(
-            svc.pull("remote", "local", dry_run=True)
-        )
+        result = asyncio.run(svc.pull("remote", "local", dry_run=True))
         assert result.success is True
         assert result.projects_fetched == 1
         assert result.labels_fetched == 1
@@ -485,55 +484,43 @@ class TestSyncPullServicePull:
 
     def test_empty_repos_succeeds(self):
         svc = _make_pull_service()
-        result = asyncio.run(
-            svc.pull("remote", "local")
-        )
+        result = asyncio.run(svc.pull("remote", "local"))
         assert result.success is True
         assert result.tasks_fetched == 0
         assert result.projects_fetched == 0
 
     def test_duration_is_positive(self):
         svc = _make_pull_service()
-        result = asyncio.run(
-            svc.pull("remote", "local")
-        )
+        result = asyncio.run(svc.pull("remote", "local"))
         assert result.duration > 0
 
     def test_result_has_no_error_on_success(self):
         svc = _make_pull_service()
-        result = asyncio.run(
-            svc.pull("remote", "local")
-        )
+        result = asyncio.run(svc.pull("remote", "local"))
         assert result.error is None
 
     def test_sync_state_updated_on_non_dry_run(self):
         svc = _make_pull_service()
-        asyncio.run(
-            svc.pull("remote", "local", dry_run=False)
-        )
+        asyncio.run(svc.pull("remote", "local", dry_run=False))
         svc.sync_state.set_last_sync.assert_called_once()
 
     def test_sync_state_not_updated_on_dry_run(self):
         svc = _make_pull_service()
-        asyncio.run(
-            svc.pull("remote", "local", dry_run=True)
-        )
+        asyncio.run(svc.pull("remote", "local", dry_run=True))
         svc.sync_state.set_last_sync.assert_not_called()
 
     def test_conflict_tracker_save_called_when_conflicts(self):
         svc = _make_pull_service()
         svc.conflict_tracker.has_conflicts.return_value = True
-        asyncio.run(
-            svc.pull("remote", "local")
-        )
+        asyncio.run(svc.pull("remote", "local"))
         svc.conflict_tracker.save.assert_called_once()
 
     def test_exception_in_list_all_captured_in_result(self):
         svc = _make_pull_service()
-        svc.source_project_repo.list_all = AsyncMock(side_effect=RuntimeError("network failure"))
-        result = asyncio.run(
-            svc.pull("remote", "local")
+        svc.source_project_repo.list_all = AsyncMock(
+            side_effect=RuntimeError("network failure")
         )
+        result = asyncio.run(svc.pull("remote", "local"))
         assert result.success is False
         assert result.error is not None
         assert "RuntimeError" in result.error
@@ -543,15 +530,14 @@ class TestSyncPullServicePull:
 # SyncPushService._sync_project
 # ===========================================================================
 
+
 class TestSyncPushServiceSyncProject:
     """Unit tests for _sync_project in SyncPushService."""
 
     def test_new_project_increments_projects_new(self):
         svc = _make_push_service(get_by_id=None)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_project(_make_project(), result, "local_wins")
-        )
+        asyncio.run(svc._sync_project(_make_project(), result, "local_wins"))
         assert result.projects_new == 1
 
     def test_existing_local_newer_local_wins_updated(self):
@@ -560,9 +546,7 @@ class TestSyncPushServiceSyncProject:
         svc = _make_push_service()
         svc.target_project_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_project(incoming, result, "local_wins")
-        )
+        asyncio.run(svc._sync_project(incoming, result, "local_wins"))
         assert result.projects_updated == 1
 
     def test_existing_remote_newer_local_wins_unchanged(self):
@@ -571,9 +555,7 @@ class TestSyncPushServiceSyncProject:
         svc = _make_push_service()
         svc.target_project_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_project(incoming, result, "local_wins")
-        )
+        asyncio.run(svc._sync_project(incoming, result, "local_wins"))
         assert result.projects_unchanged == 1
 
 
@@ -581,15 +563,14 @@ class TestSyncPushServiceSyncProject:
 # SyncPushService._sync_label
 # ===========================================================================
 
+
 class TestSyncPushServiceSyncLabel:
     """Unit tests for _sync_label in SyncPushService."""
 
     def test_new_label_increments_labels_new(self):
         svc = _make_push_service(get_by_id=None)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_label(_make_label(), result, "local_wins")
-        )
+        asyncio.run(svc._sync_label(_make_label(), result, "local_wins"))
         assert result.labels_new == 1
 
     def test_existing_label_increments_unchanged(self):
@@ -597,9 +578,7 @@ class TestSyncPushServiceSyncLabel:
         svc = _make_push_service()
         svc.target_label_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_label(_make_label(), result, "local_wins")
-        )
+        asyncio.run(svc._sync_label(_make_label(), result, "local_wins"))
         assert result.labels_unchanged == 1
 
 
@@ -607,18 +586,18 @@ class TestSyncPushServiceSyncLabel:
 # SyncPushService._sync_task
 # ===========================================================================
 
+
 class TestSyncPushServiceSyncTask:
     """Unit tests for _sync_task in SyncPushService."""
 
     def test_new_task_increments_tasks_new(self):
         import todopro_cli.services.sync_service as m
+
         m.TaskCreate = TaskCreate
         m.TaskUpdate = TaskUpdate
         svc = _make_push_service(get_by_id=None)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(_make_task(), result, "local_wins")
-        )
+        asyncio.run(svc._sync_task(_make_task(), result, "local_wins"))
         assert result.tasks_new == 1
 
     def test_existing_equal_timestamps_unchanged(self):
@@ -628,9 +607,7 @@ class TestSyncPushServiceSyncTask:
         svc = _make_push_service()
         svc.target_task_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(incoming, result, "local_wins")
-        )
+        asyncio.run(svc._sync_task(incoming, result, "local_wins"))
         assert result.tasks_unchanged == 1
 
     def test_existing_remote_newer_local_wins_conflict(self):
@@ -639,9 +616,7 @@ class TestSyncPushServiceSyncTask:
         svc = _make_push_service()
         svc.target_task_repo.get_by_id = AsyncMock(return_value=existing)
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(incoming, result, "local_wins")
-        )
+        asyncio.run(svc._sync_task(incoming, result, "local_wins"))
         assert result.tasks_conflicts == 1
 
     def test_existing_local_newer_local_wins_updated(self):
@@ -650,18 +625,18 @@ class TestSyncPushServiceSyncTask:
         svc = _make_push_service()
         svc.target_task_repo.get_by_id = AsyncMock(return_value=existing)
         import todopro_cli.services.sync_service as m
+
         m.TaskCreate = TaskCreate
         m.TaskUpdate = TaskUpdate
         result = SyncResult()
-        asyncio.run(
-            svc._sync_task(incoming, result, "local_wins")
-        )
+        asyncio.run(svc._sync_task(incoming, result, "local_wins"))
         assert result.tasks_updated == 1
 
 
 # ===========================================================================
 # SyncPushService.push (integration-style)
 # ===========================================================================
+
 
 class TestSyncPushServicePush:
     """Integration-style tests for SyncPushService.push()."""
@@ -672,47 +647,38 @@ class TestSyncPushServicePush:
         svc.source_label_repo.list_all = AsyncMock(return_value=[_make_label()])
         svc.source_task_repo.list_all = AsyncMock(return_value=[_make_task()])
 
-        result = asyncio.run(
-            svc.push("local", "remote", dry_run=True)
-        )
+        result = asyncio.run(svc.push("local", "remote", dry_run=True))
         assert result.success is True
         svc.target_project_repo.create.assert_not_called()
 
     def test_empty_repos_succeeds(self):
         svc = _make_push_service()
-        result = asyncio.run(
-            svc.push("local", "remote")
-        )
+        result = asyncio.run(svc.push("local", "remote"))
         assert result.success is True
         assert result.tasks_fetched == 0
 
     def test_sync_state_updated_after_push(self):
         svc = _make_push_service()
-        asyncio.run(
-            svc.push("local", "remote", dry_run=False)
-        )
+        asyncio.run(svc.push("local", "remote", dry_run=False))
         svc.sync_state.set_last_sync.assert_called_once()
 
     def test_exception_captured_in_result(self):
         svc = _make_push_service()
         svc.source_project_repo.list_all = AsyncMock(side_effect=ValueError("bad data"))
-        result = asyncio.run(
-            svc.push("local", "remote")
-        )
+        result = asyncio.run(svc.push("local", "remote"))
         assert result.success is False
         assert "ValueError" in result.error
 
     def test_result_duration_positive(self):
         svc = _make_push_service()
-        result = asyncio.run(
-            svc.push("local", "remote")
-        )
+        result = asyncio.run(svc.push("local", "remote"))
         assert result.duration >= 0
 
 
 # ===========================================================================
 # Additional coverage: pull non-dry-run loop bodies (lines 235-248)
 # ===========================================================================
+
 
 class TestSyncPullServiceNonDryRunLoops:
     """Cover lines 235-248: for loops in pull() non-dry-run path."""
@@ -733,6 +699,7 @@ class TestSyncPullServiceNonDryRunLoops:
         svc.target_task_repo.get_by_id = AsyncMock(return_value=None)
 
         import todopro_cli.services.sync_service as m
+
         m.TaskCreate = TaskCreate
         m.TaskUpdate = TaskUpdate
 
@@ -761,6 +728,7 @@ class TestSyncPullServiceNonDryRunLoops:
         svc.target_task_repo.get_by_id = AsyncMock(return_value=None)
 
         import todopro_cli.services.sync_service as m
+
         m.TaskCreate = TaskCreate
         m.TaskUpdate = TaskUpdate
 
@@ -773,6 +741,7 @@ class TestSyncPullServiceNonDryRunLoops:
 # ===========================================================================
 # PullService _sync_label should_update=True (line 331)
 # ===========================================================================
+
 
 class TestSyncPullServiceSyncLabelShouldUpdate:
     """Cover line 331: _sync_label with should_update=True (remote newer)."""
@@ -792,6 +761,7 @@ class TestSyncPullServiceSyncLabelShouldUpdate:
 # Additional coverage: push non-dry-run loop bodies (lines 450-461)
 # ===========================================================================
 
+
 class TestSyncPushServiceNonDryRunLoops:
     """Cover lines 450-461: for loops in push() non-dry-run path."""
 
@@ -810,6 +780,7 @@ class TestSyncPushServiceNonDryRunLoops:
         svc.target_task_repo.get_by_id = AsyncMock(return_value=None)
 
         import todopro_cli.services.sync_service as m
+
         m.TaskCreate = TaskCreate
         m.TaskUpdate = TaskUpdate
 
@@ -825,6 +796,7 @@ class TestSyncPushServiceNonDryRunLoops:
 # PushService conflict tracker save (line 470)
 # ===========================================================================
 
+
 class TestSyncPushServiceConflictTrackerSave:
     """Cover line 470: conflict_tracker.save() called in push() when conflicts."""
 
@@ -838,6 +810,7 @@ class TestSyncPushServiceConflictTrackerSave:
 # ===========================================================================
 # PushService _sync_project exception handling (lines 519-520)
 # ===========================================================================
+
 
 class TestSyncPushServiceSyncProjectException:
     """Cover lines 519-520: _sync_project exception handler."""
@@ -858,6 +831,7 @@ class TestSyncPushServiceSyncProjectException:
 # PushService _sync_label exception handling (lines 537-538)
 # ===========================================================================
 
+
 class TestSyncPushServiceSyncLabelException:
     """Cover lines 537-538: _sync_label exception handler."""
 
@@ -875,6 +849,7 @@ class TestSyncPushServiceSyncLabelException:
 # PushService _sync_task exception handling (lines 590-591)
 # ===========================================================================
 
+
 class TestSyncPushServiceSyncTaskException:
     """Cover lines 590-591: _sync_task exception handler."""
 
@@ -886,3 +861,107 @@ class TestSyncPushServiceSyncTaskException:
         result = SyncResult()
         asyncio.run(svc._sync_task(_make_task(), result, "local_wins"))
         assert result.tasks_new == 0
+
+
+# ===========================================================================
+# PushService auto-fix of validation errors
+# ===========================================================================
+
+
+def _http_error(status: int, body: dict) -> httpx.HTTPStatusError:
+    request = httpx.Request("POST", "http://example.test/api")
+    response = httpx.Response(status, json=body, request=request)
+    return httpx.HTTPStatusError("boom", request=request, response=response)
+
+
+_CONTENT_TOO_LONG = {
+    "error": {
+        "code": "VALIDATION_ERROR",
+        "details": {"content": "Content must not exceed 500 characters"},
+    }
+}
+
+
+class TestSyncPushServiceAutoFix:
+    """The push service truncates over-length fields and retries."""
+
+    def test_over_length_task_is_auto_fixed_and_retried(self):
+        svc = _make_push_service()
+        task = _make_task()
+        task.content = "x" * 620
+        # create: fail once (too long), then succeed with the corrected payload.
+        svc.target_task_repo.create = AsyncMock(
+            side_effect=[_http_error(400, _CONTENT_TOO_LONG), None]
+        )
+
+        result = SyncResult()
+        asyncio.run(svc._sync_task(task, result, "local_wins"))
+
+        assert result.tasks_new == 1
+        assert result.tasks_auto_fixed == 1
+        assert len(result.auto_fixes) == 1
+        # retried exactly once (2 create calls total)
+        assert svc.target_task_repo.create.await_count == 2
+        # the corrected create carried a 500-char content
+        retried_payload = svc.target_task_repo.create.await_args_list[1].args[0]
+        assert len(retried_payload.content) == 500
+        # the local copy was corrected too, so it isn't re-pushed next time
+        svc.source_task_repo.update.assert_awaited()
+
+    def test_pro_gated_field_is_reported_not_fixed(self):
+        svc = _make_push_service()
+        task = _make_task()
+        svc.target_task_repo.create = AsyncMock(
+            side_effect=_http_error(
+                402,
+                {
+                    "error": {
+                        "code": "pro_required",
+                        "details": {"upgrade_url": "https://x"},
+                    }
+                },
+            )
+        )
+
+        result = SyncResult()
+        asyncio.run(svc._sync_task(task, result, "local_wins"))
+
+        assert result.tasks_new == 0
+        assert result.tasks_auto_fixed == 0
+        assert len(result.failures) == 1
+        assert "Pro" in result.failures[0]["reason"]
+        # no retry for a Pro-gated failure
+        assert svc.target_task_repo.create.await_count == 1
+
+    def test_unfixable_validation_error_is_reported(self):
+        svc = _make_push_service()
+        task = _make_task()
+        svc.target_task_repo.create = AsyncMock(
+            side_effect=_http_error(
+                400, {"error": {"details": {"project_id": "Invalid project."}}}
+            )
+        )
+
+        result = SyncResult()
+        asyncio.run(svc._sync_task(task, result, "local_wins"))
+
+        assert result.tasks_new == 0
+        assert len(result.failures) == 1
+        assert result.failures[0]["reason"] == "Invalid project."
+        assert svc.target_task_repo.create.await_count == 1
+
+    def test_still_failing_after_fix_is_reported(self):
+        svc = _make_push_service()
+        task = _make_task()
+        task.content = "x" * 620
+        # fails both before and after the fix (e.g. a transient 500 on retry)
+        svc.target_task_repo.create = AsyncMock(
+            side_effect=[_http_error(400, _CONTENT_TOO_LONG), RuntimeError("boom")]
+        )
+
+        result = SyncResult()
+        asyncio.run(svc._sync_task(task, result, "local_wins"))
+
+        assert result.tasks_new == 0
+        assert result.tasks_auto_fixed == 0
+        assert len(result.failures) == 1

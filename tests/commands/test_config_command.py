@@ -21,13 +21,20 @@ def _mock_svc(**kwargs):
     svc.config.model_dump.return_value = {"api": {"endpoint": "https://example.com"}}
     svc.config.contexts = [MagicMock()]
     svc.config.current_context = "default"
+    svc.config.current_context_name = "default"
     ctx = MagicMock()
     ctx.name = "default"
-    ctx.endpoint = "https://example.com"
+    ctx.type = "remote"
+    ctx.source = "https://example.com"
     ctx.description = "Default context"
-    ctx.model_dump.return_value = {"name": "default", "endpoint": "https://example.com"}
+    ctx.model_dump.return_value = {
+        "name": "default",
+        "type": "remote",
+        "source": "https://example.com",
+    }
     svc.get_current_context.return_value = ctx
-    svc.list_contexts.return_value = [("default", ctx)]
+    svc.get_context.return_value = ctx
+    svc.list_contexts.return_value = [ctx]
     for key, val in kwargs.items():
         setattr(svc, key, val)
     return svc
@@ -304,11 +311,12 @@ class TestGetContexts:
         svc = _mock_svc()
         ctx = MagicMock()
         ctx.name = "production"
-        ctx.endpoint = "https://prod.example.com"
+        ctx.type = "remote"
+        ctx.source = "https://prod.example.com"
         ctx.description = "Prod"
         ctx.model_dump.return_value = {"name": "production"}
-        svc.list_contexts.return_value = [("production", ctx)]
-        svc.config.current_context = "production"
+        svc.list_contexts.return_value = [ctx]
+        svc.config.current_context_name = "production"
         p = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         with p:
             result = runner.invoke(app, ["get-contexts"])
@@ -332,6 +340,7 @@ class TestGetContexts:
 class TestSetContext:
     def test_set_context_creates_context(self):
         svc = _mock_svc()
+        svc.get_context.return_value = None  # context doesn't exist yet → create path
         p = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         with p:
             result = runner.invoke(
@@ -339,12 +348,15 @@ class TestSetContext:
                 ["set-context", "staging", "--endpoint", "https://staging.example.com"],
             )
         assert result.exit_code == 0
-        svc.add_context.assert_called_once_with(
-            "staging", "https://staging.example.com", ""
-        )
+        svc.add_context.assert_called_once()
+        added = svc.add_context.call_args.args[0]
+        assert added.name == "staging"
+        assert added.type == "remote"
+        assert added.source == "https://staging.example.com"
 
     def test_set_context_with_description(self):
         svc = _mock_svc()
+        svc.get_context.return_value = None  # create path
         p = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         with p:
             result = runner.invoke(
@@ -359,9 +371,11 @@ class TestSetContext:
                 ],
             )
         assert result.exit_code == 0
-        svc.add_context.assert_called_once_with(
-            "dev", "https://dev.example.com", "Dev environment"
-        )
+        svc.add_context.assert_called_once()
+        added = svc.add_context.call_args.args[0]
+        assert added.name == "dev"
+        assert added.source == "https://dev.example.com"
+        assert added.description == "Dev environment"
 
     def test_set_context_shows_success(self):
         svc = _mock_svc()
@@ -386,14 +400,14 @@ class TestSetContext:
 class TestUseContext:
     """Lines 117-138: use-context command."""
 
-    def test_use_context_exits_due_to_undefined_profile(self):
-        """use-context calls get_config_service(profile) but profile is undefined → NameError → exit 1."""
+    def test_use_context_switches_successfully(self):
+        """use-context switches to the named context and reports success."""
         svc = _mock_svc()
         p = patch("todopro_cli.commands.config_command.get_config_service", return_value=svc)
         with p:
             result = runner.invoke(app, ["use-context", "staging"])
-        # profile is undefined → NameError caught by command_wrapper → exit 1
-        assert result.exit_code != 0
+        assert result.exit_code == 0
+        svc.use_context.assert_called_once_with("staging")
 
     def test_use_context_value_error(self):
         """use-context ValueError is caught."""

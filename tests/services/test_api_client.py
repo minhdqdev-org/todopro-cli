@@ -55,6 +55,8 @@ def _make_client(
     mock_config = MagicMock()
     mock_config.api.timeout = 30
     mock_config.api.retry = retry
+    # X-Client-Id is sent on every request; httpx needs a real str header value.
+    mock_config.client_id = "test-client-id"
     mock_config_manager.config = mock_config
 
     client.config_manager = mock_config_manager
@@ -219,64 +221,6 @@ class TestClose:
 
 
 # ---------------------------------------------------------------------------
-# _try_refresh_token
-# ---------------------------------------------------------------------------
-
-
-class TestTryRefreshToken:
-    @pytest.mark.asyncio
-    async def test_returns_false_when_no_credentials(self):
-        client = _make_client(token=None, refresh_token=None)
-        client.config_manager.load_credentials.return_value = None
-        result = await client._try_refresh_token()
-        assert result is False
-
-    @pytest.mark.asyncio
-    async def test_returns_false_when_no_refresh_token(self):
-        client = _make_client(token="t", refresh_token=None)
-        result = await client._try_refresh_token()
-        assert result is False
-
-    @pytest.mark.asyncio
-    async def test_returns_true_and_saves_when_refresh_succeeds(self):
-        client = _make_client(token="old-token", refresh_token="refresh-123")
-        new_token_response = _make_response(200, {"access_token": "new-token"})
-        client.post = AsyncMock(return_value=new_token_response)
-
-        result = await client._try_refresh_token()
-
-        assert result is True
-        client.config_manager.save_credentials.assert_called_once()
-        saved_args = client.config_manager.save_credentials.call_args[0]
-        assert saved_args[0] == "new-token"
-
-    @pytest.mark.asyncio
-    async def test_returns_false_when_refresh_response_has_no_access_token(self):
-        client = _make_client(token="t", refresh_token="rt")
-        client.post = AsyncMock(return_value=_make_response(200, {"error": "invalid_grant"}))
-        result = await client._try_refresh_token()
-        assert result is False
-
-    @pytest.mark.asyncio
-    async def test_returns_false_when_request_raises(self):
-        client = _make_client(token="t", refresh_token="rt")
-        client.post = AsyncMock(side_effect=Exception("network error"))
-        result = await client._try_refresh_token()
-        assert result is False
-
-    @pytest.mark.asyncio
-    async def test_saves_new_refresh_token_when_provided(self):
-        client = _make_client(token="old", refresh_token="old-rt")
-        resp = _make_response(200, {"access_token": "new-tok", "refresh_token": "new-rt"})
-        client.post = AsyncMock(return_value=resp)
-
-        await client._try_refresh_token()
-
-        saved_args = client.config_manager.save_credentials.call_args[0]
-        assert saved_args[1] == "new-rt"
-
-
-# ---------------------------------------------------------------------------
 # request (core method)
 # ---------------------------------------------------------------------------
 
@@ -365,39 +309,12 @@ class TestRequest:
         assert call_count == 2
 
     @pytest.mark.asyncio
-    async def test_401_triggers_refresh_and_retries(self):
-        client = _make_client(token="expired", refresh_token="rt")
+    async def test_401_prints_relogin_hint_and_raises(self):
+        """A 401 on an authed request raises after pointing the user at login.
 
-        unauth_resp = _make_response(401)
-        http_err = httpx.HTTPStatusError(
-            "Unauthorized", request=unauth_resp.request, response=unauth_resp
-        )
-        ok_resp = _make_response(200, {"ok": True})
-
-        call_count = 0
-
-        async def _request(**_kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                raise http_err
-            return ok_resp
-
-        mock_http = AsyncMock()
-        mock_http.request = _request
-        mock_http.headers = MagicMock()
-        mock_http.headers.update = MagicMock()
-        client._client = mock_http
-
-        # Make refresh succeed
-        client._try_refresh_token = AsyncMock(return_value=True)
-
-        result = await client.request("GET", "/v1/protected")
-        assert result.status_code == 200
-
-    @pytest.mark.asyncio
-    async def test_401_raises_when_refresh_fails(self):
-        client = _make_client(token="expired", refresh_token="rt")
+        Knox has no client-side refresh, so the client no longer attempts one.
+        """
+        client = _make_client(token="expired")
 
         unauth_resp = _make_response(401)
         http_err = httpx.HTTPStatusError(
@@ -410,15 +327,48 @@ class TestRequest:
         mock_http.headers.update = MagicMock()
         client._client = mock_http
 
-        client._try_refresh_token = AsyncMock(return_value=False)
-        # No refresh_token to avoid console print branch
-        client.config_manager.load_credentials.return_value = {"token": "expired"}
-
+        fake_console = MagicMock()
         with (
-            patch("todopro_cli.services.api.client.get_console", return_value=MagicMock()),
+            patch(
+                "todopro_cli.services.api.client.get_console",
+                return_value=fake_console,
+            ),
             pytest.raises(httpx.HTTPStatusError),
         ):
             await client.request("GET", "/v1/protected")
+
+        printed = " ".join(
+            str(c.args[0]) for c in fake_console.print.call_args_list if c.args
+        )
+        assert "todopro login" in printed
+
+    @pytest.mark.asyncio
+    async def test_401_with_skip_auth_does_not_prompt(self):
+        """A 401 on a skip_auth request (e.g. login) is a plain 4xx — no hint."""
+        client = _make_client(token=None)
+
+        unauth_resp = _make_response(401)
+        http_err = httpx.HTTPStatusError(
+            "Unauthorized", request=unauth_resp.request, response=unauth_resp
+        )
+
+        mock_http = AsyncMock()
+        mock_http.request = AsyncMock(side_effect=http_err)
+        mock_http.headers = MagicMock()
+        mock_http.headers.update = MagicMock()
+        client._client = mock_http
+
+        fake_console = MagicMock()
+        with (
+            patch(
+                "todopro_cli.services.api.client.get_console",
+                return_value=fake_console,
+            ),
+            pytest.raises(httpx.HTTPStatusError),
+        ):
+            await client.request("POST", "/v1/auth/login", skip_auth=True)
+
+        fake_console.print.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

@@ -1,12 +1,13 @@
 """Integration tests for E2EE sync functionality.
 
-Tests the complete flow:
-1. Enable E2EE
-2. Create tasks in local context
-3. Sync to remote (encrypted)
-4. Verify server has encrypted data
-5. Pull on new device
-6. Verify decrypted data matches
+ADR-0024 dropped zero-knowledge E2EE: the CLI no longer encrypts on write —
+`prepare_task_for_storage` / `_encrypt_task_fields` are now permanent
+plaintext no-ops (see `docs/adr/ADR-0024-drop-e2ee.md`). These tests verify:
+1. Local + REST write paths always produce plaintext, even with a legacy
+   config/key that still reports encryption as "enabled".
+2. The dormant decrypt path (`extract_task_content`/`decrypt_content`) can
+   still read back already-encrypted legacy content.
+3. The `encryption setup` command no longer flips `config.e2ee.enabled`.
 """
 
 from unittest.mock import AsyncMock, Mock, patch
@@ -48,61 +49,39 @@ class TestE2EEIntegration:
         """Create E2EE handler with encryption enabled."""
         return E2EEHandler(encryption_service=encryption_service)
 
-    def test_prepare_task_for_storage_encrypts_content(self, e2ee_handler):
-        """Test that task content is encrypted when E2EE is enabled."""
+    def test_prepare_task_for_storage_is_always_plaintext(self, e2ee_handler):
+        """ADR-0024: content is never encrypted anymore, even with a valid,
+        'enabled' encryption service backing the handler."""
         content = "Secret task content"
         description = "Secret description"
+
+        assert e2ee_handler.enabled is True  # legacy key is present and valid
 
         result = e2ee_handler.prepare_task_for_storage(content, description)
         plain_content, encrypted_content, plain_desc, encrypted_desc = result
 
-        # In E2EE mode, plain fields should be empty
-        assert plain_content == ""
-        assert plain_desc == ""
+        assert plain_content == content
+        assert plain_desc == description
+        assert encrypted_content is None
+        assert encrypted_desc is None
 
-        # Encrypted fields should contain JSON
-        assert encrypted_content != ""
-        assert encrypted_desc != ""
-        assert "ciphertext" in encrypted_content
-        assert "ciphertext" in encrypted_desc
-
-    def test_extract_task_content_decrypts_data(self, e2ee_handler):
-        """Test that encrypted task data is correctly decrypted."""
+    def test_extract_task_content_still_decrypts_legacy_ciphertext(self, e2ee_handler):
+        """The read/decrypt path stays dormant-but-live: content encrypted
+        before this change (or manually crafted) can still be read back."""
         content = "Secret task content"
         description = "Secret description"
 
-        # Encrypt
-        _, encrypted_content, _, encrypted_desc = e2ee_handler.prepare_task_for_storage(
-            content, description
-        )
+        # Build ciphertext directly via the (still-intact) encrypt primitive,
+        # simulating rows written before E2EE was dropped.
+        legacy_encrypted_content = e2ee_handler.encrypt_content(content)
+        legacy_encrypted_desc = e2ee_handler.encrypt_content(description)
 
-        # Decrypt
         decrypted_content, decrypted_desc = e2ee_handler.extract_task_content(
-            "", encrypted_content, "", encrypted_desc
+            "", legacy_encrypted_content, "", legacy_encrypted_desc
         )
 
-        # Should match original
         assert decrypted_content == content
         assert decrypted_desc == description
-
-    def test_roundtrip_encryption_decryption(self, e2ee_handler):
-        """Test complete encrypt → decrypt roundtrip."""
-        original_content = "My secret todo item"
-        original_desc = "This is sensitive information"
-
-        # Prepare for storage (encrypt)
-        _, enc_content, _, enc_desc = e2ee_handler.prepare_task_for_storage(
-            original_content, original_desc
-        )
-
-        # Extract from storage (decrypt)
-        decrypted_content, decrypted_desc = e2ee_handler.extract_task_content(
-            "", enc_content, "", enc_desc
-        )
-
-        # Verify roundtrip
-        assert decrypted_content == original_content
-        assert decrypted_desc == original_desc
 
     def test_e2ee_handler_disabled_mode(self):
         """Test E2EE handler with encryption disabled."""
@@ -171,25 +150,28 @@ class TestE2EESyncIntegration:
         return handler
 
     @pytest.mark.asyncio
-    async def test_rest_api_repository_encrypts_on_create(self, mock_e2ee_handler):
-        """Test that REST API repository encrypts task data on create."""
+    async def test_rest_api_repository_never_encrypts_on_create(self, mock_e2ee_handler):
+        """ADR-0024: REST API repository always writes plaintext on create,
+        even with a mock e2ee handler that reports `enabled=True` and would
+        (per its own logic) have encrypted the payload — because
+        `_encrypt_task_fields` is now a hard no-op that never calls into the
+        handler at all."""
         from todopro_cli.adapters.rest_api import RestApiTaskRepository
 
         # Create repository
         repo = RestApiTaskRepository()
 
-        # Replace e2ee handler with our mock
+        # Replace e2ee handler with our mock (still reports enabled=True)
         repo._e2ee_handler = mock_e2ee_handler
 
-        # Mock the tasks API
+        # Mock the tasks API — server echoes back plaintext, as it always
+        # does now that the CLI stopped sending ciphertext.
         mock_tasks_api = Mock()
         mock_tasks_api.create_task = AsyncMock(
             return_value={
                 "id": "task-123",
-                "content": "",
-                "content_encrypted": '{"ciphertext": "encrypted", "iv": "iv", "tag": "tag"}',
-                "description": "",
-                "description_encrypted": '{"ciphertext": "encrypted_desc", "iv": "iv2", "tag": "tag2"}',
+                "content": "Secret task",
+                "description": "Secret description",
                 "priority": 1,
                 "is_completed": False,
                 "created_at": "2024-01-01T00:00:00Z",
@@ -205,10 +187,14 @@ class TestE2EESyncIntegration:
 
         await repo.add(task_create)
 
-        # Verify API was called with encrypted data
+        # Verify API was called with plaintext data — no encrypted fields
+        # injected, and the handler's prepare_task_for_storage was never
+        # invoked for the write path.
         call_kwargs = mock_tasks_api.create_task.call_args[1]
-        assert "content_encrypted" in call_kwargs
-        assert call_kwargs["content"] == ""  # Plain content should be empty
+        assert "content_encrypted" not in call_kwargs
+        assert "description_encrypted" not in call_kwargs
+        assert call_kwargs["content"] == "Secret task"
+        mock_e2ee_handler.prepare_task_for_storage.assert_not_called()
 
     @patch("todopro_cli.services.config_service.get_config_service")
     def test_get_e2ee_handler_respects_config(self, mock_get_config):
@@ -268,11 +254,16 @@ class TestE2EEConfigIntegration:
         assert config.e2ee.enabled is True
 
     @patch("todopro_cli.services.config_service.get_config_service")
-    def test_encryption_setup_enables_e2ee_in_config(self, mock_get_config):
-        """Test that encryption setup command enables E2EE in config."""
+    def test_encryption_setup_command_no_longer_enables_e2ee_in_config(
+        self, mock_get_config
+    ):
+        """ADR-0024: the `encryption setup` command is discontinued — it must
+        NOT flip `config.e2ee.enabled` or persist config anymore."""
+        from typer.testing import CliRunner
+
+        from todopro_cli.commands.encryption_command import app
         from todopro_cli.models.config_models import AppConfig, Context
 
-        # Create mock config service
         mock_config_service = Mock()
         mock_config = AppConfig(
             current_context_name="local",
@@ -281,13 +272,12 @@ class TestE2EEConfigIntegration:
         mock_config_service.config = mock_config
         mock_get_config.return_value = mock_config_service
 
-        # Initially disabled
         assert mock_config.e2ee.enabled is False
 
-        # Simulate what happens in encryption setup command
-        mock_config.e2ee.enabled = True
-        mock_config_service.save_config()
+        result = CliRunner().invoke(app, ["setup"])
 
-        # Verify it was enabled and saved
-        assert mock_config.e2ee.enabled is True
-        mock_config_service.save_config.assert_called_once()
+        assert result.exit_code == 0
+        assert "discontinued" in result.output.lower()
+        # Config must be left untouched: no enabling, no save.
+        assert mock_config.e2ee.enabled is False
+        mock_config_service.save_config.assert_not_called()

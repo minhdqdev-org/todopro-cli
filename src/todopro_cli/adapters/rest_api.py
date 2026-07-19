@@ -5,7 +5,7 @@ These adapters wrap the existing API client to implement the repository interfac
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from todopro_cli.models import (
     Label,
@@ -16,6 +16,9 @@ from todopro_cli.models import (
     ProjectCreate,
     ProjectFilters,
     ProjectUpdate,
+    Scratchpad,
+    ScratchpadCreate,
+    ScratchpadUpdate,
     Section,
     SectionCreate,
     SectionUpdate,
@@ -28,12 +31,14 @@ from todopro_cli.repositories.repository import (
     LabelRepository,
     LocationContextRepository,
     ProjectRepository,
+    ScratchpadRepository,
     SectionRepository,
     TaskRepository,
 )
 from todopro_cli.services.api.client import APIClient
 from todopro_cli.services.api.labels import LabelsAPI
 from todopro_cli.services.api.projects import ProjectsAPI
+from todopro_cli.services.api.scratchpads import ScratchpadsAPI
 from todopro_cli.services.api.sections import SectionsAPI
 from todopro_cli.services.api.tasks import TasksAPI
 
@@ -70,33 +75,22 @@ class RestApiTaskRepository(TaskRepository):
         return self._tasks_api
 
     def _encrypt_task_fields(self, task_data: dict) -> dict:
-        """Encrypt sensitive task fields before sending to server.
+        """No-op: the CLI no longer encrypts task fields before sending to the server.
+
+        ADR-0024 (drop zero-knowledge E2EE) — encrypting here used to send an
+        empty `content`/`description` plus ciphertext in `*_encrypted`, which
+        no other surface (SPA, mobile) can decrypt, so the task showed blank
+        everywhere but the CLI. The CLI now always writes plaintext like every
+        other client. Kept as a stub (rather than removed) so call sites don't
+        need touching and the crypto path can be revived later without
+        re-wiring this adapter.
 
         Args:
             task_data: Task data dictionary
 
         Returns:
-            Modified task data with encrypted fields
+            The task data dictionary, unchanged.
         """
-        if not self.e2ee.enabled:
-            return task_data
-
-        # Encrypt content and description
-        if "content" in task_data and task_data["content"]:
-            (
-                plain_content,
-                encrypted_content,
-                plain_desc,
-                encrypted_desc,
-            ) = self.e2ee.prepare_task_for_storage(
-                task_data["content"], task_data.get("description")
-            )
-            task_data["content"] = plain_content  # Empty in E2EE mode
-            task_data["content_encrypted"] = encrypted_content
-            if "description" in task_data:
-                task_data["description"] = plain_desc  # Empty in E2EE mode
-                task_data["description_encrypted"] = encrypted_desc
-
         return task_data
 
     def _decrypt_task_fields(self, task_data: dict) -> dict:
@@ -181,9 +175,19 @@ class RestApiTaskRepository(TaskRepository):
         """Create a new task."""
         data = task_data.model_dump(exclude_none=True)
 
-        # Convert datetime to ISO string
+        # Convert datetime to UTC ISO string so Django (USE_TZ=True) stores the
+        # correct moment regardless of the server's local timezone setting.
         if "due_date" in data and isinstance(data["due_date"], datetime):
-            data["due_date"] = data["due_date"].isoformat()
+            dt = data["due_date"]
+            if dt.tzinfo is None:
+                dt = dt.astimezone(UTC)
+            data["due_date"] = dt.isoformat()
+
+        if "deadline" in data and isinstance(data["deadline"], datetime):
+            dt = data["deadline"]
+            if dt.tzinfo is None:
+                dt = dt.astimezone(UTC)
+            data["deadline"] = dt.isoformat()
 
         # Encrypt sensitive fields if E2EE is enabled
         if self.e2ee.enabled:
@@ -201,9 +205,18 @@ class RestApiTaskRepository(TaskRepository):
         """Update an existing task."""
         update_data = updates.model_dump(exclude_none=True)
 
-        # Convert datetime to ISO string
+        # Convert datetime to UTC ISO string (same reasoning as in add()).
         if "due_date" in update_data and isinstance(update_data["due_date"], datetime):
-            update_data["due_date"] = update_data["due_date"].isoformat()
+            dt = update_data["due_date"]
+            if dt.tzinfo is None:
+                dt = dt.astimezone(UTC)
+            update_data["due_date"] = dt.isoformat()
+
+        if "deadline" in update_data and isinstance(update_data["deadline"], datetime):
+            dt = update_data["deadline"]
+            if dt.tzinfo is None:
+                dt = dt.astimezone(UTC)
+            update_data["deadline"] = dt.isoformat()
 
         # Encrypt sensitive fields if E2EE is enabled
         if self.e2ee.enabled:
@@ -577,3 +590,51 @@ class RestApiSectionRepository(SectionRepository):
     async def reorder(self, project_id: str, section_orders: list[dict]) -> None:
         """Reorder sections within a project."""
         await self.sections_api.reorder_sections(project_id, section_orders)
+
+
+class RestApiScratchpadRepository(ScratchpadRepository):
+    """Scratchpad repository implementation using REST API."""
+
+    def __init__(self):
+        self._client: APIClient | None = None
+        self._scratchpads_api: ScratchpadsAPI | None = None
+
+    @property
+    def scratchpads_api(self) -> ScratchpadsAPI:
+        if self._scratchpads_api is None:
+            if self._client is None:
+                self._client = APIClient()
+            self._scratchpads_api = ScratchpadsAPI(self._client)
+        return self._scratchpads_api
+
+    async def list_all(self, project_id: str) -> list[Scratchpad]:
+        """List all scratchpads for a project."""
+        result = await self.scratchpads_api.list_scratchpads(project_id)
+        scratchpads_data = result if isinstance(result, list) else []
+        return [Scratchpad(**s) for s in scratchpads_data]
+
+    async def get(self, scratchpad_id: str) -> Scratchpad:
+        """Get a specific scratchpad by ID."""
+        result = await self.scratchpads_api.get_scratchpad(scratchpad_id)
+        return Scratchpad(**result)
+
+    async def create(
+        self, project_id: str, scratchpad_data: ScratchpadCreate
+    ) -> Scratchpad:
+        """Create a new scratchpad."""
+        data = scratchpad_data.model_dump()
+        result = await self.scratchpads_api.create_scratchpad(project_id, **data)
+        return Scratchpad(**result)
+
+    async def update(self, scratchpad_id: str, updates: ScratchpadUpdate) -> Scratchpad:
+        """Update an existing scratchpad."""
+        update_data = updates.model_dump(exclude_none=True)
+        result = await self.scratchpads_api.update_scratchpad(
+            scratchpad_id, **update_data
+        )
+        return Scratchpad(**result)
+
+    async def delete(self, scratchpad_id: str) -> bool:
+        """Delete a scratchpad."""
+        await self.scratchpads_api.delete_scratchpad(scratchpad_id)
+        return True

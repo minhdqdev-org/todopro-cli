@@ -3,6 +3,7 @@
 import typer
 from rich.table import Table
 
+from todopro_cli.models.config_models import Context
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
@@ -127,7 +128,7 @@ def use_context(
         if context:
             format_success(
                 f"Switched to context '{context.name}'\n"
-                f"Endpoint: {context.endpoint}\n"
+                f"Source: {context.source}\n"
                 f"Description: {context.description}"
             )
     except ValueError as e:
@@ -163,7 +164,8 @@ def current_context(
         table.add_column("Value", style="green")
 
         table.add_row("Name", context.name)
-        table.add_row("Endpoint", context.endpoint)
+        table.add_row("Type", context.type)
+        table.add_row("Source", context.source)
         table.add_row("Description", context.description)
 
         console.print(table)
@@ -184,22 +186,23 @@ def get_contexts(
         config_service.init_default_contexts()
 
     contexts = config_service.list_contexts()
-    current = config_service.config.current_context
+    current = config_service.config.current_context_name
 
     if output == "table":
         table = Table(title="Available Contexts")
         table.add_column("Current", style="yellow")
         table.add_column("Name", style="cyan")
-        table.add_column("Endpoint", style="green")
+        table.add_column("Type", style="magenta")
+        table.add_column("Source", style="green")
         table.add_column("Description", style="white")
 
-        for name, ctx in contexts:
-            marker = "*" if name == current else ""
-            table.add_row(marker, ctx.name, ctx.endpoint, ctx.description)
+        for ctx in contexts:
+            marker = "*" if ctx.name == current else ""
+            table.add_row(marker, ctx.name, ctx.type, ctx.source, ctx.description)
 
         console.print(table)
     else:
-        format_output([ctx.model_dump() for ctx in contexts.values()], output)
+        format_output([ctx.model_dump() for ctx in contexts], output)
 
 
 @app.command("set-context")
@@ -216,7 +219,23 @@ def set_context(
     if not config_service.config.contexts:
         config_service.init_default_contexts()
 
-    config_service.add_context(name, endpoint, description)
+    # `set-context` manages remote (API) environments; the endpoint is its source.
+    existing = config_service.get_context(name)
+    if existing is not None:
+        existing.source = endpoint.rstrip("/")
+        existing.type = "remote"
+        if description:
+            existing.description = description
+        config_service.save_config()
+    else:
+        config_service.add_context(
+            Context(
+                name=name,
+                type="remote",
+                source=endpoint.rstrip("/"),
+                description=description,
+            )
+        )
     format_success(f"Context '{name}' created/updated successfully")
 
 

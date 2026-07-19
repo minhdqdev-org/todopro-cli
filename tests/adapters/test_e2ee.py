@@ -113,6 +113,11 @@ class TestDecryptContent:
 
 
 class TestPrepareTaskForStorage:
+    """ADR-0024 (drop zero-knowledge E2EE): `prepare_task_for_storage` is now
+    a permanent plaintext no-op, regardless of `self.enabled` — mirroring
+    `_encrypt_task_fields` in `adapters/rest_api.py` for the local SQLite
+    write path."""
+
     def test_plain_mode_returns_content_as_is(self):
         h = _make_disabled_handler()
         content, content_enc, desc, desc_enc = h.prepare_task_for_storage(
@@ -133,23 +138,23 @@ class TestPrepareTaskForStorage:
         assert content_enc is None
         assert desc_enc is None
 
-    def test_e2ee_mode_content_is_empty_string(self):
+    def test_still_plaintext_even_when_handler_reports_enabled(self):
+        """A legacy config with a valid key (handler.enabled=True) must not
+        re-enable encryption on write anymore."""
         h = _make_enabled_handler()
         content, content_enc, desc, desc_enc = h.prepare_task_for_storage(
             "secret", "notes"
         )
-        assert content == ""
-        assert content_enc is not None
-        assert content_enc != ""
+        assert content == "secret"
+        assert content_enc is None
+        assert desc == "notes"
+        assert desc_enc is None
 
-    def test_e2ee_mode_description_encrypted_when_provided(self):
+    def test_still_plaintext_no_description_defaults_empty(self):
         h = _make_enabled_handler()
-        _, _, _, desc_enc = h.prepare_task_for_storage("task", "desc text")
-        assert desc_enc is not None
-
-    def test_e2ee_mode_no_description_gives_none_desc_enc(self):
-        h = _make_enabled_handler()
-        _, _, _, desc_enc = h.prepare_task_for_storage("task", None)
+        _, content_enc, desc, desc_enc = h.prepare_task_for_storage("task", None)
+        assert desc == ""
+        assert content_enc is None
         assert desc_enc is None
 
 

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class Label(BaseModel):
@@ -87,6 +87,63 @@ class SectionFilters(BaseModel):
     """
 
     project_id: str | None = None
+
+
+class Scratchpad(BaseModel):
+    """Scratchpad model — a free-form note attached to a project.
+
+    Scratchpads are a **remote-only** concept: they live on the backend and are
+    not available in the local SQLite context. A project may have many
+    scratchpads (one-to-many); the per-project count is capped by subscription
+    tier (free: 2, pro/trial: 20), enforced server-side on create.
+
+    Attributes:
+        id: Unique identifier for the scratchpad
+        project_id: Reference to the parent project (API field ``project``)
+        title: Optional short title
+        content: Free-form note body (TipTap HTML, may embed base64 images)
+        display_order: Order position within the project
+        version: Bumped on every server-side save (conflict awareness)
+        created_at: Creation timestamp
+        updated_at: Last update timestamp
+    """
+
+    model_config = {"populate_by_name": True}
+
+    id: str
+    project_id: str = Field(alias="project")
+    title: str = ""
+    content: str = ""
+    display_order: int = 0
+    version: int = 1
+    created_at: datetime
+    updated_at: datetime
+
+
+class ScratchpadCreate(BaseModel):
+    """Model for creating a new scratchpad.
+
+    Attributes:
+        title: Optional short title
+        content: Optional note body
+    """
+
+    title: str = ""
+    content: str = ""
+
+
+class ScratchpadUpdate(BaseModel):
+    """Model for updating an existing scratchpad.
+
+    All fields are optional — only provided fields will be updated.
+
+    Attributes:
+        title: New title
+        content: New note body
+    """
+
+    title: str | None = None
+    content: str | None = None
 
 
 class Project(BaseModel):
@@ -178,11 +235,13 @@ class Task(BaseModel):
         description: Optional detailed description
         project_id: Optional reference to parent project
         due_date: Optional due date with timezone
+        deadline: Optional hard "must finish by" datetime (does not advance on recurrence)
         priority: Priority level (4=lowest, 1=highest)
         is_completed: Completion status
         is_recurring: Whether this is a recurring task
         recurrence_rule: iCalendar RRULE string (e.g., "FREQ=DAILY")
         recurrence_end: Optional date when recurrence stops
+        recurrence_from_completion: Re-anchor next occurrence to completion time
         labels: List of label IDs associated with task
         contexts: List of context IDs associated with task
         created_at: Creation timestamp
@@ -197,17 +256,39 @@ class Task(BaseModel):
     project_id: str | None = None
     section_id: str | None = None
     due_date: datetime | None = None
+    deadline: datetime | None = None
     priority: int = Field(default=4, ge=1, le=4)
     is_completed: bool = False
     is_recurring: bool = False
     recurrence_rule: str | None = None
     recurrence_end: datetime | None = None
+    recurrence_from_completion: bool = False
     labels: list[str] = Field(default_factory=list)
     contexts: list[str] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None = None
     version: int = Field(default=1)
+
+    @field_validator("labels", "contexts", mode="before")
+    @classmethod
+    def _coerce_to_str_list(cls, v: object) -> object:
+        """Accept either bare strings or expanded objects from the API.
+
+        The REST API serializes labels/contexts as nested objects
+        (``{"id": ..., "name": ...}``) while this read model stores display
+        strings. Older payloads (and the SQLite adapter) send plain strings.
+        Normalize both so list/today don't blow up on label objects.
+        """
+        if not isinstance(v, list):
+            return v
+        normalized: list[str] = []
+        for item in v:
+            if isinstance(item, dict):
+                normalized.append(str(item.get("name") or item.get("id") or "").strip())
+            else:
+                normalized.append(item)
+        return normalized
 
 
 class TaskCreate(BaseModel):
@@ -218,10 +299,12 @@ class TaskCreate(BaseModel):
         description: Optional detailed description
         project_id: Optional reference to parent project
         due_date: Optional due date with timezone
+        deadline: Optional hard "must finish by" datetime (does not advance on recurrence)
         priority: Priority level (4=lowest, 1=highest)
         is_recurring: Whether to make this a recurring task
         recurrence_rule: iCalendar RRULE string (required if is_recurring=True)
         recurrence_end: Optional date when recurrence stops
+        recurrence_from_completion: Re-anchor next occurrence to completion time
         labels: List of label IDs
         contexts: List of context IDs
         parent_id: Optional parent task ID for subtasks
@@ -232,9 +315,11 @@ class TaskCreate(BaseModel):
     project_id: str | None = None
     section_id: str | None = None
     due_date: datetime | None = None
+    deadline: datetime | None = None
     priority: int = Field(default=4, ge=1, le=4)
     recurrence_rule: str | None = None
     recurrence_end: datetime | None = None
+    recurrence_from_completion: bool = False
     labels: list[str] = Field(default_factory=list)
     contexts: list[str] = Field(default_factory=list)
     parent_id: str | None = None
@@ -250,11 +335,13 @@ class TaskUpdate(BaseModel):
         description: Detailed description
         project_id: Reference to parent project
         due_date: Due date with timezone
+        deadline: Hard "must finish by" datetime (does not advance on recurrence)
         priority: Priority level (4=lowest, 1=highest)
         is_completed: Completion status
         is_recurring: Whether this is a recurring task
         recurrence_rule: iCalendar RRULE string
         recurrence_end: Optional date when recurrence stops
+        recurrence_from_completion: Re-anchor next occurrence to completion time
         labels: List of label IDs
         contexts: List of context IDs
     """
@@ -263,11 +350,13 @@ class TaskUpdate(BaseModel):
     description: str | None = None
     project_id: str | None = None
     due_date: datetime | None = None
+    deadline: datetime | None = None
     priority: int | None = Field(default=None, ge=1, le=4)
     is_completed: bool | None = None
     is_recurring: bool | None = None
     recurrence_rule: str | None = None
     recurrence_end: datetime | None = None
+    recurrence_from_completion: bool | None = None
     labels: list[str] | None = None
     contexts: list[str] | None = None
 

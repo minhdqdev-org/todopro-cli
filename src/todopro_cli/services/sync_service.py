@@ -5,9 +5,12 @@ Handles pull and push operations with conflict detection and resolution.
 
 from __future__ import annotations
 
+import contextlib
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import Any, Literal
 
+import httpx
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -28,6 +31,12 @@ from todopro_cli.repositories import (
     LocationContextRepository,
     ProjectRepository,
     TaskRepository,
+)
+from todopro_cli.services.sync_auto_fix import (
+    compute_auto_fix,
+    describe_fix,
+    is_pro_required,
+    parse_api_error,
 )
 from todopro_cli.services.sync_conflicts import SyncConflict, SyncConflictTracker
 from todopro_cli.services.sync_state import SyncState
@@ -58,6 +67,15 @@ class SyncResult:
         self.contexts_new = 0
         self.contexts_updated = 0
         self.contexts_unchanged = 0
+
+        # Push auto-fix / failure tracking (see SyncPushService._attempt_push).
+        self.tasks_auto_fixed = 0
+        self.projects_auto_fixed = 0
+        self.labels_auto_fixed = 0
+        # Each: {"type", "id", "title", "message"} (auto-fix) /
+        # {"type", "id", "title", "reason"} (unfixable).
+        self.auto_fixes: list[dict[str, str]] = []
+        self.failures: list[dict[str, str]] = []
 
         self.success = False
         self.error: str | None = None
@@ -201,9 +219,7 @@ class SyncPullService(SyncService):
                 context_key = SyncState.make_context_key(
                     source_context, target_context, "pull"
                 )
-                (
-                    None if full_sync else self.sync_state.get_last_sync(context_key)
-                )
+                (None if full_sync else self.sync_state.get_last_sync(context_key))
 
                 # Pull projects first (dependencies)
                 task = progress.add_task("Fetching projects...", total=None)
@@ -483,43 +499,211 @@ class SyncPushService(SyncService):
 
         return result
 
+    @staticmethod
+    def _shorten(text: str | None, width: int = 40) -> str:
+        t = (text or "").strip()
+        return t if len(t) <= width else f"{t[:width]}…"
+
+    async def _attempt_push(
+        self,
+        *,
+        entity_type: str,
+        entity_id: str,
+        title: str | None,
+        push_fn: Callable[[dict[str, Any]], Awaitable[Any]],
+        persist_local_fn: Callable[[dict[str, Any]], Awaitable[Any]] | None,
+        fixable_values: dict[str, Any],
+        result: SyncResult,
+    ) -> bool:
+        """Push one entity, auto-fixing mechanically-fixable validation errors.
+
+        On a permanent (4xx) validation failure we correct the payload (truncate
+        over-length text, normalize a bad color), persist the correction locally
+        so it isn't re-pushed, and retry once. Pro-gated (402) and otherwise
+        unfixable errors are reported with the item name + reason instead of a
+        raw exception. Returns True iff the entity is now on the remote.
+        """
+        short = self._shorten(title)
+
+        try:
+            await push_fn({})
+            return True
+        except httpx.HTTPStatusError as exc:
+            api_err = parse_api_error(exc)
+        except Exception as exc:  # network/other — surface, don't crash the sync
+            self.console.print(
+                f"[red]Error pushing {entity_type} '{short}': {exc}[/red]"
+            )
+            result.failures.append(
+                {
+                    "type": entity_type,
+                    "id": entity_id,
+                    "title": short,
+                    "reason": str(exc),
+                }
+            )
+            return False
+
+        # Pro-gated: the field is valid, just gated — nothing to auto-fix.
+        if is_pro_required(api_err):
+            reason = "requires TodoPro Pro"
+            self.console.print(
+                f"[yellow]Skipped {entity_type} '{short}': {reason}.[/yellow]"
+            )
+            result.failures.append(
+                {"type": entity_type, "id": entity_id, "title": short, "reason": reason}
+            )
+            return False
+
+        fix = compute_auto_fix(entity_type, fixable_values, api_err)
+        if fix is None:
+            reason = api_err.first_reason or f"HTTP {api_err.status}"
+            self.console.print(
+                f"[red]Couldn't push {entity_type} '{short}': {reason}[/red]"
+            )
+            result.failures.append(
+                {"type": entity_type, "id": entity_id, "title": short, "reason": reason}
+            )
+            return False
+
+        # Persist the correction locally so the next sync doesn't re-push the bad
+        # value and re-trigger the same failure. Best-effort — the remote push is
+        # what actually matters.
+        if persist_local_fn is not None:
+            with contextlib.suppress(Exception):
+                await persist_local_fn(fix.overrides)
+
+        try:
+            await push_fn(fix.overrides)
+        except Exception as exc:
+            self.console.print(
+                f"[red]Couldn't push {entity_type} '{short}' after auto-fix: {exc}[/red]"
+            )
+            result.failures.append(
+                {
+                    "type": entity_type,
+                    "id": entity_id,
+                    "title": short,
+                    "reason": str(exc),
+                }
+            )
+            return False
+
+        message = describe_fix(entity_type, fix.fixes)
+        self.console.print(
+            f"[yellow]Auto-fixed {entity_type} '{short}': {message}.[/yellow]"
+        )
+        result.auto_fixes.append(
+            {"type": entity_type, "id": entity_id, "title": short, "message": message}
+        )
+        if entity_type == "task":
+            result.tasks_auto_fixed += 1
+        elif entity_type == "project":
+            result.projects_auto_fixed += 1
+        elif entity_type == "label":
+            result.labels_auto_fixed += 1
+        return True
+
+    # ── payload builders (base + auto-fix overrides) ──────────────────────────
+
+    @staticmethod
+    def _task_create(task: Task, ov: dict[str, Any]) -> TaskCreate:
+        return TaskCreate(
+            id=task.id,
+            content=ov.get("content", task.content),
+            description=ov.get("description", task.description),
+            priority=task.priority,
+            status=task.status,
+            project_id=task.project_id,
+            due_date=task.due_date,
+            completed_at=task.completed_at,
+        )
+
+    @staticmethod
+    def _task_update(task: Task, ov: dict[str, Any]) -> TaskUpdate:
+        return TaskUpdate(
+            content=ov.get("content", task.content),
+            description=ov.get("description", task.description),
+            priority=task.priority,
+            status=task.status,
+            project_id=task.project_id,
+            due_date=task.due_date,
+        )
+
+    @staticmethod
+    def _project_create(project: Project, ov: dict[str, Any]) -> ProjectCreate:
+        # NB: Project has no `description` field, so it isn't sent (the old code
+        # referenced project.description and crashed on every project).
+        return ProjectCreate(
+            id=project.id,
+            name=ov.get("name", project.name),
+            color=ov.get("color", project.color),
+        )
+
+    @staticmethod
+    def _project_update(project: Project, ov: dict[str, Any]) -> ProjectUpdate:
+        return ProjectUpdate(
+            name=ov.get("name", project.name),
+            color=ov.get("color", project.color),
+        )
+
+    @staticmethod
+    def _label_create(label: Label, ov: dict[str, Any]) -> LabelCreate:
+        return LabelCreate(
+            id=label.id,
+            name=ov.get("name", label.name),
+            color=ov.get("color", label.color),
+        )
+
     async def _sync_project(
         self, project: Project, result: SyncResult, strategy: str
     ) -> None:
         """Sync a single project to target."""
         try:
             existing = await self.target_project_repo.get_by_id(project.id)
-
-            if existing is None:
-                await self.target_project_repo.create(
-                    ProjectCreate(
-                        id=project.id,
-                        name=project.name,
-                        description=project.description,
-                        color=project.color,
-                    )
-                )
-                result.projects_new += 1
-            else:
-                should_update, reason = self._should_update(
-                    project.updated_at, existing.updated_at, strategy
-                )
-
-                if should_update:
-                    await self.target_project_repo.update(
-                        project.id,
-                        ProjectUpdate(
-                            name=project.name,
-                            description=project.description,
-                            color=project.color,
-                        ),
-                    )
-                    result.projects_updated += 1
-                else:
-                    result.projects_unchanged += 1
-
         except Exception as e:
-            self.console.print(f"[red]Error pushing project {project.id}: {e}[/red]")
+            self.console.print(
+                f"[red]Error pushing project '{self._shorten(project.name)}': {e}[/red]"
+            )
+            return
+
+        fixable = {"name": project.name, "color": project.color}
+        if existing is None:
+            if await self._attempt_push(
+                entity_type="project",
+                entity_id=project.id,
+                title=project.name,
+                push_fn=lambda ov: self.target_project_repo.create(
+                    self._project_create(project, ov)
+                ),
+                persist_local_fn=lambda ov: self.source_project_repo.update(
+                    project.id, self._project_update(project, ov)
+                ),
+                fixable_values=fixable,
+                result=result,
+            ):
+                result.projects_new += 1
+        else:
+            should_update, _reason = self._should_update(
+                project.updated_at, existing.updated_at, strategy
+            )
+            if should_update:
+                if await self._attempt_push(
+                    entity_type="project",
+                    entity_id=project.id,
+                    title=project.name,
+                    push_fn=lambda ov: self.target_project_repo.update(
+                        project.id, self._project_update(project, ov)
+                    ),
+                    persist_local_fn=lambda ov: self.source_project_repo.update(
+                        project.id, self._project_update(project, ov)
+                    ),
+                    fixable_values=fixable,
+                    result=result,
+                ):
+                    result.projects_updated += 1
+            else:
+                result.projects_unchanged += 1
 
     async def _sync_label(
         self, label: Label, result: SyncResult, _strategy: str
@@ -527,67 +711,83 @@ class SyncPushService(SyncService):
         """Sync a single label to target."""
         try:
             existing = await self.target_label_repo.get_by_id(label.id)
-
-            if existing is None:
-                await self.target_label_repo.create(
-                    LabelCreate(id=label.id, name=label.name, color=label.color)
-                )
-                result.labels_new += 1
-            else:
-                result.labels_unchanged += 1
-
         except Exception as e:
-            self.console.print(f"[red]Error pushing label {label.id}: {e}[/red]")
+            self.console.print(
+                f"[red]Error pushing label '{self._shorten(label.name)}': {e}[/red]"
+            )
+            return
+
+        if existing is None:
+            # No LabelUpdate model exists, so we can't persist a local correction
+            # (persist_local_fn=None); the fixed create still succeeds remotely.
+            if await self._attempt_push(
+                entity_type="label",
+                entity_id=label.id,
+                title=label.name,
+                push_fn=lambda ov: self.target_label_repo.create(
+                    self._label_create(label, ov)
+                ),
+                persist_local_fn=None,
+                fixable_values={"name": label.name, "color": label.color},
+                result=result,
+            ):
+                result.labels_new += 1
+        else:
+            result.labels_unchanged += 1
 
     async def _sync_task(self, task: Task, result: SyncResult, strategy: str) -> None:
         """Sync a single task to target."""
         try:
             existing = await self.target_task_repo.get_by_id(task.id)
-
-            if existing is None:
-                await self.target_task_repo.create(
-                    TaskCreate(
-                        id=task.id,
-                        content=task.content,
-                        description=task.description,
-                        priority=task.priority,
-                        status=task.status,
-                        project_id=task.project_id,
-                        due_date=task.due_date,
-                        completed_at=task.completed_at,
-                    )
-                )
-                result.tasks_new += 1
-            else:
-                should_update, reason = self._should_update(
-                    task.updated_at, existing.updated_at, strategy
-                )
-
-                if should_update:
-                    await self.target_task_repo.update(
-                        task.id,
-                        TaskUpdate(
-                            content=task.content,
-                            description=task.description,
-                            priority=task.priority,
-                            status=task.status,
-                            project_id=task.project_id,
-                            due_date=task.due_date,
-                        ),
-                    )
-                    result.tasks_updated += 1
-                else:
-                    if reason == "remote_newer":
-                        result.tasks_conflicts += 1
-                        self._log_conflict(
-                            "task",
-                            task.id,
-                            task.model_dump(),
-                            existing.model_dump(),
-                            "skipped_remote_newer",
-                        )
-                    else:
-                        result.tasks_unchanged += 1
-
         except Exception as e:
-            self.console.print(f"[red]Error pushing task {task.id}: {e}[/red]")
+            self.console.print(
+                f"[red]Error pushing task '{self._shorten(task.content)}': {e}[/red]"
+            )
+            return
+
+        fixable = {"content": task.content, "description": task.description}
+        if existing is None:
+            if await self._attempt_push(
+                entity_type="task",
+                entity_id=task.id,
+                title=task.content,
+                push_fn=lambda ov: self.target_task_repo.create(
+                    self._task_create(task, ov)
+                ),
+                persist_local_fn=lambda ov: self.source_task_repo.update(
+                    task.id, self._task_update(task, ov)
+                ),
+                fixable_values=fixable,
+                result=result,
+            ):
+                result.tasks_new += 1
+        else:
+            should_update, reason = self._should_update(
+                task.updated_at, existing.updated_at, strategy
+            )
+            if should_update:
+                if await self._attempt_push(
+                    entity_type="task",
+                    entity_id=task.id,
+                    title=task.content,
+                    push_fn=lambda ov: self.target_task_repo.update(
+                        task.id, self._task_update(task, ov)
+                    ),
+                    persist_local_fn=lambda ov: self.source_task_repo.update(
+                        task.id, self._task_update(task, ov)
+                    ),
+                    fixable_values=fixable,
+                    result=result,
+                ):
+                    result.tasks_updated += 1
+            elif reason == "remote_newer":
+                result.tasks_conflicts += 1
+                self._log_conflict(
+                    "task",
+                    task.id,
+                    task.model_dump(),
+                    existing.model_dump(),
+                    "skipped_remote_newer",
+                )
+            else:
+                result.tasks_unchanged += 1

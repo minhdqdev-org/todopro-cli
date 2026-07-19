@@ -6,6 +6,7 @@ that support multiple storage backends (local/remote).
 
 from __future__ import annotations
 
+import uuid
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -96,6 +97,13 @@ class AppConfig(BaseModel):
 
     current_context_name: str = Field(
         default="default", description="Active context name"
+    )
+    # Stable per-install client id. Sent as the `X-Client-Id` header on every
+    # request so the backend's real-time layer can avoid echoing a change back
+    # to the device that made it. Generated once and persisted in config.json.
+    client_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        description="Stable per-install client identifier",
     )
     contexts: list[Context] = Field(
         default_factory=list, description="Available contexts"

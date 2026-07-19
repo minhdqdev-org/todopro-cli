@@ -269,7 +269,7 @@ class SqliteProjectRepository(ProjectRepository):
                 COUNT(*) as total_tasks,
                 SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed_tasks,
                 SUM(CASE WHEN is_completed = 0 THEN 1 ELSE 0 END) as pending_tasks,
-                SUM(CASE WHEN is_completed = 0 AND due_date < datetime('now') THEN 1 ELSE 0 END) as overdue_tasks
+                SUM(CASE WHEN is_completed = 0 AND due_date < date('now') THEN 1 ELSE 0 END) as overdue_tasks
             FROM tasks 
             WHERE project_id = ? AND user_id = ? AND deleted_at IS NULL""",
             (project_id, user_id),

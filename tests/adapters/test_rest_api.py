@@ -328,7 +328,13 @@ class TestRestApiTaskRepositoryBulkUpdate:
 
 
 class TestRestApiTaskRepositoryE2EEHelpers:
-    """Test _encrypt_task_fields and _decrypt_task_fields directly."""
+    """Test _encrypt_task_fields and _decrypt_task_fields directly.
+
+    ADR-0024 (drop zero-knowledge E2EE): `_encrypt_task_fields` is now a
+    permanent no-op — the CLI always writes plaintext, regardless of the
+    (dormant) e2ee handler's `enabled` flag. `_decrypt_task_fields` stays a
+    live, dormant read path so any legacy ciphertext can still be read back.
+    """
 
     def test_encrypt_disabled_returns_unchanged(self):
         repo = RestApiTaskRepository()
@@ -337,12 +343,16 @@ class TestRestApiTaskRepositoryE2EEHelpers:
         result = repo._encrypt_task_fields(data)
         assert result["content"] == "hello"
 
-    def test_encrypt_enabled_sets_encrypted_field(self):
+    def test_encrypt_is_noop_even_when_e2ee_handler_reports_enabled(self):
+        """The CLI never encrypts on write anymore, even with a legacy config
+        that still has E2EE marked enabled."""
         repo = RestApiTaskRepository()
         repo._e2ee_handler = _enabled_e2ee()
         data = {"content": "secret", "description": "details"}
         result = repo._encrypt_task_fields(data)
-        assert "content_encrypted" in result
+        assert result == {"content": "secret", "description": "details"}
+        assert "content_encrypted" not in result
+        assert "description_encrypted" not in result
 
     def test_decrypt_disabled_returns_unchanged(self):
         repo = RestApiTaskRepository()

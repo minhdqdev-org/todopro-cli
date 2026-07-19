@@ -154,7 +154,7 @@ class TestLogin:
         assert "saved as default" in strip_ansi(result.stdout)
 
     def test_login_with_endpoint_flag(self):
-        """--endpoint flag calls config_service.set."""
+        """--endpoint flag points the active context at the given URL."""
         ctx = _make_context()
         svc = _mock_config_service(context=ctx)
         auth_api_mock = _make_auth_api_mock()
@@ -168,7 +168,7 @@ class TestLogin:
             )
 
         assert result.exit_code == 0
-        svc.set.assert_called_once_with("api.endpoint", "https://new.api.com")
+        svc.set_endpoint.assert_called_once_with("https://new.api.com")
 
     def test_login_prompts_for_credentials(self):
         """When email/password not given, prompts are triggered."""
@@ -313,7 +313,7 @@ class TestSignup:
             )
 
         assert result.exit_code == 0
-        svc.set.assert_called_once_with("api.endpoint", "https://custom.api.com")
+        svc.set_endpoint.assert_called_once_with("https://custom.api.com")
 
     def test_signup_prompts_for_credentials(self):
         """Without flags, prompts for email, password, and confirm password."""

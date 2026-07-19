@@ -74,7 +74,13 @@ class ConfigService:
 
         try:
             with open(self.config_path, encoding="utf-8") as f:
-                self._config = AppConfig.model_validate_json(f.read())
+                raw = f.read()
+                self._config = AppConfig.model_validate_json(raw)
+
+                # Persist a freshly-generated client_id for configs written
+                # before the field existed, so it stays stable across runs.
+                if "client_id" not in raw:
+                    self.save_config()
 
                 # After loading config, initialize the storage strategy context
                 context = self.get_current_context()
@@ -176,6 +182,17 @@ class ConfigService:
             ValueError: If no context is configured or current context not found
         """
         return self.config.get_current_context()
+
+    def get_context(self, name: str) -> Context | None:
+        """Get a context by name, or None if it doesn't exist.
+
+        Unlike ``AppConfig.get_context`` (which raises), this returns ``None`` so
+        callers can cheaply test for existence (e.g. ``context create``).
+        """
+        try:
+            return self.config.get_context(name)
+        except ValueError:
+            return None
 
     def use_context(self, name: str) -> Context:
         """Set the current context by name."""
@@ -292,6 +309,73 @@ class ConfigService:
             except (ValueError, KeyError):
                 return
         self.remove_context_credentials(context_name)
+
+    # Alias kept for callers that use the older name.
+    def clear_context_credentials(self, context_name: str) -> None:
+        """Remove credentials associated with a context (alias)."""
+        self.remove_context_credentials(context_name)
+
+    # ----- dotted-path config access (e.g. "api.endpoint") -------------------
+    def get(self, key: str) -> object | None:
+        """Read a config value by dotted path, e.g. ``get("api.endpoint")``.
+
+        Returns ``None`` if any segment of the path is missing.
+        """
+        node: object = self.config
+        for part in key.split("."):
+            if node is None:
+                return None
+            node = getattr(node, part, None)
+        return node
+
+    def set(self, key: str, value: object) -> None:
+        """Set a config value by dotted path and persist it.
+
+        e.g. ``set("api.endpoint", "http://localhost:8000/api")``.
+        """
+        parts = key.split(".")
+        node: object = self.config
+        for part in parts[:-1]:
+            node = getattr(node, part)
+        leaf = parts[-1]
+        if not hasattr(node, leaf):
+            raise ValueError(f"Unknown configuration key '{key}'")
+        setattr(node, leaf, value)
+        self.save_config()
+
+    def reset(self, key: str | None = None) -> None:
+        """Reset the whole config, or a single dotted key to its default."""
+        if not key:
+            self.reset_config()
+            return
+        # Read the field's default from a fresh AppConfig instance.
+        default_node: object = AppConfig()
+        for part in key.split("."):
+            default_node = getattr(default_node, part, None)
+        self.set(key, default_node)
+
+    def set_endpoint(self, url: str) -> None:
+        """Point the active remote context (and api.endpoint) at ``url``.
+
+        Used by ``auth login/signup --endpoint``. Updating the current context's
+        source is what actually changes request routing (the API client reads the
+        active remote context's source first); api.endpoint is kept in sync as a
+        fallback for callers not using contexts.
+        """
+        url = url.rstrip("/")
+        try:
+            current = self.config.get_current_context()
+            if current is not None and current.type == "remote":
+                current.source = url
+        except ValueError:
+            pass
+        self.config.api.endpoint = url
+        self.save_config()
+
+    def init_default_contexts(self) -> None:
+        """Ensure the default local + cloud contexts exist (no-op if present)."""
+        if not self.config.contexts:
+            self.create_default_cloud_config()
 
 
 @lru_cache(maxsize=1)

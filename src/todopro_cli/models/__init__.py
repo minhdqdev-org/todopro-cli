@@ -16,6 +16,9 @@ from .core import (
     ProjectCreate,
     ProjectFilters,
     ProjectUpdate,
+    Scratchpad,
+    ScratchpadCreate,
+    ScratchpadUpdate,
     Section,
     SectionCreate,
     SectionFilters,
@@ -43,6 +46,10 @@ __all__ = [
     "SectionCreate",
     "SectionUpdate",
     "SectionFilters",
+    # Scratchpad models
+    "Scratchpad",
+    "ScratchpadCreate",
+    "ScratchpadUpdate",
     # Label models
     "Label",
     "LabelCreate",

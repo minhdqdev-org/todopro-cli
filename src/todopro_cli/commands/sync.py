@@ -404,6 +404,34 @@ def _display_sync_result(result, direction: str, dry_run: bool):
         if direction == "push":
             console.print("  [dim]Consider running 'todopro sync pull' first[/dim]")
 
+    # Auto-fixed items (over-length text / bad colors corrected then re-pushed).
+    auto_fixes = getattr(result, "auto_fixes", None)
+    if auto_fixes:
+        console.print(
+            f"\n  [yellow]✎ Auto-fixed {len(auto_fixes)} item"
+            f"{'s' if len(auto_fixes) > 1 else ''} so they could be saved:[/yellow]"
+        )
+        for fix in auto_fixes:
+            console.print(
+                f'    [dim]•[/dim] {fix["type"]} "{fix["title"]}" — {fix["message"]}'
+            )
+
+    # Items that still couldn't be pushed (unfixable / Pro-gated).
+    failures = getattr(result, "failures", None)
+    if failures:
+        console.print(
+            f"\n  [red]✗ {len(failures)} change"
+            f"{'s' if len(failures) > 1 else ''} couldn't be saved:[/red]"
+        )
+        for fail in failures:
+            console.print(
+                f'    [dim]•[/dim] {fail["type"]} "{fail["title"]}" — {fail["reason"]}'
+            )
+        console.print(
+            "    [dim]Edit the affected item(s) and sync again, "
+            "or upgrade to Pro where noted.[/dim]"
+        )
+
     if result.success:
         if dry_run:
             console.print(
