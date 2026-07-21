@@ -25,15 +25,12 @@ class TemplatesAPI:
         *,
         description: str | None = None,
         priority: int = 4,
-        labels: list[str] | None = None,
         recurrence_rule: str | None = None,
     ) -> dict:
         """Create a new task template."""
         data: dict[str, Any] = {"name": name, "content": content, "priority": priority}
         if description:
             data["description"] = description
-        if labels:
-            data["labels"] = labels
         if recurrence_rule:
             data["recurrence_rule"] = recurrence_rule
         response = await self.client.post("/v1/templates", json=data)

@@ -25,9 +25,6 @@ def create_template(
     priority: int = typer.Option(
         4, "--priority", "-p", help="Priority (1-4)", min=1, max=4
     ),
-    label: list[str] = typer.Option(  # noqa: B008
-        None, "--label", "-l", help="Label names (repeatable)"
-    ),
     recur: str = typer.Option(
         None,
         "--recur",
@@ -51,7 +48,6 @@ def create_template(
                 content=content,
                 description=description,
                 priority=priority,
-                labels=list(label) if label else [],
                 recurrence_rule=rrule,
             )
             console.print(
