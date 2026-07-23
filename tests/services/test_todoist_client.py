@@ -54,8 +54,20 @@ class TestGetProjects:
     @pytest.mark.asyncio
     async def test_returns_list_of_projects(self):
         raw = [
-            {"id": "p1", "name": "Inbox", "color": None, "is_favorite": False, "is_archived": False},
-            {"id": "p2", "name": "Work", "color": "red", "is_favorite": True, "is_archived": False},
+            {
+                "id": "p1",
+                "name": "Inbox",
+                "color": None,
+                "is_favorite": False,
+                "is_archived": False,
+            },
+            {
+                "id": "p2",
+                "name": "Work",
+                "color": "red",
+                "is_favorite": True,
+                "is_archived": False,
+            },
         ]
         client = _make_client()
         with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
@@ -81,7 +93,10 @@ class TestGetProjects:
 
     @pytest.mark.asyncio
     async def test_handles_paginated_response_format(self):
-        raw = {"results": [{"id": "p1", "name": "Inbox", "is_archived": False}], "next_cursor": None}
+        raw = {
+            "results": [{"id": "p1", "name": "Inbox", "is_archived": False}],
+            "next_cursor": None,
+        }
         client = _make_client()
         with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
             projects = await client.get_projects()
@@ -99,8 +114,20 @@ class TestGetTasks:
     async def test_returns_active_tasks(self):
         raw = [
             {"id": "t1", "content": "Buy milk", "project_id": "p1", "priority": 4},
-            {"id": "t2", "content": "Done task", "project_id": "p1", "priority": 4, "checked": True},
-            {"id": "t3", "content": "Deleted", "project_id": "p1", "priority": 4, "is_deleted": True},
+            {
+                "id": "t2",
+                "content": "Done task",
+                "project_id": "p1",
+                "priority": 4,
+                "checked": True,
+            },
+            {
+                "id": "t3",
+                "content": "Deleted",
+                "project_id": "p1",
+                "priority": 4,
+                "is_deleted": True,
+            },
         ]
         client = _make_client()
         with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
@@ -121,7 +148,10 @@ class TestGetTasks:
 
     @pytest.mark.asyncio
     async def test_respects_limit(self):
-        raw = [{"id": f"t{i}", "content": f"Task {i}", "project_id": "p1"} for i in range(10)]
+        raw = [
+            {"id": f"t{i}", "content": f"Task {i}", "project_id": "p1"}
+            for i in range(10)
+        ]
         client = _make_client()
         with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
             tasks = await client.get_tasks("p1", limit=3)
@@ -130,11 +160,17 @@ class TestGetTasks:
 
     @pytest.mark.asyncio
     async def test_follows_next_cursor_pagination(self):
-        page1 = {"results": [{"id": "t1", "content": "A", "project_id": "p1"}], "next_cursor": "cur2"}
-        page2 = {"results": [{"id": "t2", "content": "B", "project_id": "p1"}], "next_cursor": None}
+        page1 = {
+            "results": [{"id": "t1", "content": "A", "project_id": "p1"}],
+            "next_cursor": "cur2",
+        }
+        page2 = {
+            "results": [{"id": "t2", "content": "B", "project_id": "p1"}],
+            "next_cursor": None,
+        }
         call_count = 0
 
-        async def fake_get(_path, _params=None):
+        async def fake_get(_path, **_kwargs):
             nonlocal call_count
             call_count += 1
             return page1 if call_count == 1 else page2
@@ -148,6 +184,76 @@ class TestGetTasks:
 
 
 # ---------------------------------------------------------------------------
+# get_completed_tasks
+# ---------------------------------------------------------------------------
+
+
+class TestGetCompletedTasks:
+    @pytest.mark.asyncio
+    async def test_returns_completed_tasks_from_items_envelope(self):
+        raw = {
+            "items": [
+                {
+                    "id": "c1",
+                    "content": "Done",
+                    "project_id": "p1",
+                    "priority": 4,
+                    "completed_at": "2026-01-01T10:00:00",
+                }
+            ],
+            "next_cursor": None,
+        }
+        client = _make_client()
+        # lookback within one 90-day window → a single _get call, no duplication.
+        with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
+            tasks = await client.get_completed_tasks("p1", lookback_days=30)
+
+        assert len(tasks) == 1
+        assert isinstance(tasks[0], TodoistTask)
+        assert tasks[0].completed_at == "2026-01-01T10:00:00"
+
+    @pytest.mark.asyncio
+    async def test_tolerates_results_envelope(self):
+        raw = {"results": [{"id": "c1", "content": "Done", "project_id": "p1"}]}
+        client = _make_client()
+        with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
+            tasks = await client.get_completed_tasks("p1", lookback_days=30)
+
+        assert len(tasks) == 1
+
+    @pytest.mark.asyncio
+    async def test_respects_limit_across_windows(self):
+        raw = {
+            "items": [
+                {"id": f"c{i}", "content": f"Done {i}", "project_id": "p1"}
+                for i in range(50)
+            ],
+            "next_cursor": None,
+        }
+        client = _make_client()
+        with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
+            tasks = await client.get_completed_tasks("p1", lookback_days=365, limit=10)
+
+        assert len(tasks) == 10
+
+    @pytest.mark.asyncio
+    async def test_skips_deleted_items(self):
+        raw = {
+            "items": [
+                {"id": "c1", "content": "Kept", "project_id": "p1"},
+                {"id": "c2", "content": "Gone", "project_id": "p1", "is_deleted": True},
+            ],
+            "next_cursor": None,
+        }
+        client = _make_client()
+        with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
+            tasks = await client.get_completed_tasks("p1", lookback_days=30)
+
+        assert len(tasks) == 1
+        assert tasks[0].content == "Kept"
+
+
+# ---------------------------------------------------------------------------
 # get_labels
 # ---------------------------------------------------------------------------
 
@@ -155,10 +261,12 @@ class TestGetTasks:
 class TestGetLabels:
     @pytest.mark.asyncio
     async def test_returns_list_of_labels(self):
-        raw = {"results": [
-            {"id": 1, "name": "@home", "color": "blue", "order": 1},
-            {"id": 2, "name": "@work", "color": "red", "order": 2},
-        ]}
+        raw = {
+            "results": [
+                {"id": 1, "name": "@home", "color": "blue", "order": 1},
+                {"id": 2, "name": "@work", "color": "red", "order": 2},
+            ]
+        }
         client = _make_client()
         with patch.object(client, "_get", new=AsyncMock(return_value=raw)):
             labels = await client.get_labels()
@@ -197,7 +305,10 @@ class TestHttpErrors:
         async def fake_get(*_, **__):
             raise ValueError("Invalid Todoist API key — check your credentials.")
 
-        with patch.object(client, "_get", new=fake_get), pytest.raises(ValueError, match="API key"):
+        with (
+            patch.object(client, "_get", new=fake_get),
+            pytest.raises(ValueError, match="API key"),
+        ):
             await client.get_projects()
 
     @pytest.mark.asyncio
@@ -215,7 +326,10 @@ class TestHttpErrors:
         mock_async_client.get = AsyncMock(return_value=mock_resp)
 
         with (
-            patch("todopro_cli.services.todoist.client.httpx.AsyncClient", return_value=mock_async_client),
+            patch(
+                "todopro_cli.services.todoist.client.httpx.AsyncClient",
+                return_value=mock_async_client,
+            ),
             pytest.raises(ValueError, match="API key"),
         ):
             await client._get("/projects")

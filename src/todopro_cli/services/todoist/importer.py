@@ -57,7 +57,9 @@ class TodoistImportService:
         labels = await self._client.get_labels()
         project_name_map = await self._import_projects(projects, options, result)
         label_name_map = await self._import_labels(labels, options, result)
-        await self._import_tasks(projects, project_name_map, label_name_map, options, result)
+        await self._import_tasks(
+            projects, project_name_map, label_name_map, options, result
+        )
 
         return result
 
@@ -145,14 +147,39 @@ class TodoistImportService:
         options: TodoistImportOptions,
         result: TodoistImportResult,
     ) -> None:
-        """Fetch and import tasks for every project."""
+        """Fetch and import tasks for every project.
+
+        Active tasks always import. When ``include_completed`` is set, each
+        project's recently-completed tasks are fetched and imported as
+        already-completed.
+        """
         for project in projects:
             tasks = await self._client.get_tasks(
                 project.id, limit=options.max_tasks_per_project
             )
             await self._import_project_tasks(
-                tasks, project_name_map, label_name_map, options, result
+                tasks,
+                project_name_map,
+                label_name_map,
+                options,
+                result,
+                completed=False,
             )
+
+            if options.include_completed:
+                completed_tasks = await self._client.get_completed_tasks(
+                    project.id,
+                    lookback_days=options.completed_lookback_days,
+                    limit=options.max_tasks_per_project,
+                )
+                await self._import_project_tasks(
+                    completed_tasks,
+                    project_name_map,
+                    label_name_map,
+                    options,
+                    result,
+                    completed=True,
+                )
 
     async def _import_project_tasks(
         self,
@@ -161,11 +188,20 @@ class TodoistImportService:
         label_name_map: dict[str, str],
         options: TodoistImportOptions,
         result: TodoistImportResult,
+        *,
+        completed: bool,
     ) -> None:
-        """Persist a batch of tasks, resolving project/label references."""
+        """Persist a batch of tasks, resolving project/label references.
+
+        When *completed* is True the created task is immediately marked done so
+        migrated history stays in its completed state.
+        """
         for task in tasks:
             if options.dry_run:
-                result.tasks_created += 1
+                if completed:
+                    result.tasks_completed += 1
+                else:
+                    result.tasks_created += 1
                 continue
 
             try:
@@ -183,17 +219,27 @@ class TodoistImportService:
                 label_ids = self._resolve_label_ids(task.labels, label_name_map)
                 due_date = self._parse_due_date(task)
 
-                await self._storage.task_repository.add(
+                created = await self._storage.task_repository.add(
                     TaskCreate(
                         content=task.content,
                         description=task.description or None,
                         project_id=project_id,
                         due_date=due_date,
-                        priority=task.priority,
+                        # Todoist API priority is inverted vs TodoPro: Todoist
+                        # 4 = highest, TodoPro 1 = highest. 5 - p realigns them.
+                        priority=5 - task.priority,
                         labels=label_ids,
                     )
                 )
-                result.tasks_created += 1
+
+                if completed:
+                    # completed_at is set to import time by complete(); the
+                    # original Todoist completion timestamp is not preserved in
+                    # the local path (no repository field for it).
+                    await self._storage.task_repository.complete(created.id)
+                    result.tasks_completed += 1
+                else:
+                    result.tasks_created += 1
             except Exception as exc:  # noqa: BLE001
                 result.errors.append(f"Task '{task.content[:40]}': {exc}")
 

@@ -28,11 +28,13 @@ def _make_client(
     projects: list = None,
     tasks: list = None,
     labels: list = None,
+    completed_tasks: list = None,
 ) -> MagicMock:
     """Create a mock TodoistClientProtocol."""
     client = MagicMock()
     client.get_projects = AsyncMock(return_value=projects or [])
     client.get_tasks = AsyncMock(return_value=tasks or [])
+    client.get_completed_tasks = AsyncMock(return_value=completed_tasks or [])
     client.get_labels = AsyncMock(return_value=labels or [])
     return client
 
@@ -49,19 +51,24 @@ def _make_storage(
     # Project repository
     proj_repo = MagicMock()
     proj_repo.list_all = AsyncMock(return_value=existing_projects or [])
-    proj_repo.create = AsyncMock(side_effect=lambda data: MagicMock(id="new-proj-id", name=data.name))
+    proj_repo.create = AsyncMock(
+        side_effect=lambda data: MagicMock(id="new-proj-id", name=data.name)
+    )
     storage.project_repository = proj_repo
 
     # Label repository
     lbl_repo = MagicMock()
     lbl_repo.list_all = AsyncMock(return_value=existing_labels or [])
-    lbl_repo.create = AsyncMock(side_effect=lambda data: MagicMock(id="new-lbl-id", name=data.name))
+    lbl_repo.create = AsyncMock(
+        side_effect=lambda data: MagicMock(id="new-lbl-id", name=data.name)
+    )
     storage.label_repository = lbl_repo
 
     # Task repository
     task_repo = MagicMock()
     task_repo.list_all = AsyncMock(return_value=existing_tasks or [])
     task_repo.add = AsyncMock(return_value=MagicMock(id="new-task-id"))
+    task_repo.complete = AsyncMock(return_value=MagicMock(id="new-task-id"))
     storage.task_repository = task_repo
 
     return storage
@@ -283,11 +290,125 @@ class TestResolveLabelIds:
 
     def test_skips_unknown_labels(self):
         label_map = {"@home": "id-home"}
-        result = TodoistImportService._resolve_label_ids(["@home", "@unknown"], label_map)
+        result = TodoistImportService._resolve_label_ids(
+            ["@home", "@unknown"], label_map
+        )
         assert result == ["id-home"]
 
     def test_returns_empty_for_no_labels(self):
         assert TodoistImportService._resolve_label_ids([], {}) == []
+
+
+# ---------------------------------------------------------------------------
+# Priority inversion (Todoist API 4=highest → TodoPro 1=highest)
+# ---------------------------------------------------------------------------
+
+
+class TestPriorityInversion:
+    @pytest.mark.asyncio
+    async def test_todoist_p4_becomes_todopro_p1(self):
+        """Todoist priority 4 (highest) must import as TodoPro priority 1."""
+        client = _make_client(
+            projects=[_project()],
+            tasks=[TodoistTask(id="t1", content="Urgent", project_id="p1", priority=4)],
+        )
+        storage = _make_storage()
+        service = TodoistImportService(client, storage)
+
+        await service.import_all(_default_options())
+
+        created = storage.task_repository.add.call_args[0][0]
+        assert created.priority == 1
+
+    @pytest.mark.asyncio
+    async def test_todoist_p1_becomes_todopro_p4(self):
+        """Todoist priority 1 (lowest/default) must import as TodoPro priority 4."""
+        client = _make_client(
+            projects=[_project()],
+            tasks=[
+                TodoistTask(id="t1", content="Whenever", project_id="p1", priority=1)
+            ],
+        )
+        storage = _make_storage()
+        service = TodoistImportService(client, storage)
+
+        await service.import_all(_default_options())
+
+        created = storage.task_repository.add.call_args[0][0]
+        assert created.priority == 4
+
+    @pytest.mark.asyncio
+    async def test_priority_is_bijective(self):
+        """Every Todoist priority maps to 5 - p and stays within 1..4."""
+        for todoist_p, expected in [(4, 1), (3, 2), (2, 3), (1, 4)]:
+            client = _make_client(
+                projects=[_project()],
+                tasks=[
+                    TodoistTask(
+                        id="t", content="c", project_id="p1", priority=todoist_p
+                    )
+                ],
+            )
+            storage = _make_storage()
+            service = TodoistImportService(client, storage)
+            await service.import_all(_default_options())
+            created = storage.task_repository.add.call_args[0][0]
+            assert created.priority == expected
+
+
+# ---------------------------------------------------------------------------
+# include_completed
+# ---------------------------------------------------------------------------
+
+
+class TestIncludeCompleted:
+    @pytest.mark.asyncio
+    async def test_completed_not_fetched_by_default(self):
+        client = _make_client(projects=[_project()])
+        storage = _make_storage()
+        service = TodoistImportService(client, storage)
+
+        await service.import_all(_default_options())
+
+        client.get_completed_tasks.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_completed_tasks_are_imported_and_completed(self):
+        completed = [
+            TodoistTask(
+                id="c1",
+                content="Old done task",
+                project_id="p1",
+                priority=1,
+                completed_at="2026-01-01T10:00:00",
+            )
+        ]
+        client = _make_client(projects=[_project()], completed_tasks=completed)
+        storage = _make_storage()
+        service = TodoistImportService(client, storage)
+
+        result = await service.import_all(_default_options(include_completed=True))
+
+        client.get_completed_tasks.assert_called_once()
+        storage.task_repository.add.assert_called_once()
+        storage.task_repository.complete.assert_called_once_with("new-task-id")
+        assert result.tasks_completed == 1
+        assert result.tasks_created == 0
+
+    @pytest.mark.asyncio
+    async def test_completed_counted_in_dry_run_without_writing(self):
+        completed = [TodoistTask(id="c1", content="Done", project_id="p1")]
+        client = _make_client(projects=[_project()], completed_tasks=completed)
+        storage = _make_storage()
+        service = TodoistImportService(client, storage)
+
+        result = await service.import_all(
+            _default_options(include_completed=True, dry_run=True)
+        )
+
+        storage.task_repository.add.assert_not_called()
+        storage.task_repository.complete.assert_not_called()
+        assert result.tasks_completed == 1
 
 
 # ---------------------------------------------------------------------------

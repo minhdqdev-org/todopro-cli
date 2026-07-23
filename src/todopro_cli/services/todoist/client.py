@@ -6,6 +6,7 @@ concrete implementation backed by httpx.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import Protocol, runtime_checkable
 
 import httpx
@@ -15,6 +16,11 @@ from .models import TodoistLabel, TodoistProject, TodoistTask
 _BASE_URL = "https://api.todoist.com/api/v1"
 _DEFAULT_TIMEOUT = 30.0
 _MAX_LABEL_LIMIT = 200  # Todoist labels endpoint paginates incorrectly; use max
+_MAX_PAGE_LIMIT = 200  # Todoist caps page size at 200 across list endpoints
+# The completed-tasks endpoint rejects any since/until window wider than
+# 3 months, so we walk history in windows strictly under that cap.
+_COMPLETED_WINDOW_DAYS = 90
+_COMPLETED_DATE_FMT = "%Y-%m-%dT%H:%M:%S"
 
 
 @runtime_checkable
@@ -29,8 +35,16 @@ class TodoistClientProtocol(Protocol):
         """Return all non-archived projects."""
         ...
 
-    async def get_tasks(self, project_id: str, *, limit: int = 500) -> list[TodoistTask]:
+    async def get_tasks(
+        self, project_id: str, *, limit: int = 500
+    ) -> list[TodoistTask]:
         """Return active (non-completed, non-deleted) tasks for a project."""
+        ...
+
+    async def get_completed_tasks(
+        self, project_id: str, *, lookback_days: int = 365, limit: int = 500
+    ) -> list[TodoistTask]:
+        """Return completed tasks for a project within the lookback window."""
         ...
 
     async def get_labels(self) -> list[TodoistLabel]:
@@ -71,7 +85,9 @@ class TodoistClient:
             if not p.get("is_archived", False)
         ]
 
-    async def get_tasks(self, project_id: str, *, limit: int = 500) -> list[TodoistTask]:
+    async def get_tasks(
+        self, project_id: str, *, limit: int = 500
+    ) -> list[TodoistTask]:
         """Return active tasks for a project (paginated internally)."""
         params: dict[str, str | int] = {
             "project_id": project_id,
@@ -100,6 +116,63 @@ class TodoistClient:
 
         return all_tasks
 
+    async def get_completed_tasks(
+        self, project_id: str, *, lookback_days: int = 365, limit: int = 500
+    ) -> list[TodoistTask]:
+        """Return completed tasks for a project within *lookback_days*.
+
+        Uses ``/tasks/completed/by_completion_date``, which requires an explicit
+        ``since``/``until`` window and rejects any span wider than 3 months. We
+        therefore walk backwards from *now* in <=90-day windows, paginating each
+        with the ``next_cursor`` token, until we reach the lookback horizon or
+        hit *limit*. Completed items share the active-task shape plus a
+        ``completed_at`` timestamp, so they deserialize into ``TodoistTask``.
+        """
+        now = datetime.now(UTC)
+        horizon = now - timedelta(days=lookback_days)
+        all_tasks: list[TodoistTask] = []
+        window_end = now
+
+        while window_end > horizon and len(all_tasks) < limit:
+            window_start = max(
+                window_end - timedelta(days=_COMPLETED_WINDOW_DAYS), horizon
+            )
+            params: dict[str, str | int] = {
+                "project_id": project_id,
+                "since": window_start.strftime(_COMPLETED_DATE_FMT),
+                "until": window_end.strftime(_COMPLETED_DATE_FMT),
+                "limit": _MAX_PAGE_LIMIT,
+            }
+
+            while True:
+                data = await self._get(
+                    "/tasks/completed/by_completion_date", params=params
+                )
+                # The completed endpoint envelopes items under "items"; tolerate
+                # "results"/bare-list too so a future API tweak can't drop data.
+                if isinstance(data, list):
+                    items = data
+                else:
+                    items = data.get("items") or data.get("results", [])
+
+                for item in items:
+                    if item.get("is_deleted"):
+                        continue
+                    all_tasks.append(TodoistTask.model_validate(item))
+                    if len(all_tasks) >= limit:
+                        return all_tasks
+
+                next_cursor = (
+                    data.get("next_cursor") if isinstance(data, dict) else None
+                )
+                if not next_cursor or not items:
+                    break
+                params["cursor"] = next_cursor
+
+            window_end = window_start
+
+        return all_tasks
+
     async def get_labels(self) -> list[TodoistLabel]:
         """Return all personal labels.
 
@@ -124,6 +197,8 @@ class TodoistClient:
         if response.status_code == 401:
             raise ValueError("Invalid Todoist API key — check your credentials.")
         if response.status_code == 403:
-            raise PermissionError("Insufficient permissions for the requested resource.")
+            raise PermissionError(
+                "Insufficient permissions for the requested resource."
+            )
         response.raise_for_status()
         return response.json()

@@ -55,6 +55,7 @@ class TodoistTask(BaseModel):
     labels: list[str] = Field(default_factory=list)
     added_at: str | None = None
     updated_at: str | None = None
+    completed_at: str | None = None
     checked: bool = False
     is_deleted: bool = False
 
@@ -66,6 +67,10 @@ class TodoistImportOptions(BaseModel):
     max_tasks_per_project: int = Field(default=500, ge=1)
     dry_run: bool = False
     include_completed: bool = False
+    # How far back to fetch completed tasks. The Todoist completed-tasks
+    # endpoint caps any single query window at 3 months, so the client walks
+    # backwards from *now* in <=90-day windows up to this many days.
+    completed_lookback_days: int = Field(default=365, ge=1)
 
 
 class TodoistImportResult(BaseModel):
@@ -77,6 +82,7 @@ class TodoistImportResult(BaseModel):
     labels_skipped: int = 0
     tasks_created: int = 0
     tasks_skipped: int = 0
+    tasks_completed: int = 0
     errors: list[str] = Field(default_factory=list)
 
     @property
