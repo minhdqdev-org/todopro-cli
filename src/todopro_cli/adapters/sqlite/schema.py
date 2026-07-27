@@ -7,7 +7,7 @@ to ensure data compatibility and enable future sync capabilities.
 from __future__ import annotations
 
 # Schema version tracking
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 # Users table - local user profile
 CREATE_USERS_TABLE = """
@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS projects (
     is_archived BOOLEAN DEFAULT 0,
     protected BOOLEAN DEFAULT 0,
     user_id TEXT NOT NULL,
-    workspace_id TEXT,
     display_order INTEGER,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,

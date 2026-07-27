@@ -51,8 +51,6 @@ def show_current_context_info(output: str = "text"):
         }
         if ctx.user:
             data["user"] = ctx.user
-        if ctx.workspace_id:
-            data["workspace"] = ctx.workspace_id
 
         # Add user info for remote contexts
         if ctx.type == "remote":
@@ -68,9 +66,6 @@ def show_current_context_info(output: str = "text"):
 
         if ctx.user:
             console.print(f"[bold]User:[/bold] {ctx.user}")
-
-        if ctx.workspace_id:
-            console.print(f"[bold]Workspace:[/bold] {ctx.workspace_id}")
 
         # Local context specific info
         if ctx.type == "local":

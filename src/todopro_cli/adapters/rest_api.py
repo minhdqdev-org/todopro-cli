@@ -303,8 +303,6 @@ class RestApiProjectRepository(ProjectRepository):
             projects = [p for p in projects if p.is_favorite == filters.is_favorite]
         if filters.is_archived is not None:
             projects = [p for p in projects if p.is_archived == filters.is_archived]
-        if filters.workspace_id is not None:
-            projects = [p for p in projects if p.workspace_id == filters.workspace_id]
         if filters.search:
             search_lower = filters.search.lower()
             projects = [p for p in projects if search_lower in p.name.lower()]

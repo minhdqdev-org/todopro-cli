@@ -78,7 +78,9 @@ class Context(BaseModel):
     source: str = Field(..., description="Database path or API URL")
     user: str | None = Field(default=None, description="User email (remote only)")
     user_id: str | None = Field(default=None, description="User ID (local contexts)")
-    workspace_id: str | None = Field(default=None, description="Workspace ID")
+    # No workspace_id: the backend dropped the `workspaces` table entirely
+    # (SPEC-SCHEMA-REDESIGN phase 4). Older config files still carry the key;
+    # this model ignores unknown fields, so they load and re-save without it.
     master_key_backup: str | None = None  # Encrypted with recovery phrase
     description: str = Field(default="", description="Human-readable description")
 
