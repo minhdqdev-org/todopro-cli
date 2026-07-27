@@ -21,6 +21,7 @@ runner = CliRunner()
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def strip_ansi(text: str) -> str:
     ansi = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi.sub("", text)
@@ -61,15 +62,18 @@ def _make_auth_api_mock(
 ):
     mock = MagicMock()
     mock.login = AsyncMock(
-        return_value=login_result or {"access_token": "tok123", "refresh_token": "ref456"},
+        return_value=login_result
+        or {"access_token": "tok123", "refresh_token": "ref456"},
         side_effect=login_side_effect,
     )
     mock.signup = AsyncMock(
-        return_value=signup_result or {"user_id": "uid-001", "email": "user@example.com"},
+        return_value=signup_result
+        or {"user_id": "uid-001", "email": "user@example.com"},
         side_effect=signup_side_effect,
     )
     mock.get_profile = AsyncMock(
-        return_value=get_profile_result or {"email": "user@example.com", "timezone": "UTC"},
+        return_value=get_profile_result
+        or {"email": "user@example.com", "timezone": "UTC"},
     )
     mock.logout = AsyncMock(return_value=None)
     mock.update_profile = AsyncMock(return_value=update_profile_result or {})
@@ -85,12 +89,15 @@ def _patch_get_client():
     """Patch get_client to return a mock that has .close()."""
     mock_client = MagicMock()
     mock_client.close = AsyncMock()
-    return patch("todopro_cli.commands.auth.get_client", return_value=mock_client), mock_client
+    return patch(
+        "todopro_cli.commands.auth.get_client", return_value=mock_client
+    ), mock_client
 
 
 # ===========================================================================
 # Tests: login
 # ===========================================================================
+
 
 class TestLogin:
     """Tests for the `auth login` command."""
@@ -106,7 +113,9 @@ class TestLogin:
         svc = _mock_config_service(context=ctx)
 
         with _patch_config_service(svc):
-            result = runner.invoke(app, ["login", "--email", "a@b.com", "--password", "pass"])
+            result = runner.invoke(
+                app, ["login", "--email", "a@b.com", "--password", "Passw0rd!"]
+            )
 
         assert result.exit_code == 1
         assert "remote" in strip_ansi(result.stdout).lower()
@@ -118,7 +127,9 @@ class TestLogin:
         p_client, _ = _patch_get_client()
 
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
-            result = runner.invoke(app, ["login", "--email", "a@b.com", "--password", "pass"])
+            result = runner.invoke(
+                app, ["login", "--email", "a@b.com", "--password", "Passw0rd!"]
+            )
 
         # No context type check when context is None — goes to login
         assert result.exit_code == 0
@@ -131,7 +142,9 @@ class TestLogin:
         p_client, _ = _patch_get_client()
 
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
-            result = runner.invoke(app, ["login", "--email", "a@b.com", "--password", "pass"])
+            result = runner.invoke(
+                app, ["login", "--email", "a@b.com", "--password", "Passw0rd!"]
+            )
 
         assert result.exit_code == 0
         assert "Logged in as" in strip_ansi(result.stdout)
@@ -147,7 +160,14 @@ class TestLogin:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["login", "--email", "a@b.com", "--password", "pass", "--save-profile"],
+                [
+                    "login",
+                    "--email",
+                    "a@b.com",
+                    "--password",
+                    "Passw0rd!",
+                    "--save-profile",
+                ],
             )
 
         assert result.exit_code == 0
@@ -163,8 +183,15 @@ class TestLogin:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["login", "--email", "a@b.com", "--password", "pass",
-                 "--endpoint", "https://new.api.com"],
+                [
+                    "login",
+                    "--email",
+                    "a@b.com",
+                    "--password",
+                    "Passw0rd!",
+                    "--endpoint",
+                    "https://new.api.com",
+                ],
             )
 
         assert result.exit_code == 0
@@ -179,7 +206,9 @@ class TestLogin:
 
         prompt_answers = iter(["a@b.com", "password123"])
         with (
-            _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock),
+            _patch_config_service(svc),
+            p_client,
+            _patch_auth_api(auth_api_mock),
             patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
         ):
             result = runner.invoke(app, ["login"])
@@ -208,7 +237,9 @@ class TestLogin:
         p_client, _ = _patch_get_client()
 
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
-            result = runner.invoke(app, ["login", "--email", "a@b.com", "--password", "pass"])
+            result = runner.invoke(
+                app, ["login", "--email", "a@b.com", "--password", "Passw0rd!"]
+            )
 
         assert result.exit_code == 1
         assert "no token" in strip_ansi(result.stdout).lower()
@@ -217,11 +248,15 @@ class TestLogin:
         """Server returns 'token' key instead of 'access_token'."""
         ctx = _make_context()
         svc = _mock_config_service(context=ctx)
-        auth_api_mock = _make_auth_api_mock(login_result={"token": "tok-alt", "refresh_token": None})
+        auth_api_mock = _make_auth_api_mock(
+            login_result={"token": "tok-alt", "refresh_token": None}
+        )
         p_client, _ = _patch_get_client()
 
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
-            result = runner.invoke(app, ["login", "--email", "a@b.com", "--password", "pass"])
+            result = runner.invoke(
+                app, ["login", "--email", "a@b.com", "--password", "Passw0rd!"]
+            )
 
         assert result.exit_code == 0
         svc.save_credentials.assert_called_once()
@@ -230,11 +265,15 @@ class TestLogin:
         """API raises unexpected exception — exits 1 with error message."""
         ctx = _make_context()
         svc = _mock_config_service(context=ctx)
-        auth_api_mock = _make_auth_api_mock(login_side_effect=Exception("network error"))
+        auth_api_mock = _make_auth_api_mock(
+            login_side_effect=Exception("network error")
+        )
         p_client, _ = _patch_get_client()
 
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
-            result = runner.invoke(app, ["login", "--email", "a@b.com", "--password", "pass"])
+            result = runner.invoke(
+                app, ["login", "--email", "a@b.com", "--password", "Passw0rd!"]
+            )
 
         assert result.exit_code == 1
         assert "Login failed" in strip_ansi(result.stdout)
@@ -243,6 +282,7 @@ class TestLogin:
 # ===========================================================================
 # Tests: signup
 # ===========================================================================
+
 
 class TestSignup:
     """Tests for the `auth signup` command."""
@@ -257,7 +297,9 @@ class TestSignup:
         svc = _mock_config_service(context=ctx)
 
         with _patch_config_service(svc):
-            result = runner.invoke(app, ["signup", "--email", "a@b.com", "--password", "pass"])
+            result = runner.invoke(
+                app, ["signup", "--email", "a@b.com", "--password", "Passw0rd!"]
+            )
 
         assert result.exit_code == 1
         assert "remote" in strip_ansi(result.stdout).lower()
@@ -272,7 +314,7 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass"],
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
             )
 
         assert result.exit_code == 0
@@ -290,7 +332,14 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass", "--no-auto-login"],
+                [
+                    "signup",
+                    "--email",
+                    "a@b.com",
+                    "--password",
+                    "Passw0rd!",
+                    "--no-auto-login",
+                ],
             )
 
         assert result.exit_code == 0
@@ -308,8 +357,15 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass",
-                 "--endpoint", "https://custom.api.com"],
+                [
+                    "signup",
+                    "--email",
+                    "a@b.com",
+                    "--password",
+                    "Passw0rd!",
+                    "--endpoint",
+                    "https://custom.api.com",
+                ],
             )
 
         assert result.exit_code == 0
@@ -322,9 +378,11 @@ class TestSignup:
         auth_api_mock = _make_auth_api_mock()
         p_client, _ = _patch_get_client()
 
-        prompt_answers = iter(["a@b.com", "pass123", "pass123"])
+        prompt_answers = iter(["a@b.com", "Passw0rd!", "Passw0rd!"])
         with (
-            _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock),
+            _patch_config_service(svc),
+            p_client,
+            _patch_auth_api(auth_api_mock),
             patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
         ):
             result = runner.invoke(app, ["signup"])
@@ -336,7 +394,7 @@ class TestSignup:
         ctx = _make_context()
         svc = _mock_config_service(context=ctx)
 
-        prompt_answers = iter(["a@b.com", "pass1", "pass2"])
+        prompt_answers = iter(["a@b.com", "Passw0rd!", "Different1!"])
         with (
             _patch_config_service(svc),
             patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
@@ -351,8 +409,9 @@ class TestSignup:
         ctx = _make_context()
         svc = _mock_config_service(context=ctx)
 
-        # Need 3 answers: email="", password="", confirm=""
-        prompt_answers = iter(["", "", ""])
+        # Email is empty; a policy-valid password is needed to clear the
+        # re-prompt loop before the empty-email guard trips "required".
+        prompt_answers = iter(["", "Passw0rd!", "Passw0rd!"])
         with (
             _patch_config_service(svc),
             patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
@@ -366,13 +425,15 @@ class TestSignup:
         """signup raises a plain exception — exits 1."""
         ctx = _make_context()
         svc = _mock_config_service(context=ctx)
-        auth_api_mock = _make_auth_api_mock(signup_side_effect=Exception("duplicate email"))
+        auth_api_mock = _make_auth_api_mock(
+            signup_side_effect=Exception("duplicate email")
+        )
         p_client, _ = _patch_get_client()
 
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass"],
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
             )
 
         assert result.exit_code == 1
@@ -395,7 +456,7 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass"],
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
             )
 
         assert result.exit_code == 1
@@ -417,7 +478,7 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass"],
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
             )
 
         assert result.exit_code == 1
@@ -439,7 +500,7 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass"],
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
             )
 
         assert result.exit_code == 1
@@ -459,7 +520,7 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass"],
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
             )
 
         assert result.exit_code == 1
@@ -477,7 +538,7 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass"],
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
             )
 
         assert result.exit_code == 0
@@ -493,15 +554,54 @@ class TestSignup:
         with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
             result = runner.invoke(
                 app,
-                ["signup", "--email", "a@b.com", "--password", "pass"],
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
             )
 
         assert result.exit_code == 0
+
+    def test_signup_weak_password_flag_rejected(self):
+        """A --password that fails the policy is rejected before hitting the API."""
+        ctx = _make_context()
+        svc = _mock_config_service(context=ctx)
+        auth_api_mock = _make_auth_api_mock()
+        p_client, _ = _patch_get_client()
+
+        with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
+            result = runner.invoke(
+                app,
+                ["signup", "--email", "a@b.com", "--password", "weak"],
+            )
+
+        assert result.exit_code == 1
+        assert "Password must" in strip_ansi(result.stdout)
+        auth_api_mock.signup.assert_not_called()
+
+    def test_signup_reprompts_until_policy_met(self):
+        """A weak interactive password re-prompts; a compliant one succeeds."""
+        ctx = _make_context()
+        svc = _mock_config_service(context=ctx)
+        auth_api_mock = _make_auth_api_mock()
+        p_client, _ = _patch_get_client()
+
+        # First password fails the policy, second one satisfies it.
+        prompt_answers = iter(["a@b.com", "weakpass", "Passw0rd!", "Passw0rd!"])
+        with (
+            _patch_config_service(svc),
+            p_client,
+            _patch_auth_api(auth_api_mock),
+            patch("todopro_cli.commands.auth.Prompt.ask", side_effect=prompt_answers),
+        ):
+            result = runner.invoke(app, ["signup"])
+
+        assert result.exit_code == 0
+        assert "Strength" in strip_ansi(result.stdout)
+        auth_api_mock.signup.assert_awaited_once()
 
 
 # ===========================================================================
 # Tests: logout
 # ===========================================================================
+
 
 class TestLogout:
     """Tests for the `auth logout` command."""
@@ -592,6 +692,7 @@ class TestLogout:
 # Tests: timezone
 # ===========================================================================
 
+
 class TestTimezone:
     """Tests for the `auth timezone` command."""
 
@@ -646,7 +747,9 @@ class TestTimezone:
 
         assert result.exit_code == 0
         assert "America/New_York" in strip_ansi(result.stdout)
-        auth_api_mock.update_profile.assert_awaited_once_with(timezone="America/New_York")
+        auth_api_mock.update_profile.assert_awaited_once_with(
+            timezone="America/New_York"
+        )
 
     def test_timezone_api_error(self):
         """API raises during timezone get — exits 1."""

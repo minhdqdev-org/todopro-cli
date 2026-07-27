@@ -110,24 +110,33 @@ class SyncState:
             self._save()
 
     def get_all_sync_times(self) -> dict[str, datetime | None]:
-        """Get all sync timestamps.
+        """Get all sync timestamps, as **aware** UTC.
+
+        This used to strip tzinfo and return naive datetimes while its sibling
+        :meth:`get_last_sync` returned aware ones — two readers of the same
+        state disagreeing about representation. `todopro sync status` subtracts
+        these from ``datetime.now(UTC)``, so it crashed outright:
+
+            Error: can't subtract offset-naive and offset-aware datetimes
+
+        Aware is the right side of that disagreement to land on: the values are
+        UTC instants, `set_last_sync` records them from an aware clock, and
+        every comparison in the codebase is against an aware "now".
 
         Returns:
-            Dictionary mapping context keys to last sync times (naive UTC)
+            Dictionary mapping context keys to aware UTC datetimes.
         """
         result: dict[str, datetime | None] = {}
         for key, value in self._state["last_sync"].items():
             if value is None:
                 result[key] = None
             elif isinstance(value, datetime):
-                # Make naive if aware
-                if value.tzinfo is not None:
-                    result[key] = value.replace(tzinfo=None)
-                else:
-                    result[key] = value
+                result[key] = (
+                    value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+                )
             else:
                 dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-                result[key] = dt.replace(tzinfo=None)
+                result[key] = dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
         return result
 
     @staticmethod

@@ -43,3 +43,18 @@ class AuthAPI:
             skip_auth=True,
         )
         return response.json()
+
+    async def resend_verification(self, email: str | None = None) -> dict:
+        """S-80: request a fresh email-confirmation link.
+
+        ``skip_auth`` when an address is supplied, so this works from a machine
+        that is walled out or not signed in at all. With no address the backend
+        uses the session's own. Either way the response is deliberately generic
+        — it never reveals whether an account exists or is already confirmed.
+        """
+        response = await self.client.post(
+            "/v1/auth/resend-verification",
+            json={"email": email} if email else {},
+            skip_auth=email is not None,
+        )
+        return response.json()

@@ -20,6 +20,9 @@ from todopro_cli.adapters.sqlite.migrations.m003_project_protected import (
 from todopro_cli.adapters.sqlite.migrations.m004_add_deadline_recurrence_from_completion import (  # noqa: E501
     deadline_recurrence_from_completion_migration,
 )
+from todopro_cli.adapters.sqlite.migrations.m005_drop_workspace_id import (
+    drop_workspace_id_migration,
+)
 from todopro_cli.adapters.sqlite.migrations.runner import MigrationRunner
 
 
@@ -118,6 +121,7 @@ class DatabaseConnection:
             initial_migration,
             project_protected_migration,
             deadline_recurrence_from_completion_migration,
+            drop_workspace_id_migration,
         ]
 
         # Run migrations

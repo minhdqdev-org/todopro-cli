@@ -22,7 +22,9 @@ def login(
     email: str | None = typer.Option(None, "--email", help="Email address"),
     password: str | None = typer.Option(None, "--password", help="Password"),
     endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
-    save_profile: bool = typer.Option(False, "--save-profile", help="Save as default profile"),
+    save_profile: bool = typer.Option(
+        False, "--save-profile", help="Save as default profile"
+    ),
 ) -> None:
     """Login to TodoPro."""
     try:
@@ -130,13 +132,55 @@ def signup(
         # Prompt for credentials if not provided
         if not email:
             email = Prompt.ask("Email")
-        if not password:
-            password = Prompt.ask("Password", password=True)
-            confirm_password = Prompt.ask("Confirm password", password=True)
 
-            if password != confirm_password:
-                format_error("Passwords do not match")
+        # Client-side password policy — kept in lockstep with the backend and
+        # the other TodoPro clients: at least 8 characters, and at least one
+        # uppercase letter, one lowercase letter, and one special
+        # (non-alphanumeric) character.
+        def password_problems(pw: str) -> list[str]:
+            problems: list[str] = []
+            if len(pw) < 8:
+                problems.append("be at least 8 characters long")
+            if not any(c.isupper() for c in pw):
+                problems.append("contain an uppercase letter")
+            if not any(c.islower() for c in pw):
+                problems.append("contain a lowercase letter")
+            if not any(not c.isalnum() for c in pw):
+                problems.append("contain a special character")
+            return problems
+
+        if password:
+            # Supplied non-interactively (--password): validate, but there is
+            # no way to re-prompt, so a weak password is a hard error.
+            problems = password_problems(password)
+            if problems:
+                format_error("Password must " + "; ".join(problems) + ".")
                 raise typer.Exit(1)
+        else:
+            # Interactive: keep asking until the policy is satisfied, showing a
+            # 4-segment strength meter (one filled block per satisfied rule).
+            while True:
+                password = Prompt.ask("Password", password=True)
+                problems = password_problems(password)
+                met = 4 - len(problems)
+
+                bar_color = "red" if met <= 1 else "yellow" if met <= 3 else "green"
+                bar = "".join(
+                    f"[{bar_color}]█[/{bar_color}]" if i < met else "[dim]█[/dim]"
+                    for i in range(4)
+                )
+                label = ("very weak", "weak", "fair", "good", "strong")[met]
+                console.print(f"[dim]Strength:[/dim] {bar} [dim]({label})[/dim]")
+
+                if problems:
+                    format_error("Password must " + "; ".join(problems) + ".")
+                    continue
+
+                confirm_password = Prompt.ask("Confirm password", password=True)
+                if password != confirm_password:
+                    format_error("Passwords do not match")
+                    raise typer.Exit(1)
+                break
 
         if not email or not password:
             format_error("Email and password are required")
@@ -307,4 +351,55 @@ def timezone(
 
     except Exception as e:
         format_error(f"Failed to handle timezone: {str(e)}")
+        raise typer.Exit(1) from e
+
+
+@app.command("resend-verification")
+def resend_verification(
+    email: str | None = typer.Option(
+        None,
+        "--email",
+        help="Address to resend to (defaults to the signed-in account)",
+    ),
+) -> None:
+    """S-80: send yourself a fresh email-confirmation link.
+
+    The wall the API puts in front of an unconfirmed account points here, so
+    this has to work while that wall is up — which it does: the endpoint is
+    exempt from the gate, and `--email` skips auth entirely for a machine that
+    was never signed in.
+    """
+    try:
+        config_service = get_config_service()
+
+        current_context = config_service.get_current_context()
+        if current_context and current_context.type != "remote":
+            format_error(
+                f"Email verification only applies to remote contexts. "
+                f"Current context '{current_context.name}' is "
+                f"'{current_context.type}'."
+            )
+            raise typer.Exit(1)
+
+        async def do_resend() -> None:
+            client = get_client()
+            auth_api = AuthAPI(client)
+            try:
+                result = await auth_api.resend_verification(email)
+                # The backend answers the same way whether the address is
+                # unknown, already confirmed, or genuinely pending — echo its
+                # wording rather than inventing a more specific claim.
+                format_success(
+                    result.get("message")
+                    or "If that address needs confirming, a new link is on its way."
+                )
+            finally:
+                await client.close()
+
+        asyncio.run(do_resend())
+
+    except typer.Exit:
+        raise
+    except Exception as e:
+        format_error(f"Could not request a new link: {str(e)}")
         raise typer.Exit(1) from e

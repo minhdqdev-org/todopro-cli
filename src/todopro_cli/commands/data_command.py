@@ -5,6 +5,7 @@ import gzip
 import json
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.prompt import Confirm, Prompt
@@ -30,6 +31,94 @@ from .decorators import command_wrapper
 app = typer.Typer(cls=SuggestingGroup, help="Data management commands")
 console = get_console()
 
+# How often to poll a queued `--archive` export job.
+POLL_INTERVAL_SECONDS = 2.0
+
+
+async def _export_archive(output: str | None, timeout: int) -> None:
+    """Run the complete (ZIP) export: enqueue, poll, download.
+
+    `GET /v1/export/data` only covers tasks, projects, labels and contexts.
+    `POST /v1/export/archive` builds the full account picture (26 model
+    groups) plus the user's uploaded files, off-request, and returns a job id
+    to poll — a heavy account cannot finish inside the proxy timeout.
+    """
+    config_svc = get_config_service()
+    try:
+        if config_svc.config.get_current_context().type == "local":
+            format_error(
+                "--archive needs a remote context (the archive is built "
+                "server-side). Use a plain `todopro data export` locally."
+            )
+            raise typer.Exit(1)
+    except (ValueError, KeyError) as e:
+        format_error("--archive needs a remote context; no remote context is active.")
+        raise typer.Exit(1) from e
+
+    client = get_client()
+    try:
+        format_info("Requesting a complete export archive...")
+        # `request` is annotated as returning httpx.Response but every caller in
+        # this module treats it as the decoded JSON body; keep that convention.
+        queued: Any = await client.request("POST", "/v1/export/archive") or {}
+        job_id = queued.get("job_id")
+        if not job_id:
+            format_error("Server did not return an export job id")
+            raise typer.Exit(1)
+
+        format_info(f"Export queued (job {job_id}). Waiting for it to finish...")
+
+        deadline = asyncio.get_event_loop().time() + timeout
+        download_url: str | None = None
+        while True:
+            # `ExportArchiveStatusView` returns the FLAT `_serialize_job` shape:
+            # a top-level string `status` ("pending"/"running"/"ready"/"failed"/
+            # "expired") and, only on a `ready` job, a top-level `download_url`.
+            # There is no `ready` boolean and no nested `result` wrapper — the SPA
+            # consumes this same flat shape.
+            status: Any = (
+                await client.request("GET", f"/v1/export/archive/{job_id}") or {}
+            )
+            job_status = status.get("status")
+            if job_status == "ready":
+                download_url = status.get("download_url")
+                if not download_url:
+                    format_error(
+                        "Export is ready but the server returned no download URL."
+                    )
+                    raise typer.Exit(1)
+                break
+            if job_status in ("failed", "expired"):
+                error = status.get("error") or job_status
+                format_error(
+                    f"Export failed on the server ({error}). Please try again."
+                )
+                raise typer.Exit(1)
+            if asyncio.get_event_loop().time() >= deadline:
+                format_error(
+                    f"Export did not finish within {timeout}s. It may still be "
+                    f"running — poll it later with job id {job_id}."
+                )
+                raise typer.Exit(1)
+            await asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+        format_info("Downloading archive...")
+        content = await client.download(download_url)
+    finally:
+        await client.close()
+
+    if output is None:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        output = f"todopro-export-{timestamp}.zip"
+    output_path = Path(output)
+    output_path.write_bytes(content)
+
+    format_success(
+        f"✓ Complete export ({len(content) / 1024 / 1024:.1f} MiB) written to: "
+        f"{output_path.absolute()}"
+    )
+    format_info("The ZIP contains data.json plus your uploaded attachments.")
+
 
 @app.command("export")
 @command_wrapper
@@ -46,15 +135,39 @@ def export_data(
         "-z",
         help="Compress output with gzip",
     ),
+    archive: bool = typer.Option(
+        False,
+        "--archive",
+        "-a",
+        help=(
+            "Complete export: a ZIP with data.json plus your uploaded "
+            "attachments (remote contexts only). Generated server-side."
+        ),
+    ),
+    timeout: int = typer.Option(
+        600,
+        "--timeout",
+        help="Seconds to wait for an --archive export to finish",
+    ),
 ) -> None:
     """
-    Export all your data (tasks, projects, labels, contexts) to JSON.
+    Export your data.
+
+    By default this exports tasks, projects, labels and contexts as JSON.
+    Use --archive for the *complete* export (every record group plus your
+    uploaded attachments) as a ZIP — this is the one to use for a genuine
+    data-portability / GDPR copy of your account.
 
     Examples:
         todopro data export
         todopro data export --output backup.json
         todopro data export --compress
+        todopro data export --archive --output my-todopro-data.zip
     """
+
+    if archive:
+        asyncio.run(_export_archive(output, timeout))
+        return
 
     async def do_export() -> None:
         # Detect context type
@@ -116,7 +229,11 @@ def export_data(
             params = {}
             if compress:
                 params["compress"] = "true"
-            response = await client.request("GET", "/api/export/data", params=params)
+            # NOTE: the backend mounts tasks.urls under `api/v1/` and the
+            # client's base_url already ends in `/api`, so the path here must
+            # be `/v1/...`. It used to be `/api/export/data`, which resolved
+            # to `/api/api/export/data` and 404'd on every remote export.
+            response = await client.request("GET", "/v1/export/data", params=params)
             await client.close()
 
         # Determine output filename
@@ -278,6 +395,15 @@ def import_data(
 
             import_data_payload = data.get("data", {})
 
+            # The export (`ExportDataView`) writes each task with a `project_id`
+            # (the *exported* project's id) and a `labels` list (exported label
+            # ids). Those ids are meaningless locally, so as we create/dedupe
+            # projects and labels we record exported-id -> local-id maps and use
+            # them to re-link tasks. This preserves task->project and task->label
+            # associations across an export/import round-trip.
+            project_id_map: dict[str, str] = {}
+            label_id_map: dict[str, str] = {}
+
             # Import projects first (tasks may reference them)
             projects_created = 0
             projects_skipped = 0
@@ -290,7 +416,15 @@ def import_data(
                         )
                     )
                     # Filter by exact name match (search is substring search)
-                    if any(p.name == project_data.get("name") for p in existing):
+                    matching = [
+                        p for p in existing if p.name == project_data.get("name")
+                    ]
+                    exported_id = project_data.get("id")
+                    if matching:
+                        # Map the exported id onto the existing local project so
+                        # tasks that referenced it still link after dedupe.
+                        if exported_id is not None:
+                            project_id_map[str(exported_id)] = matching[0].id
                         projects_skipped += 1
                         continue
 
@@ -299,13 +433,16 @@ def import_data(
 
                     project_create = ProjectCreate(
                         name=project_data["name"],
-                        description=project_data.get("description"),
                         color=project_data.get("color"),
-                        archived=project_data.get("archived", False),
+                        is_favorite=project_data.get("is_favorite", False),
                     )
-                    await storage_strategy_context.project_repository.create(
-                        project_create
+                    created_project = (
+                        await storage_strategy_context.project_repository.create(
+                            project_create
+                        )
                     )
+                    if exported_id is not None:
+                        project_id_map[str(exported_id)] = created_project.id
                     projects_created += 1
                 except Exception as e:
                     details["projects"]["errors"].append(
@@ -325,7 +462,13 @@ def import_data(
                     existing = (
                         await storage_strategy_context.label_repository.list_all()
                     )
-                    if any(lbl.name == label_data.get("name") for lbl in existing):
+                    matching_labels = [
+                        lbl for lbl in existing if lbl.name == label_data.get("name")
+                    ]
+                    exported_label_id = label_data.get("id")
+                    if matching_labels:
+                        if exported_label_id is not None:
+                            label_id_map[str(exported_label_id)] = matching_labels[0].id
                         labels_skipped += 1
                         continue
 
@@ -336,7 +479,13 @@ def import_data(
                         name=label_data["name"],
                         color=label_data.get("color"),
                     )
-                    await storage_strategy_context.label_repository.create(label_create)
+                    created_label = (
+                        await storage_strategy_context.label_repository.create(
+                            label_create
+                        )
+                    )
+                    if exported_label_id is not None:
+                        label_id_map[str(exported_label_id)] = created_label.id
                     labels_created += 1
                 except Exception as e:
                     details["labels"]["errors"].append(
@@ -359,27 +508,28 @@ def import_data(
                         tasks_skipped += 1
                         continue
 
-                    # Create task (map project name to ID if present)
+                    # Create task, re-linking project + labels via the id maps
+                    # built above (the export emits `project_id` + `labels`).
                     from todopro_cli.models import TaskCreate
 
-                    project_id = None
-                    if task_data.get("project_name"):
-                        projects = (
-                            await storage_strategy_context.project_repository.list_all(
-                                ProjectFilters(search=task_data["project_name"])
-                            )
-                        )
-                        # Filter by exact name match (search is substring search)
-                        matching = [p for p in projects if p.name == task_data["project_name"]]
-                        if matching:
-                            project_id = matching[0].id
+                    exported_project_id = task_data.get("project_id")
+                    project_id = (
+                        project_id_map.get(str(exported_project_id))
+                        if exported_project_id is not None
+                        else None
+                    )
+                    local_label_ids = [
+                        label_id_map[str(lid)]
+                        for lid in task_data.get("labels", [])
+                        if str(lid) in label_id_map
+                    ]
 
                     task_create = TaskCreate(
                         content=task_data["content"],
                         description=task_data.get("description"),
                         priority=task_data.get("priority", 4),
                         project_id=project_id,
-                        label_ids=task_data.get("label_ids", []),
+                        labels=local_label_ids,
                     )
                     await storage_strategy_context.task_repository.add(task_create)
                     tasks_created += 1
@@ -401,7 +551,7 @@ def import_data(
         else:
             # Remote import - call API
             client = get_client()
-            response = await client.request("POST", "/api/import/data", json=data)
+            response = await client.request("POST", "/v1/import/data", json=data)
             await client.close()
 
         # Show results
@@ -475,7 +625,7 @@ def purge_data(
             payload = {"confirm": "DELETE", "username": user_email}
 
             response = await client.request(
-                "POST", "/api/purge/data", params=params, json=payload
+                "POST", "/v1/purge/data", params=params, json=payload
             )
 
             if isinstance(response, dict):
@@ -540,7 +690,7 @@ def purge_data(
 
         payload = {"confirm": "DELETE", "username": user_email}
 
-        response = await client.request("POST", "/api/purge/data", json=payload)
+        response = await client.request("POST", "/v1/purge/data", json=payload)
 
         if isinstance(response, dict):
             deleted = response.get("deleted", {})

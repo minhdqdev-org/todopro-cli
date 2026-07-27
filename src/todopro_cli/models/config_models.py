@@ -67,6 +67,24 @@ class E2EEConfig(BaseModel):
     enabled: bool = Field(default=False, description="Whether E2EE is enabled")
 
 
+class PrivacyConfig(BaseModel):
+    """Privacy choices the user has been asked about explicitly."""
+
+    model_config = {"extra": "allow"}
+
+    # Tri-state on purpose:
+    #   None  -> never asked; the CLI must disclose + prompt before any lookup
+    #   True  -> user consented to IP-based geolocation via a third party
+    #   False -> user declined; never call out, use explicit --lat/--lon instead
+    geoip_consent: bool | None = Field(
+        default=None,
+        description=(
+            "Consent to send the machine's public IP to a third-party geo-IP "
+            "service to approximate the current location. None = not asked yet."
+        ),
+    )
+
+
 class Context(BaseModel):
     """Context configuration for a storage backend.
 
@@ -78,7 +96,9 @@ class Context(BaseModel):
     source: str = Field(..., description="Database path or API URL")
     user: str | None = Field(default=None, description="User email (remote only)")
     user_id: str | None = Field(default=None, description="User ID (local contexts)")
-    workspace_id: str | None = Field(default=None, description="Workspace ID")
+    # No workspace_id: the backend dropped the `workspaces` table entirely
+    # (SPEC-SCHEMA-REDESIGN phase 4). Older config files still carry the key;
+    # this model ignores unknown fields, so they load and re-save without it.
     master_key_backup: str | None = None  # Encrypted with recovery phrase
     description: str = Field(default="", description="Human-readable description")
 
@@ -116,6 +136,7 @@ class AppConfig(BaseModel):
     cache: CacheConfig = Field(default_factory=CacheConfig)
     sync: SyncConfig = Field(default_factory=SyncConfig)
     e2ee: E2EEConfig = Field(default_factory=E2EEConfig)
+    privacy: PrivacyConfig = Field(default_factory=PrivacyConfig)
 
     # Focus-related settings
     focus_templates: dict[str, dict] | None = None

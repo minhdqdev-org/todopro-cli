@@ -3,6 +3,12 @@
 import typer
 from rich.table import Table
 
+from todopro_cli.commands.remote_goals import (
+    is_remote_context,
+    list_remote_goals,
+    set_remote_goal,
+    show_remote_goals,
+)
 from todopro_cli.models.focus.goals import GoalsManager
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.ui.console import get_console
@@ -37,6 +43,12 @@ def render_progress_bar(value: float, max_value: float, width: int = 12) -> str:
 @app.command()
 def show_goals():
     """Show current goals and progress."""
+    # Remote contexts read server-persisted task-completion goals; local
+    # contexts keep the original focus-session view out of the config file.
+    if is_remote_context():
+        show_remote_goals()
+        return
+
     manager = _get_goals_manager()
     manager.get_goals()
     progress = manager.get_all_progress()
@@ -136,7 +148,15 @@ def set_goal(
     ),
     value: int = typer.Argument(..., help="Target value"),
 ):
-    """Set a focus goal."""
+    """Set a goal.
+
+    Remote: `todopro goals set daily 5` (tasks per day/week, server-persisted).
+    Local:  `todopro goals set daily-sessions 8` (focus-session targets).
+    """
+    if is_remote_context():
+        set_remote_goal(goal_type, value)
+        return
+
     # Convert hyphenated to underscore
     goal_type = goal_type.replace("-", "_")
 
@@ -164,6 +184,10 @@ def set_goal(
 @app.command("list")
 def list_goals():
     """List all configured goals."""
+    if is_remote_context():
+        list_remote_goals()
+        return
+
     manager = _get_goals_manager()
     goals = manager.get_goals()
 
@@ -192,7 +216,14 @@ def list_goals():
 
 @app.command("reset")
 def reset_goals():
-    """Reset goals to defaults."""
+    """Reset goals to defaults (local focus goals only)."""
+    if is_remote_context():
+        console.print(
+            "\n[yellow]Remote goals are not reset in bulk — archive one with "
+            "'todopro goals set <period> <value>' or the API.[/yellow]\n"
+        )
+        return
+
     manager = _get_goals_manager()
 
     defaults = {

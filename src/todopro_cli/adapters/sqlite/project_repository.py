@@ -91,10 +91,6 @@ class SqliteProjectRepository(ProjectRepository):
             query += " AND is_archived = ?"
             params.append(1 if filters.is_archived else 0)
 
-        if filters.workspace_id:
-            query += " AND workspace_id = ?"
-            params.append(filters.workspace_id)
-
         if filters.search:
             query += " AND name LIKE ?"
             params.append(f"%{filters.search}%")
@@ -150,15 +146,14 @@ class SqliteProjectRepository(ProjectRepository):
         self.connection.execute(
             """INSERT INTO projects (
                 id, name, color, is_favorite, is_archived,
-                workspace_id, user_id, created_at, updated_at, version
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                user_id, created_at, updated_at, version
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 project_id,
                 data["name"],
                 data.get("color"),
                 1 if data.get("is_favorite", False) else 0,
                 0,
-                data.get("workspace_id"),
                 user_id,
                 now,
                 now,

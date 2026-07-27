@@ -76,7 +76,7 @@ class TestSubCommandHelp:
         "edit",
         "today",
         "reopen",
-        "ramble",
+        "dictate",
         # Resource groups
         "auth",
         "task",

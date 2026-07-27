@@ -3,6 +3,10 @@
 import typer
 from rich.panel import Panel
 
+from todopro_cli.commands.remote_goals import (
+    is_remote_context,
+    show_remote_achievements,
+)
 from todopro_cli.models.focus.achievements import ACHIEVEMENTS, AchievementTracker
 from todopro_cli.utils.ui.console import get_console
 
@@ -25,6 +29,12 @@ def list_achievements(
     ),
 ):
     """Show earned achievements and badges."""
+    # Remote contexts read durable, server-awarded achievements; local contexts
+    # keep the original focus-session badges from the local SQLite DB.
+    if is_remote_context():
+        show_remote_achievements(show_all=show_all)
+        return
+
     tracker = AchievementTracker()
 
     # Check for new achievements

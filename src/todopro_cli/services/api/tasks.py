@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from httpx import HTTPStatusError
+
 from todopro_cli.services.api.client import APIClient
 
 
@@ -217,14 +219,17 @@ class TasksAPI:
             response = await self.client.post(
                 "/v1/tasks/quick-add", json={"input": input_text}
             )
+
+            response.raise_for_status()
+
             return response.json()
-        except Exception as e:
-            # Try to parse error response
-            if hasattr(e, "response") and e.response is not None:
-                try:
-                    return e.response.json()
-                except Exception:
-                    pass
+        except HTTPStatusError as e:
+            # The type checker knows httpx.HTTPStatusError has a .response attribute
+            try:
+                return e.response.json()
+            except Exception:
+                raise
+        except Exception:
             raise
 
     async def eisenhower_matrix(self) -> dict:
@@ -233,7 +238,10 @@ class TasksAPI:
         return response.json()
 
     async def classify_task(
-        self, task_id: str, is_urgent: bool = None, is_important: bool = None
+        self,
+        task_id: str,
+        is_urgent: bool | None = None,
+        is_important: bool | None = None,
     ) -> dict:
         """Classify a task in the Eisenhower Matrix."""
         data = {}
@@ -253,7 +261,10 @@ class TasksAPI:
         is_important: bool | None = None,
     ) -> dict:
         """Bulk classify tasks."""
-        data = {"task_ids": task_ids}
+
+        # Explicitly declare that values can be anything (Any)
+        data: dict[str, Any] = {"task_ids": task_ids}
+
         if quadrant:
             data["quadrant"] = quadrant
         if is_urgent is not None:
@@ -262,4 +273,5 @@ class TasksAPI:
             data["is_important"] = is_important
 
         response = await self.client.post("/v1/tasks/eisenhower/classify", json=data)
+        response.raise_for_status()
         return response.json()

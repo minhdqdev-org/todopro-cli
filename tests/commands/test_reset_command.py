@@ -23,10 +23,10 @@ class TestResetGoals:
 
     def test_reset_goals_with_force_flag(self):
         """Test reset goals with --force skips confirmation."""
-        with patch("todopro_cli.commands.reset_command.get_goal_service") as mock_get_svc:
-            mock_svc = MagicMock()
-            mock_svc.reset_goals = MagicMock()
-            mock_get_svc.return_value = mock_svc
+        with patch(
+            "todopro_cli.commands.reset_command.get_config_service"
+        ) as mock_get_svc:
+            mock_get_svc.return_value = MagicMock()
             result = runner.invoke(app, ["goals", "--force"])
             assert result.exit_code == 0
 
@@ -43,14 +43,30 @@ class TestResetGoals:
             assert result.exit_code == 0
 
     def test_reset_goals_sets_defaults(self):
-        """Test reset goals calls reset_goals on the goal service."""
-        with patch("todopro_cli.commands.reset_command.get_goal_service") as mock_get_svc:
+        """Reset writes the default focus goals back to the config and saves.
+
+        Previously this asserted a call to `GoldService.reset_goals()`, a stub
+        that only re-saved the config and never touched a goal.
+        """
+        with patch(
+            "todopro_cli.commands.reset_command.get_config_service"
+        ) as mock_get_svc:
             mock_svc = MagicMock()
-            mock_svc.reset_goals = MagicMock()
+            config = MagicMock()
+            mock_svc.load_config.return_value = config
             mock_get_svc.return_value = mock_svc
+
             result = runner.invoke(app, ["goals", "--force"])
+
             assert result.exit_code == 0
-            mock_svc.reset_goals.assert_called_once()
+            assert config.focus_goals == {
+                "daily_sessions": 8,
+                "daily_minutes": 200,
+                "weekly_sessions": 40,
+                "weekly_minutes": 1000,
+                "streak_target": 30,
+            }
+            mock_svc.save_config.assert_called_once()
 
 
 class TestResetConfig:

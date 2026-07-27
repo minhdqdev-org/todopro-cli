@@ -1,6 +1,10 @@
+---
+updated_at: 2026-07-20T10:04:19+07:00
+---
+
 # TodoPro CLI - Troubleshooting Guide
 
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-07-20
 
 This guide helps you resolve common issues with TodoPro CLI.
 
@@ -492,158 +496,19 @@ todopro sync push
 
 ---
 
-## Encryption Issues
+## Encryption (discontinued)
 
-### Problem: "Encryption key not found"
+End-to-end encryption was **discontinued** (ADR-0024). There is no client-side
+encryption key, no 24-word recovery phrase, and nothing to set up or recover before
+syncing.
 
-**Symptoms:**
+The `todopro encryption` command group is still present for backwards compatibility,
+but every subcommand is a no-op stub that prints a notice and exits. If a script of
+yours still calls `todopro encryption setup` or `todopro encryption recover`, you can
+remove that step.
 
-```bash
-$ todopro sync pull
-Error: Encryption key not found
-```
-
-**Cause:** E2EE enabled but key file missing
-
-**Solutions:**
-
-**Option 1: Recover with recovery phrase**
-
-```bash
-todopro encryption recover
-# Enter your 24-word recovery phrase
-```
-
-**Option 2: Set up encryption (if first time)**
-
-```bash
-todopro encryption setup
-# Save the 24-word recovery phrase!
-```
-
----
-
-### Problem: "Invalid recovery phrase"
-
-**Symptoms:**
-
-```bash
-$ todopro encryption recover
-Error: Invalid recovery phrase
-```
-
-**Causes:**
-
-1. Wrong words
-2. Wrong order
-3. Extra/missing words
-
-**Solutions:**
-
-**Check word count:**
-
-```bash
-# Should be exactly 24 words
-echo "your recovery phrase" | wc -w
-# Output: 24
-```
-
-**Check spelling:**
-
-- BIP39 wordlist: https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt
-- Common mistakes: "to" vs "too", "by" vs "buy"
-
-**Try different formats:**
-
-```bash
-# With spaces
-todopro encryption recover
-word1 word2 word3 ... word24
-
-# Without extra spaces
-# (some terminals add extra whitespace)
-```
-
----
-
-### Problem: "Cannot decrypt data"
-
-**Symptoms:**
-
-```bash
-$ todopro sync pull
-Error: Failed to decrypt task data
-```
-
-**Causes:**
-
-1. Wrong encryption key
-2. Corrupted encrypted data
-3. Key rotation without re-encryption
-
-**Solutions:**
-
-**Check encryption status:**
-
-```bash
-todopro encryption status
-```
-
-**Verify key fingerprint:**
-
-```bash
-# Should match across devices
-todopro encryption status | grep Fingerprint
-```
-
-**If keys don't match:**
-
-```bash
-# Use same recovery phrase on all devices
-todopro encryption recover
-# Enter SAME 24-word phrase as original device
-```
-
----
-
-### Problem: "Lost recovery phrase"
-
-**Unfortunately:** If you lost your recovery phrase AND encryption key:
-
-**Your encrypted data is UNRECOVERABLE.**
-
-This is by design (zero-knowledge encryption). No one can decrypt it, not even TodoPro staff.
-
-**Options:**
-
-**If you have LOCAL unencrypted data:**
-
-```bash
-# 1. Export what you have
-todopro data export --output backup.json
-
-# 2. Start fresh encryption
-rm ~/.config/todopro_cli/encryption.key
-todopro encryption setup  # New key, new recovery phrase
-
-# 3. Import data
-todopro data import backup.json
-
-# 4. Push re-encrypted data
-todopro sync push
-```
-
-**If EVERYTHING is encrypted:**
-
-- You must start fresh
-- Previous encrypted data is lost forever
-- **This is why we emphasize saving recovery phrase!**
-
-**Prevention:**
-
-- ✅ Write recovery phrase on paper
-- ✅ Store in password manager
-- ✅ Keep multiple secure copies
+Data you sync to the cloud is protected in transit (HTTPS) and at rest by the server.
+It is **not** encrypted client-side, so TodoPro operators can technically access it.
 
 ---
 
@@ -713,7 +578,6 @@ $ todopro sync push
 
 1. Large amount of data
 2. Slow internet
-3. E2EE encryption overhead
 
 **Solutions:**
 
@@ -904,9 +768,6 @@ cat ~/.config/todopro_cli/config.json | jq .
   "api": {
     "endpoint": "https://todopro.minhdq.dev/api",
     "timeout": 30
-  },
-  "e2ee": {
-    "enabled": false
   }
 }
 ```
@@ -1019,8 +880,6 @@ Traceback (most recent call last):
 | "Not logged in"            | Need authentication          | `todopro login`                  |
 | "Token expired"            | Session expired              | `todopro login`                  |
 | "Connection timeout"       | Network issues               | Check internet, try later        |
-| "Encryption key not found" | Missing key file             | `todopro encryption recover`     |
-| "Invalid recovery phrase"  | Wrong words/order            | Check BIP39 wordlist             |
 | "No such command"          | Command doesn't exist        | Check `todopro --help`           |
 | "Invalid arguments"        | Missing required args        | Check `todopro <command> --help` |
 | "Database corrupt"         | File corruption              | Restore from backup              |

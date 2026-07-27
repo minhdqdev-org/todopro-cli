@@ -22,6 +22,7 @@ runner = CliRunner()
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _mock_config_svc(context_type: str = "remote", email: str = "test@example.com"):
     svc = MagicMock()
     ctx = MagicMock()
@@ -67,6 +68,7 @@ def _import_response(errors=None):
 # Help text
 # ---------------------------------------------------------------------------
 
+
 class TestHelpText:
     def test_app_help(self):
         result = runner.invoke(app, ["--help"])
@@ -109,6 +111,7 @@ class TestHelpText:
 # export command
 # ---------------------------------------------------------------------------
 
+
 class TestExportCommand:
     """Tests for the 'export' subcommand using remote context."""
 
@@ -120,8 +123,12 @@ class TestExportCommand:
             args += ["--output", str(output_path)]
         if extra_args:
             args += extra_args
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             return runner.invoke(app, args)
 
     def test_export_remote_success(self, tmp_path):
@@ -136,7 +143,9 @@ class TestExportCommand:
 
     def test_export_stats_table_shown(self, tmp_path):
         out = str(tmp_path / "backup.json")
-        result = self._invoke_export(response=_export_response(tasks=7), output_path=out)
+        result = self._invoke_export(
+            response=_export_response(tasks=7), output_path=out
+        )
         assert result.exit_code == 0
         # Summary table should be printed
         assert "7" in result.output or "Tasks" in result.output
@@ -153,21 +162,29 @@ class TestExportCommand:
         monkeypatch.chdir(tmp_path)
         svc = _mock_config_svc("remote")
         client = _mock_client(_export_response())
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             result = runner.invoke(app, ["export"])
         assert result.exit_code == 0
         assert any(f.name.startswith("todopro-export-") for f in tmp_path.iterdir())
 
     def test_export_encryption_message(self, tmp_path):
         out = str(tmp_path / "backup.json")
-        result = self._invoke_export(response=_export_response(encrypted=True), output_path=out)
+        result = self._invoke_export(
+            response=_export_response(encrypted=True), output_path=out
+        )
         assert result.exit_code == 0
         assert "encrypt" in result.output.lower()
 
     def test_export_no_encryption_message_when_disabled(self, tmp_path):
         out = str(tmp_path / "backup.json")
-        result = self._invoke_export(response=_export_response(encrypted=False), output_path=out)
+        result = self._invoke_export(
+            response=_export_response(encrypted=False), output_path=out
+        )
         assert result.exit_code == 0
         # No encryption message when disabled
         assert "🔐" not in result.output
@@ -181,8 +198,12 @@ class TestExportCommand:
         monkeypatch.chdir(tmp_path)
         svc = _mock_config_svc("remote")
         client = _mock_client(_export_response())
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             result = runner.invoke(app, ["export", "--compress"])
         assert result.exit_code == 0
         gz_files = list(tmp_path.glob("*.gz"))
@@ -192,8 +213,14 @@ class TestExportCommand:
         out = str(tmp_path / "backup.json")
         svc = _mock_config_svc("remote")
         client = _mock_client(_export_response())
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client) as mock_gc:
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_client", return_value=client
+            ) as mock_gc,
+        ):
             runner.invoke(app, ["export", "--output", out])
         mock_gc.assert_called_once()
 
@@ -201,8 +228,12 @@ class TestExportCommand:
         out = str(tmp_path / "backup.json")
         svc = _mock_config_svc("remote")
         client = _mock_client(_export_response())
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             runner.invoke(app, ["export", "--output", out])
         client.close.assert_awaited_once()
 
@@ -211,8 +242,12 @@ class TestExportCommand:
         out = str(tmp_path / "backup.json")
         svc = _mock_config_svc("remote")
         client = _mock_client(b"raw bytes")  # not a dict
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             result = runner.invoke(app, ["export", "--output", out])
         assert result.exit_code != 0
 
@@ -221,8 +256,12 @@ class TestExportCommand:
         svc = MagicMock()
         svc.config.get_current_context.side_effect = ValueError("no context")
         svc.load_credentials.return_value = {}
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc):
-            result = runner.invoke(app, ["export", "--output", str(tmp_path / "out.json")])
+        with patch(
+            "todopro_cli.commands.data_command.get_config_service", return_value=svc
+        ):
+            result = runner.invoke(
+                app, ["export", "--output", str(tmp_path / "out.json")]
+            )
         # Local path fails on undefined get_storage_strategy_context - exit non-zero
         assert result.exit_code != 0
 
@@ -230,6 +269,7 @@ class TestExportCommand:
 # ---------------------------------------------------------------------------
 # import command
 # ---------------------------------------------------------------------------
+
 
 class TestImportCommand:
     """Tests for the 'import' subcommand."""
@@ -249,7 +289,12 @@ class TestImportCommand:
     def test_import_confirmation_cancel(self, tmp_path):
         good_file = tmp_path / "data.json"
         good_file.write_text(
-            json.dumps({"stats": {"tasks_count": 2}, "data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}),
+            json.dumps(
+                {
+                    "stats": {"tasks_count": 2},
+                    "data": {"tasks": [], "projects": [], "labels": [], "contexts": []},
+                }
+            ),
             encoding="utf-8",
         )
         result = runner.invoke(app, ["import", str(good_file)], input="n\n")
@@ -259,7 +304,17 @@ class TestImportCommand:
     def test_import_shows_preview_table(self, tmp_path):
         good_file = tmp_path / "data.json"
         good_file.write_text(
-            json.dumps({"stats": {"tasks_count": 3, "projects_count": 1, "labels_count": 2, "contexts_count": 0}, "data": {}}),
+            json.dumps(
+                {
+                    "stats": {
+                        "tasks_count": 3,
+                        "projects_count": 1,
+                        "labels_count": 2,
+                        "contexts_count": 0,
+                    },
+                    "data": {},
+                }
+            ),
             encoding="utf-8",
         )
         result = runner.invoke(app, ["import", str(good_file)], input="n\n")
@@ -269,7 +324,12 @@ class TestImportCommand:
     def test_import_preview_shows_tasks_count(self, tmp_path):
         good_file = tmp_path / "data.json"
         good_file.write_text(
-            json.dumps({"stats": {"tasks_count": 99}, "data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}),
+            json.dumps(
+                {
+                    "stats": {"tasks_count": 99},
+                    "data": {"tasks": [], "projects": [], "labels": [], "contexts": []},
+                }
+            ),
             encoding="utf-8",
         )
         result = runner.invoke(app, ["import", str(good_file)], input="n\n")
@@ -294,7 +354,9 @@ class TestImportCommand:
     def test_import_note_displayed(self, tmp_path):
         good_file = tmp_path / "data.json"
         good_file.write_text(
-            json.dumps({"data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}),
+            json.dumps(
+                {"data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}
+            ),
             encoding="utf-8",
         )
         result = runner.invoke(app, ["import", str(good_file)], input="n\n")
@@ -303,13 +365,19 @@ class TestImportCommand:
     def test_import_yes_flag_remote_success(self, tmp_path):
         good_file = tmp_path / "data.json"
         good_file.write_text(
-            json.dumps({"data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}),
+            json.dumps(
+                {"data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}
+            ),
             encoding="utf-8",
         )
         svc = _mock_config_svc("remote")
         client = _mock_client(_import_response())
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
         assert result.exit_code == 0
         assert "import" in result.output.lower()
@@ -319,8 +387,12 @@ class TestImportCommand:
         good_file.write_text(json.dumps({"data": {}}), encoding="utf-8")
         svc = _mock_config_svc("remote")
         client = _mock_client(_import_response())
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
         assert "Import Results" in result.output or "import" in result.output.lower()
 
@@ -328,12 +400,25 @@ class TestImportCommand:
         good_file = tmp_path / "data.json"
         good_file.write_text(json.dumps({"data": {}}), encoding="utf-8")
         svc = _mock_config_svc("remote")
-        client = _mock_client({
-            "summary": {"projects": "0 created, 0 skipped", "labels": "0 created, 0 skipped", "contexts": "N/A", "tasks": "0 created, 0 skipped"},
-            "details": {"tasks": {"errors": ["task1: some error", "task2: another error"]}},
-        })
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        client = _mock_client(
+            {
+                "summary": {
+                    "projects": "0 created, 0 skipped",
+                    "labels": "0 created, 0 skipped",
+                    "contexts": "N/A",
+                    "tasks": "0 created, 0 skipped",
+                },
+                "details": {
+                    "tasks": {"errors": ["task1: some error", "task2: another error"]}
+                },
+            }
+        )
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
         assert result.exit_code == 0
         assert "error" in result.output.lower() or "⚠" in result.output
@@ -343,14 +428,21 @@ class TestImportCommand:
         good_file.write_text(json.dumps({"data": {}}), encoding="utf-8")
         svc = _mock_config_svc("remote")
         client = _mock_client(_import_response())
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             runner.invoke(app, ["import", str(good_file), "--yes"])
         client.close.assert_awaited_once()
 
     def test_import_gzip_file_cancel(self, tmp_path):
         gz_file = tmp_path / "data.json.gz"
-        payload = {"stats": {"tasks_count": 0}, "data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}
+        payload = {
+            "stats": {"tasks_count": 0},
+            "data": {"tasks": [], "projects": [], "labels": [], "contexts": []},
+        }
         with gzip.open(str(gz_file), "wt") as f:
             json.dump(payload, f)
         result = runner.invoke(app, ["import", str(gz_file)], input="n\n")
@@ -376,12 +468,23 @@ class TestImportCommand:
         good_file.write_text(json.dumps({"data": {}}), encoding="utf-8")
         svc = _mock_config_svc("remote")
         errors = [f"task{i}: error" for i in range(10)]
-        client = _mock_client({
-            "summary": {"projects": "0 created, 0 skipped", "labels": "0 created, 0 skipped", "contexts": "N/A", "tasks": "0 created, 0 skipped"},
-            "details": {"tasks": {"errors": errors}},
-        })
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        client = _mock_client(
+            {
+                "summary": {
+                    "projects": "0 created, 0 skipped",
+                    "labels": "0 created, 0 skipped",
+                    "contexts": "N/A",
+                    "tasks": "0 created, 0 skipped",
+                },
+                "details": {"tasks": {"errors": errors}},
+            }
+        )
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
         assert result.exit_code == 0
         assert "more" in result.output.lower() or "5" in result.output
@@ -391,6 +494,7 @@ class TestImportCommand:
 # purge command
 # ---------------------------------------------------------------------------
 
+
 class TestPurgeCommand:
     """Tests for the 'purge' subcommand."""
 
@@ -398,14 +502,27 @@ class TestPurgeCommand:
 
     def _patches(self, client):
         return (
-            patch("todopro_cli.commands.data_command.get_config_service", return_value=_mock_config_svc(email=self.USER_EMAIL)),
+            patch(
+                "todopro_cli.commands.data_command.get_config_service",
+                return_value=_mock_config_svc(email=self.USER_EMAIL),
+            ),
             patch("todopro_cli.commands.data_command.get_client", return_value=client),
         )
 
     # -- dry-run path
 
     def test_purge_dry_run_exits_zero(self):
-        client = _mock_client({"items_to_delete": {"tasks": 10, "projects": 3, "labels": 5, "contexts": 2}, "total_items": 20})
+        client = _mock_client(
+            {
+                "items_to_delete": {
+                    "tasks": 10,
+                    "projects": 3,
+                    "labels": 5,
+                    "contexts": 2,
+                },
+                "total_items": 20,
+            }
+        )
         p1, p2 = self._patches(client)
         with p1, p2:
             result = runner.invoke(app, ["purge", "--dry-run"])
@@ -419,7 +536,17 @@ class TestPurgeCommand:
         assert "dry" in result.output.lower()
 
     def test_purge_dry_run_shows_counts(self):
-        client = _mock_client({"items_to_delete": {"tasks": 7, "projects": 2, "labels": 4, "contexts": 1}, "total_items": 14})
+        client = _mock_client(
+            {
+                "items_to_delete": {
+                    "tasks": 7,
+                    "projects": 2,
+                    "labels": 4,
+                    "contexts": 1,
+                },
+                "total_items": 14,
+            }
+        )
         p1, p2 = self._patches(client)
         with p1, p2:
             result = runner.invoke(app, ["purge", "--dry-run"])
@@ -432,8 +559,9 @@ class TestPurgeCommand:
             runner.invoke(app, ["purge", "--dry-run"])
         client.request.assert_awaited_once()
         call_args = client.request.call_args
-        assert call_args[1].get("params", {}).get("dry_run") == "true" or \
-               (len(call_args[0]) > 2 and "dry_run" in str(call_args))
+        assert call_args[1].get("params", {}).get("dry_run") == "true" or (
+            len(call_args[0]) > 2 and "dry_run" in str(call_args)
+        )
 
     def test_purge_dry_run_closes_client(self):
         client = _mock_client({"items_to_delete": {}, "total_items": 0})
@@ -480,30 +608,36 @@ class TestPurgeCommand:
         assert "cancel" in result.output.lower()
 
     def test_purge_full_success(self):
-        client = _mock_client({
-            "deleted": {"tasks": 5, "projects": 2, "labels": 3, "contexts": 1},
-            "encryption_cleared": True,
-        })
+        client = _mock_client(
+            {
+                "deleted": {"tasks": 5, "projects": 2, "labels": 3, "contexts": 1},
+                "encryption_cleared": True,
+            }
+        )
         p1, p2 = self._patches(client)
         with p1, p2:
             result = runner.invoke(app, ["purge"], input=f"y\n{self.USER_EMAIL}\ny\n")
         assert result.exit_code == 0
 
     def test_purge_success_shows_deletion_summary(self):
-        client = _mock_client({
-            "deleted": {"tasks": 5, "projects": 2, "labels": 3, "contexts": 1},
-            "encryption_cleared": False,
-        })
+        client = _mock_client(
+            {
+                "deleted": {"tasks": 5, "projects": 2, "labels": 3, "contexts": 1},
+                "encryption_cleared": False,
+            }
+        )
         p1, p2 = self._patches(client)
         with p1, p2:
             result = runner.invoke(app, ["purge"], input=f"y\n{self.USER_EMAIL}\ny\n")
         assert "Deletion" in result.output or "deleted" in result.output.lower()
 
     def test_purge_success_shows_encryption_cleared_message(self):
-        client = _mock_client({
-            "deleted": {"tasks": 1},
-            "encryption_cleared": True,
-        })
+        client = _mock_client(
+            {
+                "deleted": {"tasks": 1},
+                "encryption_cleared": True,
+            }
+        )
         p1, p2 = self._patches(client)
         with p1, p2:
             result = runner.invoke(app, ["purge"], input=f"y\n{self.USER_EMAIL}\ny\n")
@@ -520,6 +654,7 @@ class TestPurgeCommand:
 # ===========================================================================
 # Local export path (lines 76-93)
 # ===========================================================================
+
 
 class TestLocalExport:
     """Cover lines 76-93: local export when is_local=True."""
@@ -541,9 +676,16 @@ class TestLocalExport:
 
         storage = self._make_mock_storage()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["export", "--output", out])
 
         assert result.exit_code == 0
@@ -558,9 +700,16 @@ class TestLocalExport:
 
         storage = self._make_mock_storage()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             runner.invoke(app, ["export", "--output", str(out)])
 
         assert out.exists()
@@ -577,9 +726,16 @@ class TestLocalExport:
 
         storage = self._make_mock_storage()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["export", "--output", out])
 
         assert result.exit_code == 0
@@ -595,9 +751,16 @@ class TestLocalExport:
 
         storage = self._make_mock_storage()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["export", "--output", out])
 
         assert result.exit_code == 0
@@ -612,9 +775,16 @@ class TestLocalExport:
 
         storage = self._make_mock_storage()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["export", "--output", out])
 
         assert result.exit_code == 0
@@ -628,9 +798,16 @@ class TestLocalExport:
 
         storage = self._make_mock_storage()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["export", "--compress"])
 
         assert result.exit_code == 0
@@ -648,9 +825,16 @@ class TestLocalExport:
 
         storage = self._make_mock_storage()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["export", "--output", out])
 
         assert result.exit_code == 0
@@ -659,6 +843,7 @@ class TestLocalExport:
 # ===========================================================================
 # Line 134: compress=True with bytes response from remote
 # ===========================================================================
+
 
 class TestExportCompressBytesResponse:
     """Line 134: when compress=True and server returns raw bytes, write_bytes is called."""
@@ -671,8 +856,12 @@ class TestExportCompressBytesResponse:
         raw_gz = b"\x1f\x8b\x08\x00already-gzipped-data"
         client = _mock_client(raw_gz)
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_client", return_value=client):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
             result = runner.invoke(app, ["export", "--output", str(out), "--compress"])
 
         assert result.exit_code == 0
@@ -684,6 +873,7 @@ class TestExportCompressBytesResponse:
 # Lines 254-256: import do_import() exception path (is_local fallback)
 # ===========================================================================
 
+
 class TestImportIsLocalFallback:
     """Lines 254-256: ValueError/KeyError from get_current_context → is_local=True."""
 
@@ -691,7 +881,9 @@ class TestImportIsLocalFallback:
         """Lines 254-256: ValueError → is_local=True, triggers local import."""
         good_file = tmp_path / "data.json"
         good_file.write_text(
-            json.dumps({"data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}),
+            json.dumps(
+                {"data": {"tasks": [], "projects": [], "labels": [], "contexts": []}}
+            ),
             encoding="utf-8",
         )
         svc = MagicMock()
@@ -706,9 +898,16 @@ class TestImportIsLocalFallback:
         storage.project_repository.create = AsyncMock()
         storage.label_repository.create = AsyncMock()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         assert result.exit_code == 0
@@ -729,9 +928,16 @@ class TestImportIsLocalFallback:
         storage.project_repository.create = AsyncMock()
         storage.label_repository.create = AsyncMock()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         assert result.exit_code == 0
@@ -740,6 +946,7 @@ class TestImportIsLocalFallback:
 # ===========================================================================
 # Lines 263-393: Local import path
 # ===========================================================================
+
 
 class TestLocalImport:
     """Cover lines 263-393: the local SQLite import path when is_local=True."""
@@ -761,9 +968,16 @@ class TestLocalImport:
         svc = _mock_config_svc("local")
         storage = self._make_storage()
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             args = ["import", str(good_file), "--yes"]
             if extra_args:
                 args += extra_args
@@ -786,7 +1000,9 @@ class TestLocalImport:
         """Local import creates new projects that don't exist yet."""
         payload = {
             "data": {
-                "projects": [{"name": "NewProject", "description": "desc", "color": None}],
+                "projects": [
+                    {"name": "NewProject", "description": "desc", "color": None}
+                ],
                 "tasks": [],
                 "labels": [],
             }
@@ -813,9 +1029,16 @@ class TestLocalImport:
         storage = self._make_storage()
         storage.project_repository.list_all = AsyncMock(return_value=[existing_project])
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         assert result.exit_code == 0
@@ -852,9 +1075,16 @@ class TestLocalImport:
         storage = self._make_storage()
         storage.label_repository.list_all = AsyncMock(return_value=[existing_label])
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         assert result.exit_code == 0
@@ -891,25 +1121,36 @@ class TestLocalImport:
         storage = self._make_storage()
         storage.task_repository.list_all = AsyncMock(return_value=[existing_task])
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         assert result.exit_code == 0
         storage.task_repository.add.assert_not_awaited()
 
-    def test_local_import_task_with_project_name_resolves_id(self, tmp_path):
-        """Local import resolves project_id from project_name for tasks."""
+    def test_local_import_task_links_to_existing_project(self, tmp_path):
+        """A task whose exported `project_id` matches an existing local project
+        (by name) is re-linked to that project's LOCAL id."""
         existing_project = MagicMock()
-        existing_project.id = "proj-123"
+        existing_project.id = "local-proj-123"
         existing_project.name = "MyProject"
 
         payload = {
             "data": {
-                "projects": [],
+                # Exported project shares the name but a different (exported) id.
+                "projects": [{"id": "exported-proj-1", "name": "MyProject"}],
                 "labels": [],
-                "tasks": [{"content": "Task with project", "project_name": "MyProject"}],
+                "tasks": [
+                    {"content": "Task with project", "project_id": "exported-proj-1"}
+                ],
             }
         }
         good_file = tmp_path / "data.json"
@@ -920,13 +1161,91 @@ class TestLocalImport:
         storage.task_repository.list_all = AsyncMock(return_value=[])
         storage.project_repository.list_all = AsyncMock(return_value=[existing_project])
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         assert result.exit_code == 0
         storage.task_repository.add.assert_awaited_once()
+        created = storage.task_repository.add.call_args.args[0]
+        assert created.project_id == "local-proj-123"
+
+    def test_local_import_roundtrip_preserves_project_and_label_links(self, tmp_path):
+        """Export->import round-trip preserves task->project and task->label
+        associations by re-mapping exported ids to freshly created local ids."""
+
+        # Storage whose create() calls return records with deterministic local
+        # ids so we can assert the task ends up linked to the RIGHT locals.
+        storage = MagicMock()
+        storage.task_repository.list_all = AsyncMock(return_value=[])
+        storage.project_repository.list_all = AsyncMock(return_value=[])
+        storage.label_repository.list_all = AsyncMock(return_value=[])
+
+        async def _create_project(project_create):
+            proj = MagicMock()
+            proj.id = f"local-proj-{project_create.name}"
+            proj.name = project_create.name
+            return proj
+
+        async def _create_label(label_create):
+            lbl = MagicMock()
+            lbl.id = f"local-label-{label_create.name}"
+            lbl.name = label_create.name
+            return lbl
+
+        storage.project_repository.create = AsyncMock(side_effect=_create_project)
+        storage.label_repository.create = AsyncMock(side_effect=_create_label)
+        storage.task_repository.add = AsyncMock()
+
+        # Payload shaped exactly like ExportDataView emits: task carries
+        # `project_id` (exported id) and `labels` (list of exported label ids).
+        payload = {
+            "data": {
+                "projects": [{"id": "exp-proj-A", "name": "Work"}],
+                "labels": [
+                    {"id": "exp-lbl-1", "name": "urgent"},
+                    {"id": "exp-lbl-2", "name": "home"},
+                ],
+                "tasks": [
+                    {
+                        "content": "Linked task",
+                        "project_id": "exp-proj-A",
+                        "labels": ["exp-lbl-1", "exp-lbl-2"],
+                    }
+                ],
+            }
+        }
+        good_file = tmp_path / "data.json"
+        good_file.write_text(json.dumps(payload), encoding="utf-8")
+        svc = _mock_config_svc("local")
+
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
+            result = runner.invoke(app, ["import", str(good_file), "--yes"])
+
+        assert result.exit_code == 0
+        storage.task_repository.add.assert_awaited_once()
+        created = storage.task_repository.add.call_args.args[0]
+        # project re-linked to the newly created local project id
+        assert created.project_id == "local-proj-Work"
+        # both labels re-linked to their new local ids (order preserved)
+        assert created.labels == ["local-label-urgent", "local-label-home"]
 
     def test_local_import_project_error_continues(self, tmp_path):
         """Local import handles individual project errors gracefully."""
@@ -944,9 +1263,16 @@ class TestLocalImport:
         storage.project_repository.list_all = AsyncMock(return_value=[])
         storage.project_repository.create = AsyncMock(side_effect=Exception("DB error"))
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         # Errors should be gracefully handled, import completes
@@ -973,11 +1299,20 @@ class TestLocalImport:
         svc = _mock_config_svc("local")
         storage = self._make_storage()
         storage.label_repository.list_all = AsyncMock(return_value=[])
-        storage.label_repository.create = AsyncMock(side_effect=Exception("label DB error"))
+        storage.label_repository.create = AsyncMock(
+            side_effect=Exception("label DB error")
+        )
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         assert result.exit_code == 0
@@ -998,9 +1333,253 @@ class TestLocalImport:
         storage.task_repository.list_all = AsyncMock(return_value=[])
         storage.task_repository.add = AsyncMock(side_effect=Exception("task DB error"))
 
-        with patch("todopro_cli.commands.data_command.get_config_service", return_value=svc), \
-             patch("todopro_cli.commands.data_command.get_storage_strategy_context",
-                   return_value=storage, create=True):
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch(
+                "todopro_cli.commands.data_command.get_storage_strategy_context",
+                return_value=storage,
+                create=True,
+            ),
+        ):
             result = runner.invoke(app, ["import", str(good_file), "--yes"])
 
         assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# API paths (the client's base_url already ends in /api, so paths are /v1/...)
+# ---------------------------------------------------------------------------
+
+
+class TestVersionedAPIPaths:
+    """`/api/export/data` resolved to `/api/api/export/data` and 404'd.
+
+    tasks.urls is mounted at `api/v1/` in todopro/urls.py and APIClient's
+    base_url already carries the `/api` prefix.
+    """
+
+    def _paths(self, client):
+        return [call.args[1] for call in client.request.call_args_list]
+
+    def test_export_uses_v1_path(self, tmp_path):
+        svc = _mock_config_svc("remote")
+        client = _mock_client(_export_response())
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
+            result = runner.invoke(
+                app, ["export", "--output", str(tmp_path / "b.json")]
+            )
+        assert result.exit_code == 0
+        assert self._paths(client) == ["/v1/export/data"]
+
+    def test_import_uses_v1_path(self, tmp_path):
+        path = tmp_path / "in.json"
+        path.write_text(json.dumps(_export_response()))
+        svc = _mock_config_svc("remote")
+        client = _mock_client({"summary": {}, "details": {}})
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
+            result = runner.invoke(app, ["import", str(path), "--yes"])
+        assert result.exit_code == 0
+        assert self._paths(client) == ["/v1/import/data"]
+
+    def test_purge_dry_run_uses_v1_path(self):
+        svc = _mock_config_svc("remote")
+        client = _mock_client({"items_to_delete": {}, "total_items": 0})
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
+            result = runner.invoke(app, ["purge", "--dry-run"])
+        assert result.exit_code == 0
+        assert self._paths(client) == ["/v1/purge/data"]
+
+    def test_no_path_double_prefixes_api(self, tmp_path):
+        svc = _mock_config_svc("remote")
+        client = _mock_client(_export_response())
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
+            runner.invoke(app, ["export", "--output", str(tmp_path / "b.json")])
+        for path in self._paths(client):
+            assert not path.startswith("/api/")
+
+
+# ---------------------------------------------------------------------------
+# --archive: the complete (GDPR-grade) export
+# ---------------------------------------------------------------------------
+
+
+def _archive_client(states, download=b"PK\x03\x04zipbytes"):
+    """Client whose archive-status polls walk through `states`.
+
+    The POST enqueue reply and every GET poll use the backend's FLAT
+    `_serialize_job` shape: a top-level string `status` and (only when ready)
+    a top-level `download_url`. There is no `ready` boolean or `result` wrapper.
+    """
+    client = MagicMock()
+    responses = [{"status": "pending", "job_id": "job-1"}, *states]
+    client.request = AsyncMock(side_effect=responses)
+    client.download = AsyncMock(return_value=download)
+    client.close = AsyncMock()
+    return client
+
+
+_READY = {
+    "job_id": "job-1",
+    "status": "ready",
+    "download_url": "/media/exports/u/job-1.zip",
+}
+
+
+class TestArchiveExport:
+    def _invoke(self, client, args, context_type="remote"):
+        svc = _mock_config_svc(context_type)
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+            patch("todopro_cli.commands.data_command.POLL_INTERVAL_SECONDS", 0),
+        ):
+            return runner.invoke(app, args)
+
+    def test_archive_writes_the_zip(self, tmp_path):
+        out = tmp_path / "full.zip"
+        client = _archive_client([_READY])
+        result = self._invoke(client, ["export", "--archive", "--output", str(out)])
+        assert result.exit_code == 0
+        assert out.read_bytes() == b"PK\x03\x04zipbytes"
+
+    def test_archive_uses_the_versioned_job_endpoints(self, tmp_path):
+        client = _archive_client([_READY])
+        result = self._invoke(
+            client, ["export", "--archive", "--output", str(tmp_path / "f.zip")]
+        )
+        assert result.exit_code == 0
+        calls = [(c.args[0], c.args[1]) for c in client.request.call_args_list]
+        assert calls == [
+            ("POST", "/v1/export/archive"),
+            ("GET", "/v1/export/archive/job-1"),
+        ]
+
+    def test_archive_polls_until_ready(self, tmp_path):
+        client = _archive_client(
+            [
+                {"job_id": "job-1", "status": "running"},
+                {"job_id": "job-1", "status": "running"},
+                _READY,
+            ]
+        )
+        result = self._invoke(
+            client, ["export", "--archive", "--output", str(tmp_path / "f.zip")]
+        )
+        assert result.exit_code == 0
+        assert client.request.call_count == 4
+
+    def test_archive_detects_flat_ready_status_and_downloads(self, tmp_path):
+        """The poller completes on a top-level `status: "ready"` and downloads
+        from the top-level `download_url` (the flat `_serialize_job` shape)."""
+        out = tmp_path / "full.zip"
+        client = _archive_client([_READY])
+        result = self._invoke(client, ["export", "--archive", "--output", str(out)])
+        assert result.exit_code == 0
+        client.download.assert_awaited_once_with("/media/exports/u/job-1.zip")
+        assert out.read_bytes() == b"PK\x03\x04zipbytes"
+
+    def test_archive_downloads_the_returned_url(self, tmp_path):
+        client = _archive_client([_READY])
+        self._invoke(
+            client, ["export", "--archive", "--output", str(tmp_path / "f.zip")]
+        )
+        client.download.assert_awaited_once_with("/media/exports/u/job-1.zip")
+
+    def test_archive_ready_without_download_url_exits_nonzero(self, tmp_path):
+        client = _archive_client([{"job_id": "job-1", "status": "ready"}])
+        result = self._invoke(
+            client, ["export", "--archive", "--output", str(tmp_path / "f.zip")]
+        )
+        assert result.exit_code != 0
+        client.download.assert_not_called()
+
+    def test_archive_server_side_failure_exits_nonzero(self, tmp_path):
+        client = _archive_client(
+            [{"job_id": "job-1", "status": "failed", "error": "boom"}]
+        )
+        result = self._invoke(
+            client, ["export", "--archive", "--output", str(tmp_path / "f.zip")]
+        )
+        assert result.exit_code != 0
+        client.download.assert_not_called()
+
+    def test_archive_expired_status_exits_nonzero(self, tmp_path):
+        client = _archive_client([{"job_id": "job-1", "status": "expired"}])
+        result = self._invoke(
+            client, ["export", "--archive", "--output", str(tmp_path / "f.zip")]
+        )
+        assert result.exit_code != 0
+        client.download.assert_not_called()
+
+    def test_archive_missing_job_id_exits_nonzero(self, tmp_path):
+        client = MagicMock()
+        client.request = AsyncMock(return_value={"status": "queued"})
+        client.close = AsyncMock()
+        result = self._invoke(
+            client, ["export", "--archive", "--output", str(tmp_path / "f.zip")]
+        )
+        assert result.exit_code != 0
+
+    def test_archive_rejects_local_context(self, tmp_path):
+        client = _archive_client([_READY])
+        result = self._invoke(
+            client,
+            ["export", "--archive", "--output", str(tmp_path / "f.zip")],
+            context_type="local",
+        )
+        assert result.exit_code != 0
+        client.request.assert_not_called()
+
+    def test_archive_closes_the_client(self, tmp_path):
+        client = _archive_client([_READY])
+        self._invoke(
+            client, ["export", "--archive", "--output", str(tmp_path / "f.zip")]
+        )
+        client.close.assert_awaited_once()
+
+    def test_archive_default_filename_is_a_zip(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        client = _archive_client([_READY])
+        result = self._invoke(client, ["export", "--archive"])
+        assert result.exit_code == 0
+        assert list(tmp_path.glob("todopro-export-*.zip"))
+
+    def test_plain_export_is_unaffected(self, tmp_path):
+        """--archive is opt-in; the default path stays the narrow JSON export."""
+        svc = _mock_config_svc("remote")
+        client = _mock_client(_export_response())
+        with (
+            patch(
+                "todopro_cli.commands.data_command.get_config_service", return_value=svc
+            ),
+            patch("todopro_cli.commands.data_command.get_client", return_value=client),
+        ):
+            result = runner.invoke(
+                app, ["export", "--output", str(tmp_path / "b.json")]
+            )
+        assert result.exit_code == 0
+        assert client.request.call_args.args[1] == "/v1/export/data"

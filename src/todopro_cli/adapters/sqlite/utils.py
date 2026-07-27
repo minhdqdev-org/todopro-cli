@@ -9,12 +9,22 @@ from typing import Any
 
 
 def generate_uuid() -> str:
-    """Generate a new UUID as string.
+    """Generate a new time-ordered UUID (v7) as a string.
+
+    v7 rather than v4 because these ids are primary keys, locally and after
+    sync. The high 48 bits are a millisecond timestamp, so inserts append to
+    the B-tree instead of scattering across it — the same reasoning that moved
+    the backend's defaults (core-svc `todopro/ids.py`, schema review §3.4).
+    Ids minted here for offline creates travel to the server as-is, so the
+    server's tables get the benefit too.
+
+    Same 16 bytes, same opacity, same string form. Existing v4 ids keep
+    working; nothing reads a version out of an id.
 
     Returns:
-        UUID string (e.g., "123e4567-e89b-12d3-a456-426614174000")
+        UUID string (e.g., "019fa1d2-7c35-7342-8ed0-d97d9e38733c")
     """
-    return str(uuid.uuid4())
+    return str(uuid.uuid7())
 
 
 def now_iso() -> str:

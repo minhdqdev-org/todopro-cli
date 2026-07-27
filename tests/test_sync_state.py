@@ -346,21 +346,30 @@ def test_get_all_sync_times_with_none_value_fixture(temp_config_dir):
 
 
 def test_get_all_sync_times_with_datetime_object(temp_config_dir):
-    """Test get_all_sync_times when state contains datetime objects."""
+    """A naive datetime on disk is read back as the UTC instant it represents.
+
+    This used to assert the value came back naive and unchanged, which pinned
+    the defect rather than a requirement: `sync status` subtracts these from an
+    aware `now` and crashed on exactly that. The instant is unchanged; only the
+    tzinfo it now carries is new.
+    """
     from datetime import datetime
 
     state = SyncState(config_dir=temp_config_dir)
-    # Naive datetime
     naive_dt = datetime(2025, 1, 15, 10, 0, 0)
     state._state["last_sync"]["dt-ctx"] = naive_dt
 
     all_times = state.get_all_sync_times()
     assert "dt-ctx" in all_times
-    assert all_times["dt-ctx"] == naive_dt
+    assert all_times["dt-ctx"] == naive_dt.replace(tzinfo=UTC)
 
 
-def test_get_all_sync_times_with_aware_datetime_object(temp_config_dir):
-    """Test get_all_sync_times strips tzinfo from aware datetime objects."""
+def test_get_all_sync_times_preserves_an_aware_datetime(temp_config_dir):
+    """An aware value is returned as-is — the tzinfo is no longer stripped.
+
+    Stripping it was the bug: it made this reader disagree with
+    `get_last_sync`, which has always returned aware UTC.
+    """
     from datetime import datetime
 
     state = SyncState(config_dir=temp_config_dir)
@@ -368,8 +377,37 @@ def test_get_all_sync_times_with_aware_datetime_object(temp_config_dir):
     state._state["last_sync"]["aware-ctx"] = aware_dt
 
     all_times = state.get_all_sync_times()
-    assert "aware-ctx" in all_times
-    # Should be stripped of timezone
-    result = all_times["aware-ctx"]
-    assert result is not None
-    assert result.tzinfo is None
+    assert all_times["aware-ctx"] == aware_dt
+    assert all_times["aware-ctx"].tzinfo is not None
+
+
+def test_both_readers_agree_on_timezone_awareness(tmp_path):
+    """`get_all_sync_times` and `get_last_sync` must not disagree.
+
+    They read the same values out of the same file, and `todopro sync status`
+    subtracts the former from `datetime.now(UTC)`. When one returned naive and
+    the other aware, that subtraction raised
+    `TypeError: can't subtract offset-naive and offset-aware datetimes` and the
+    command was unusable.
+    """
+    state = SyncState(config_dir=tmp_path / ".todopro")
+    state.set_last_sync("ctx", datetime.now(UTC))
+
+    from_all = state.get_all_sync_times()["ctx"]
+    from_one = state.get_last_sync("ctx")
+
+    assert from_all.tzinfo is not None
+    assert from_one.tzinfo is not None
+    # The property that actually broke: this must not raise.
+    assert (datetime.now(UTC) - from_all).total_seconds() >= 0
+
+
+def test_naive_values_on_disk_are_read_back_as_utc(tmp_path):
+    """Older state files hold naive strings; they are UTC instants, so say so."""
+    state = SyncState(config_dir=tmp_path / ".todopro")
+    state._state["last_sync"]["legacy"] = "2024-01-01T12:00:00"
+
+    value = state.get_all_sync_times()["legacy"]
+
+    assert value.tzinfo is not None
+    assert (datetime.now(UTC) - value).total_seconds() > 0
