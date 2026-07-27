@@ -1,5 +1,8 @@
 [tools]
-python = "3.12"
+# 3.14.2, not a loose "3.14" — mise resolves newer 3.14 patches to a
+# freethreaded tarball that installs without a `lib` directory and fails. Same
+# pin as todopro-core-svc; keep them together.
+python = "3.14.2"
 uv = "latest"
 
 [env]
