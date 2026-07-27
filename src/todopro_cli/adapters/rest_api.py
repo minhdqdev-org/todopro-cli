@@ -303,8 +303,6 @@ class RestApiProjectRepository(ProjectRepository):
             projects = [p for p in projects if p.is_favorite == filters.is_favorite]
         if filters.is_archived is not None:
             projects = [p for p in projects if p.is_archived == filters.is_archived]
-        if filters.workspace_id is not None:
-            projects = [p for p in projects if p.workspace_id == filters.workspace_id]
         if filters.search:
             search_lower = filters.search.lower()
             projects = [p for p in projects if search_lower in p.name.lower()]
@@ -445,9 +443,11 @@ class RestApiLocationContextRepository(LocationContextRepository):
         try:
             response = await self.client.get("/v1/contexts")
 
+            data = response.json()
+
             # Response is a list of context objects
             contexts = []
-            for ctx_data in response:
+            for ctx_data in data:
                 # Map backend fields to our model
                 context = LocationContext(
                     id=ctx_data["id"],
@@ -468,12 +468,14 @@ class RestApiLocationContextRepository(LocationContextRepository):
         try:
             response = await self.client.get(f"/v1/contexts/{context_id}")
 
+            data = response.json()
+
             return LocationContext(
-                id=response["id"],
-                name=response["name"],
-                latitude=response["latitude"],
-                longitude=response["longitude"],
-                radius=response["radius"],
+                id=data["id"],
+                name=data["name"],
+                latitude=data["latitude"],
+                longitude=data["longitude"],
+                radius=data["radius"],
             )
         except Exception as e:
             raise ValueError(f"Context {context_id} not found") from e
@@ -490,12 +492,14 @@ class RestApiLocationContextRepository(LocationContextRepository):
         try:
             response = await self.client.post("/v1/contexts", json=payload)
 
+            data = response.json()
+
             return LocationContext(
-                id=response["id"],
-                name=response["name"],
-                latitude=response["latitude"],
-                longitude=response["longitude"],
-                radius=response["radius"],
+                id=data["id"],
+                name=data["name"],
+                latitude=data["latitude"],
+                longitude=data["longitude"],
+                radius=data["radius"],
             )
         except Exception as e:
             raise ValueError(f"Failed to create context: {e}") from e
@@ -522,9 +526,11 @@ class RestApiLocationContextRepository(LocationContextRepository):
                 json={"latitude": latitude, "longitude": longitude},
             )
 
+            data = response.json()
+
             # Backend returns {"available": [...], "unavailable": [...], "user_location": {...}}
             available_contexts = []
-            for ctx_data in response.get("available", []):
+            for ctx_data in data.get("available", []):
                 context = LocationContext(
                     id=ctx_data["id"],
                     name=ctx_data["name"],

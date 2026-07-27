@@ -4,17 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "todopro-cli"
-version = "1.0.4"
+version = "1.2.0"
 description = "A professional CLI for TodoPro task management system"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 authors = [{ name = "minhdqdev", email = "minhdq.dev@gmail.com" }]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Office/Business :: Scheduling",
     "Topic :: Utilities",
 ]
@@ -33,6 +33,9 @@ dependencies = [
     "textual[syntax]>=0.87.0",
     "tzlocal>=5.3.1",
     "dateparser>=1.2.0",
+    "numpy>=2.5.1",
+    "sounddevice>=0.5.5",
+    "faster-whisper>=1.2.1",
 ]
 
 [project.optional-dependencies]
@@ -61,7 +64,7 @@ packages = ["src/todopro_cli"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py312"
+target-version = "py314"
 src = ["src"]
 exclude = ["tests"]
 
@@ -127,6 +130,7 @@ addopts = "-v"
 [dependency-groups]
 dev = [
     "click-man>=0.5.1",
+    "djangorestframework-stubs>=3.17.0",
     "mypy>=1.19.1",
     "pydeps>=3.0.2",
     "pylint-pydantic>=0.4.1",

@@ -5,7 +5,7 @@ import typer
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
 
-from .auth import login, logout
+from .auth import login, logout, resend_verification, signup
 
 app = typer.Typer(cls=SuggestingGroup, help="Authentication — login, logout, signup")
 console = get_console()
@@ -37,22 +37,31 @@ def auth_logout(
     logout(all_profiles=all_profiles)
 
 
+@app.command("resend-verification")
+def auth_resend_verification(
+    email: str | None = typer.Option(
+        None,
+        "--email",
+        help="Address to resend to (defaults to the signed-in account)",
+    ),
+) -> None:
+    """Send yourself a fresh email-confirmation link."""
+    resend_verification(email=email)
+
+
 @app.command("signup")
 def auth_signup(
     email: str | None = typer.Option(None, "--email", help="Email address"),
     password: str | None = typer.Option(None, "--password", help="Password"),
+    endpoint: str | None = typer.Option(None, "--endpoint", help="API endpoint URL"),
+    auto_login: bool = typer.Option(
+        True, "--auto-login/--no-auto-login", help="Automatically login after signup"
+    ),
 ) -> None:
     """Register a new user account."""
-    import asyncio
-
-    from todopro_cli.services.auth_service import AuthService
-    from todopro_cli.utils.ui.formatters import format_success
-
-    if not email:
-        email = typer.prompt("Email")
-    if not password:
-        password = typer.prompt("Password", hide_input=True)
-
-    auth_service = AuthService()
-    asyncio.run(auth_service.signup(email=email, password=password))
-    format_success(f"Account created: {email}")
+    signup(
+        email=email,
+        password=password,
+        endpoint=endpoint,
+        auto_login=auto_login,
+    )

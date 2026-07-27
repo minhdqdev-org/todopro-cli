@@ -1,18 +1,21 @@
-"""Microphone audio recorder for CLI Ramble."""
+"""Microphone audio recorder for CLI Dictate."""
 
 SOUNDDEVICE_AVAILABLE = False
 NUMPY_AVAILABLE = False
 
 try:
+    # sounddevice raises OSError (not ImportError) at import time when the
+    # PortAudio system library is missing — common on headless servers. Catch
+    # both so an optional voice feature can never take down the whole CLI.
     import sounddevice as sd
     SOUNDDEVICE_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError):
     pass
 
 try:
     import numpy as np  # noqa: F401
     NUMPY_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError):
     pass
 
 

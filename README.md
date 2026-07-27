@@ -1,6 +1,10 @@
+---
+updated_at: 2026-07-20T11:34:58+07:00
+---
+
 # TodoPro CLI
 
-> A professional CLI-first task management system with offline-first architecture and end-to-end encryption.
+> A professional CLI-first task management system with an offline-first architecture.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -12,7 +16,6 @@ TodoPro is a **CLI-first task manager** for power users, developers, and privacy
 
 - 🖥️ **Terminal Interface:** Keyboard-driven, fast, and distraction-free
 - 💾 **Offline-First:** Works without internet, local SQLite storage
-- 🔐 **Zero-Knowledge E2EE:** Your data encrypted before leaving your device
 - 🤖 **Automation-Ready:** JSON output, scripting support, CI/CD friendly
 - 🎯 **Privacy-Focused:** You own your data, no tracking, no ads
 
@@ -57,16 +60,16 @@ TodoPro is a **CLI-first task manager** for power users, developers, and privacy
 - ✅ Conflict resolution
 - ✅ **Todoist import** — migrate active tasks, projects, and labels from Todoist via API key (`todopro import todoist`)
 
-**Security:**
+**Security & Privacy:**
 
-- ✅ End-to-end encryption (AES-256-GCM)
-- ✅ 24-word recovery phrase (BIP39)
-- ✅ Zero-knowledge architecture
-- ✅ Client-side encryption
+- ✅ Local-only mode — data stays on your machine, no account required
+- ✅ Per-context credentials stored in `~/.config/todopro_cli/credentials/` with `0600` permissions
+- ✅ Token-based authentication over HTTPS to the cloud backend
+- ⚠️ End-to-end encryption was **discontinued** (ADR-0024). Data synced to the cloud is protected in transit and at rest by the server, **not** encrypted client-side. The `todopro encryption` commands remain only as no-op stubs.
 
 **Voice & AI:**
 
-- ✅ **Ramble** — voice-to-tasks (speak naturally, tasks appear automatically)
+- ✅ **Dictate** — voice-to-tasks (speak, then tasks are created from the recording)
 - ✅ **Quick Add** — natural language task creation with NLP date parsing
 
 ### 🚀 Coming Soon (Post-MVP1)
@@ -135,11 +138,7 @@ Want to sync across devices?
 # 1. Sign up
 todopro auth signup
 
-# 2. Set up encryption
-todopro encryption setup
-# ⚠️ Save your 24-word recovery phrase!
-
-# 3. Push your data
+# 2. Push your data
 todopro sync push
 ```
 
@@ -149,10 +148,7 @@ todopro sync push
 # 1. Login
 todopro auth login
 
-# 2. Recover encryption key
-todopro encryption recover
-
-# 3. Pull data
+# 2. Pull data
 todopro sync pull
 ```
 
@@ -218,38 +214,34 @@ todopro data export --compress  # Gzip compressed
 todopro data import backup.json
 ```
 
-### 🎙️ Ramble (Voice-to-Tasks)
+### 🎙️ Dictate (Voice-to-Tasks)
+
+Pro feature; requires the `remote` context, since transcription runs server-side.
 
 ```bash
-# Speak naturally — tasks are created automatically
-todopro ramble                              # Batch mode (30s default)
-todopro ramble --duration=60               # Custom duration
-todopro ramble --stream                    # Streaming mode (premium)
-todopro ramble --project=work              # Send tasks to specific project
-todopro ramble --dry-run                   # Preview parsed tasks without creating
-todopro ramble --text "Buy milk tomorrow"  # Text mode (no mic)
-todopro ramble history                     # Last 10 sessions
-todopro ramble config                      # Show/set Ramble configuration
+# Speak, then stop — the recording is transcribed in one batch and tasks are created
+todopro dictate                              # 30s default
+todopro dictate --duration=60                # Custom duration
+todopro dictate --project=work               # Send tasks to specific project
+todopro dictate --dry-run                    # Preview parsed tasks without creating
+todopro dictate --text "Buy milk tomorrow"   # Text mode (no mic)
+todopro dictate history                      # Last 10 sessions
+todopro dictate config                       # Show/set Dictate configuration
 ```
 
-### Encryption
+Transcription is batch: audio is buffered while recording and processed once you stop, so
+there is no live transcript and no interim results.
 
-```bash
-# Set up E2EE
-todopro encryption setup
+> Renamed from `ramble` on 2026-07-20, with **no alias kept** — the old command pointed at
+> `/api/ramble`, a mount the backend never had, so every `todopro ramble` sub-call 404'd
+> against a live server.
 
-# Check status
-todopro encryption status
+### Encryption (discontinued)
 
-# Show recovery phrase
-todopro encryption show-recovery
-
-# Recover on new device
-todopro encryption recover
-
-# Rotate key
-todopro encryption rotate-key
-```
+The `todopro encryption` command group still exists, but end-to-end encryption was
+discontinued in **ADR-0024**. Every subcommand is a no-op stub that prints a notice
+and exits — there is no key to set up, recover, or rotate. Nothing needs to be run
+before or after `todopro sync`.
 
 ---
 

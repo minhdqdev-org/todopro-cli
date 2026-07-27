@@ -1,9 +1,12 @@
 """Context management commands for TodoPro CLI."""
 
+from typing import Any
+
 import typer
 from rich.table import Table
 
 from todopro_cli.services.api.client import APIClient
+from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.ui.console import get_console
 
 from .utils import handle_api_error
@@ -11,42 +14,145 @@ from .utils import handle_api_error
 console = get_console()
 app = typer.Typer(help="Manage task contexts (@home, @office, @errands)")
 
+# The third party `geocoder.ip("me")` talks to. Named explicitly so the consent
+# prompt can say *who* receives the user's IP rather than hand-waving.
+GEOIP_PROVIDER = "ipinfo.io (via the `geocoder` package)"
+
+_CONSENT_DISCLOSURE = (
+    "\n[bold yellow]Location lookup requires sending your IP address to a "
+    "third party.[/bold yellow]\n"
+    f"TodoPro would ask [cyan]{GEOIP_PROVIDER}[/cyan] to estimate your "
+    "location from your public IP address.\n"
+    "Your IP address is personal data and this service is operated by "
+    "someone other than TodoPro.\n"
+    "You can skip this entirely by passing coordinates yourself with "
+    "[cyan]--lat[/cyan] and [cyan]--lon[/cyan].\n"
+)
+
+
+def _geoip_consent_granted() -> bool:
+    """Return whether the user has consented to third-party geo-IP lookups.
+
+    Asks once, on first use, and persists the answer in
+    ``~/.config/todopro_cli/config.json`` under ``privacy.geoip_consent``.
+    A non-interactive session (no TTY, piped input) counts as "no": we must
+    never make the call on a silent default.
+    """
+    config_svc = get_config_service()
+    privacy = config_svc.config.privacy
+    if privacy.geoip_consent is not None:
+        return privacy.geoip_consent
+
+    console.print(_CONSENT_DISCLOSURE)
+    try:
+        granted = typer.confirm(
+            f"Allow TodoPro to send your IP address to {GEOIP_PROVIDER}?",
+            default=False,
+        )
+    except (typer.Abort, EOFError):
+        # Non-interactive: decline, and don't persist — the user never saw the
+        # question, so a later interactive run should still get to answer it.
+        console.print(
+            "[yellow]No answer available (non-interactive session); "
+            "skipping location lookup.[/yellow]"
+        )
+        return False
+
+    privacy.geoip_consent = granted
+    config_svc.save_config()
+    if granted:
+        console.print(
+            "[dim]Saved. Revoke any time with: "
+            "[cyan]todopro config set privacy.geoip_consent false[/cyan][/dim]"
+        )
+    else:
+        console.print(
+            "[dim]Saved. No location lookup will be performed. Pass --lat/--lon "
+            "to use contexts' geo features.[/dim]"
+        )
+    return granted
+
+
+def _resolve_location(
+    lat: float | None, lon: float | None
+) -> tuple[float | None, float | None]:
+    """Resolve coordinates for a geo-aware command.
+
+    Explicit ``--lat``/``--lon`` always win and never trigger a network call.
+    Otherwise a third-party geo-IP lookup is attempted, but only after the
+    user has been told what it does and has consented.
+    """
+    if lat is not None and lon is not None:
+        return lat, lon
+    if lat is not None or lon is not None:
+        console.print("[red]Pass both --lat and --lon, or neither.[/red]")
+        return None, None
+
+    if not _geoip_consent_granted():
+        return None, None
+
+    try:
+        import geocoder
+    except ImportError:
+        console.print(
+            "[yellow]Install the 'geocoder' package for location detection, "
+            "or pass --lat/--lon.[/yellow]"
+        )
+        return None, None
+
+    g = geocoder.ip("me")
+    if not g.ok:
+        console.print("[red]Could not detect location[/red]")
+        return None, None
+    resolved_lat, resolved_lon = g.latlng
+    console.print(f"[blue]📍 Your location: {resolved_lat:.4f}, {resolved_lon:.4f}[/blue]")
+    return resolved_lat, resolved_lon
+
 
 @app.command("list")
 def list_contexts(
     location: bool = typer.Option(
         False, "--location", "-l", help="Request location for availability check"
     ),
+    lat: float | None = typer.Option(
+        None, "--lat", help="Latitude to use instead of a geo-IP lookup"
+    ),
+    lon: float | None = typer.Option(
+        None, "--lon", help="Longitude to use instead of a geo-IP lookup"
+    ),
 ):
     """List all contexts."""
     client = APIClient()
 
     try:
-        # Get location if requested
-        lat, lon = None, None
-        if location:
-            try:
-                import geocoder
+        # Availability needs coordinates. They must NOT travel as query
+        # params — query strings land in nginx/LB access logs and Sentry
+        # breadcrumbs in cleartext, which would put the user's real-time
+        # position in plaintext logs. The dedicated endpoint takes them in
+        # the POST body instead.
+        if location or lat is not None or lon is not None:
+            user_lat, user_lon = _resolve_location(lat, lon)
+        else:
+            user_lat, user_lon = None, None
 
-                g = geocoder.ip("me")
-                if g.ok:
-                    lat, lon = g.latlng
-                    console.print(
-                        f"[blue]📍 Your location: {lat:.4f}, {lon:.4f}[/blue]"
-                    )
-            except ImportError:
-                console.print(
-                    "[yellow]Install 'geocoder' package for location detection[/yellow]"
-                )
-
-        # Build query params
-        params = {}
-        if lat and lon:
-            params["lat"] = lat
-            params["lon"] = lon
-
-        response = client.get("/v1/contexts", params=params)
+        response = client.get("/v1/contexts")
         contexts_data = response if isinstance(response, list) else []
+
+        if user_lat is not None and user_lon is not None:
+            availability: Any = (
+                client.post(
+                    "/v1/contexts/check-available",
+                    {"latitude": user_lat, "longitude": user_lon},
+                )
+                or {}
+            )
+            available_ids = {ctx["id"] for ctx in availability.get("available", [])}
+            unavailable_ids = {ctx["id"] for ctx in availability.get("unavailable", [])}
+            for ctx in contexts_data:
+                if ctx.get("id") in available_ids:
+                    ctx["is_available"] = True
+                elif ctx.get("id") in unavailable_ids:
+                    ctx["is_available"] = False
 
         if not contexts_data:
             console.print(
@@ -97,31 +203,29 @@ def create_context(
         False, "--geo", help="Enable geo-fencing at current location"
     ),
     radius: int = typer.Option(200, help="Geo-fence radius in meters"),
+    lat: float | None = typer.Option(
+        None, "--lat", help="Latitude to use instead of a geo-IP lookup"
+    ),
+    lon: float | None = typer.Option(
+        None, "--lon", help="Longitude to use instead of a geo-IP lookup"
+    ),
 ):
     """Create a new context."""
     client = APIClient()
 
-    data = {"name": name, "icon": icon, "color": color}
+    data: dict[str, Any] = {"name": name, "icon": icon, "color": color}
 
-    if geo:
-        try:
-            import geocoder
-
-            g = geocoder.ip("me")
-            if g.ok:
-                lat, lon = g.latlng
-                data["latitude"] = lat
-                data["longitude"] = lon
-                data["radius"] = radius
-                console.print(
-                    f"[blue]📍 Geo-fence: {lat:.4f}, {lon:.4f} (radius: {radius}m)[/blue]"
-                )
-            else:
-                console.print("[red]Could not detect location[/red]")
-                return
-        except ImportError:
-            console.print("[red]Install 'geocoder' package: pip install geocoder[/red]")
+    if geo or lat is not None or lon is not None:
+        fence_lat, fence_lon = _resolve_location(lat, lon)
+        if fence_lat is None or fence_lon is None:
             return
+        data["latitude"] = fence_lat
+        data["longitude"] = fence_lon
+        data["radius"] = radius
+        console.print(
+            f"[blue]📍 Geo-fence: {fence_lat:.4f}, {fence_lon:.4f} "
+            f"(radius: {radius}m)[/blue]"
+        )
 
     try:
         result = client.post("/v1/contexts", data)
@@ -204,23 +308,29 @@ def context_tasks(
 
 
 @app.command("check")
-def check_available():
+def check_available(
+    lat: float | None = typer.Option(
+        None, "--lat", help="Latitude to use instead of a geo-IP lookup"
+    ),
+    lon: float | None = typer.Option(
+        None, "--lon", help="Longitude to use instead of a geo-IP lookup"
+    ),
+):
     """Check which contexts are available at current location."""
     client = APIClient()
 
     try:
-        import geocoder
-
-        g = geocoder.ip("me")
-        if not g.ok:
-            console.print("[red]Could not detect location[/red]")
+        user_lat, user_lon = _resolve_location(lat, lon)
+        if user_lat is None or user_lon is None:
             return
 
-        lat, lon = g.latlng
-        console.print(f"[blue]📍 Checking location: {lat:.4f}, {lon:.4f}[/blue]\n")
+        console.print(
+            f"[blue]📍 Checking location: {user_lat:.4f}, {user_lon:.4f}[/blue]\n"
+        )
 
         result = client.post(
-            "/v1/contexts/check-available", {"latitude": lat, "longitude": lon}
+            "/v1/contexts/check-available",
+            {"latitude": user_lat, "longitude": user_lon},
         )
 
         available = result.get("available", [])
@@ -240,7 +350,5 @@ def check_available():
         if not available and not unavailable:
             console.print("[yellow]No geo-fenced contexts configured[/yellow]")
 
-    except ImportError:
-        console.print("[red]Install 'geocoder' package: pip install geocoder[/red]")
     except Exception as e:
         handle_api_error(e, "checking available contexts")

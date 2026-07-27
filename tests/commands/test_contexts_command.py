@@ -6,11 +6,36 @@ Patches: todopro_cli.commands.contexts.APIClient
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from todopro_cli.commands.contexts import app
+from todopro_cli.models.config_models import AppConfig
 
 runner = CliRunner()
+
+
+def _config_svc(geoip_consent: bool | None = True):
+    """A ConfigService double whose privacy.geoip_consent is preset."""
+    svc = MagicMock()
+    svc.config = AppConfig()
+    svc.config.privacy.geoip_consent = geoip_consent
+    return svc
+
+
+def _patch_config(svc):
+    return patch("todopro_cli.commands.contexts.get_config_service", return_value=svc)
+
+
+@pytest.fixture(autouse=True)
+def _consent_granted():
+    """Default the geo-IP consent to "already granted" for existing tests.
+
+    The consent flow itself is exercised explicitly in TestGeoIPConsent, which
+    re-patches get_config_service from inside the test.
+    """
+    with _patch_config(_config_svc(True)):
+        yield
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -452,3 +477,195 @@ class TestCheckAvailable:
             result = runner.invoke(app, ["check"])
         assert result.exit_code == 0
         assert "48." in result.output or "2." in result.output
+
+
+# ---------------------------------------------------------------------------
+# Privacy: coordinates must never travel in the query string
+# ---------------------------------------------------------------------------
+
+def _geocoder(ok=True, latlng=(51.5, -0.1)):
+    geo = MagicMock()
+    geo.ok = ok
+    geo.latlng = list(latlng)
+    mod = MagicMock()
+    mod.ip.return_value = geo
+    return mod
+
+
+class TestCoordinatesNeverInQueryString:
+    """Query strings land in nginx/LB access logs and Sentry breadcrumbs.
+
+    A live GPS position must therefore go in the POST body of
+    /v1/contexts/check-available, never as ?lat=&lon= on the list endpoint.
+    """
+
+    def test_list_with_location_does_not_send_lat_lon_params(self):
+        client = _make_client(get=SAMPLE_CONTEXTS)
+        client.post.return_value = {"available": [], "unavailable": []}
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": _geocoder()}):
+            result = runner.invoke(app, ["list", "--location"])
+        assert result.exit_code == 0
+        for call in client.get.call_args_list:
+            params = call.kwargs.get("params") or {}
+            assert "lat" not in params and "lon" not in params
+            assert "latitude" not in params and "longitude" not in params
+
+    def test_list_with_location_posts_coordinates_in_body(self):
+        client = _make_client(get=SAMPLE_CONTEXTS)
+        client.post.return_value = {"available": [], "unavailable": []}
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": _geocoder()}):
+            result = runner.invoke(app, ["list", "--location"])
+        assert result.exit_code == 0
+        endpoint, body = client.post.call_args[0]
+        assert endpoint == "/v1/contexts/check-available"
+        assert body == {"latitude": 51.5, "longitude": -0.1}
+
+    def test_list_merges_availability_into_the_table(self):
+        client = _make_client(get=SAMPLE_CONTEXTS)
+        client.post.return_value = {
+            "available": [{"id": "ctx-1", "icon": "🏠", "name": "@home"}],
+            "unavailable": [{"id": "ctx-2", "icon": "🏢", "name": "@office"}],
+        }
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": _geocoder()}):
+            result = runner.invoke(app, ["list", "--location"])
+        assert result.exit_code == 0
+        assert "HERE" in result.output
+
+    def test_list_without_location_makes_no_availability_call(self):
+        client = _make_client(get=SAMPLE_CONTEXTS)
+        with _patch_client(client):
+            result = runner.invoke(app, ["list"])
+        assert result.exit_code == 0
+        client.post.assert_not_called()
+
+    def test_list_without_location_sends_no_params_at_all(self):
+        client = _make_client(get=SAMPLE_CONTEXTS)
+        with _patch_client(client):
+            result = runner.invoke(app, ["list"])
+        assert result.exit_code == 0
+        client.get.assert_called_once_with("/v1/contexts")
+
+
+class TestExplicitCoordinates:
+    """--lat/--lon bypass the third-party lookup entirely."""
+
+    def test_check_with_explicit_coords_makes_no_geoip_call(self):
+        client = _make_client(post={"available": [], "unavailable": []})
+        geocoder = _geocoder()
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": geocoder}):
+            result = runner.invoke(app, ["check", "--lat", "10.5", "--lon", "20.25"])
+        assert result.exit_code == 0
+        geocoder.ip.assert_not_called()
+        assert client.post.call_args[0][1] == {"latitude": 10.5, "longitude": 20.25}
+
+    def test_create_with_explicit_coords_makes_no_geoip_call(self):
+        client = _make_client(post={"name": "@here", "icon": "📍"})
+        geocoder = _geocoder()
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": geocoder}):
+            result = runner.invoke(
+                app, ["create", "@here", "--lat", "1.5", "--lon", "2.5"]
+            )
+        assert result.exit_code == 0
+        geocoder.ip.assert_not_called()
+        body = client.post.call_args[0][1]
+        assert body["latitude"] == 1.5
+        assert body["longitude"] == 2.5
+
+    def test_only_one_coordinate_is_rejected(self):
+        client = _make_client(post={"available": [], "unavailable": []})
+        geocoder = _geocoder()
+        with _patch_client(client), patch.dict("sys.modules", {"geocoder": geocoder}):
+            result = runner.invoke(app, ["check", "--lat", "10.5"])
+        assert result.exit_code == 0
+        geocoder.ip.assert_not_called()
+        client.post.assert_not_called()
+        assert "both --lat and --lon" in result.output
+
+
+class TestGeoIPConsent:
+    """The IP address must never reach a third party without an opt-in."""
+
+    def test_first_use_discloses_the_third_party_and_prompts(self):
+        svc = _config_svc(None)
+        geocoder = _geocoder()
+        client = _make_client(post={"available": [], "unavailable": []})
+        with _patch_config(svc), _patch_client(client), patch.dict(
+            "sys.modules", {"geocoder": geocoder}
+        ):
+            result = runner.invoke(app, ["check"], input="y\n")
+        assert result.exit_code == 0
+        assert "IP address" in result.output
+        assert "ipinfo.io" in result.output
+        geocoder.ip.assert_called_once_with("me")
+
+    def test_declining_blocks_the_lookup_and_is_persisted(self):
+        svc = _config_svc(None)
+        geocoder = _geocoder()
+        client = _make_client()
+        with _patch_config(svc), _patch_client(client), patch.dict(
+            "sys.modules", {"geocoder": geocoder}
+        ):
+            result = runner.invoke(app, ["check"], input="n\n")
+        assert result.exit_code == 0
+        geocoder.ip.assert_not_called()
+        client.post.assert_not_called()
+        assert svc.config.privacy.geoip_consent is False
+        svc.save_config.assert_called_once()
+
+    def test_accepting_is_persisted(self):
+        svc = _config_svc(None)
+        client = _make_client(post={"available": [], "unavailable": []})
+        with _patch_config(svc), _patch_client(client), patch.dict(
+            "sys.modules", {"geocoder": _geocoder()}
+        ):
+            runner.invoke(app, ["check"], input="y\n")
+        assert svc.config.privacy.geoip_consent is True
+        svc.save_config.assert_called_once()
+
+    def test_stored_consent_is_not_re_prompted(self):
+        svc = _config_svc(True)
+        client = _make_client(post={"available": [], "unavailable": []})
+        with _patch_config(svc), _patch_client(client), patch.dict(
+            "sys.modules", {"geocoder": _geocoder()}
+        ):
+            result = runner.invoke(app, ["check"])
+        assert result.exit_code == 0
+        assert "ipinfo.io" not in result.output
+        svc.save_config.assert_not_called()
+
+    def test_stored_refusal_blocks_every_call_site(self):
+        """One gate, checked in _resolve_location, covers list/create/check."""
+        geocoder = _geocoder()
+        for argv in (["check"], ["create", "@x", "--geo"], ["list", "--location"]):
+            svc = _config_svc(False)
+            client = _make_client(get=[], post={})
+            with _patch_config(svc), _patch_client(client), patch.dict(
+                "sys.modules", {"geocoder": geocoder}
+            ):
+                result = runner.invoke(app, argv)
+            assert result.exit_code == 0, argv
+            geocoder.ip.assert_not_called()
+
+    def test_non_interactive_session_declines_without_persisting(self):
+        """No TTY must mean "no", not a silent default-yes."""
+        svc = _config_svc(None)
+        geocoder = _geocoder()
+        client = _make_client()
+        with _patch_config(svc), _patch_client(client), patch.dict(
+            "sys.modules", {"geocoder": geocoder}
+        ), patch("typer.confirm", side_effect=EOFError):
+            result = runner.invoke(app, ["check"])
+        assert result.exit_code == 0
+        geocoder.ip.assert_not_called()
+        # Not persisted: the user never actually saw the question.
+        assert svc.config.privacy.geoip_consent is None
+        svc.save_config.assert_not_called()
+
+    def test_explicit_coords_skip_the_consent_prompt_entirely(self):
+        svc = _config_svc(None)
+        client = _make_client(post={"available": [], "unavailable": []})
+        with _patch_config(svc), _patch_client(client):
+            result = runner.invoke(app, ["check", "--lat", "1.0", "--lon", "2.0"])
+        assert result.exit_code == 0
+        assert "ipinfo.io" not in result.output
+        svc.save_config.assert_not_called()

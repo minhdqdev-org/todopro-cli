@@ -47,7 +47,6 @@ def mock_project():
         color="#FF0000",
         is_favorite=False,
         is_archived=False,
-        workspace_id=None,
         created_at=datetime(2024, 1, 1, 12, 0, 0),
         updated_at=datetime(2024, 1, 1, 12, 0, 0),
     )

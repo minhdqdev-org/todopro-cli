@@ -11,6 +11,24 @@ from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.update_checker import DEFAULT_BACKEND_URL, get_backend_url
 
 
+def _is_email_unverified(response: httpx.Response) -> bool:
+    """S-80: is this 403 the email-verification wall, or a real permission denial?
+
+    The wall carries `code: email_not_verified` in the backend's standard error
+    envelope. Anything unparseable is treated as a normal 403 — guessing from
+    the status alone would mislabel every genuine authorisation failure as a
+    verification problem.
+    """
+    try:
+        body = response.json()
+    except Exception:
+        return False
+    envelope = body.get("error") if isinstance(body, dict) else None
+    if not isinstance(envelope, dict):
+        return False
+    return envelope.get("code") == "email_not_verified"
+
+
 class APIClient:
     """HTTP client for TodoPro API."""
 
@@ -47,7 +65,7 @@ class APIClient:
             return endpoint.rstrip("/")
         return get_backend_url()
 
-    async def __aenter__(self) -> "APIClient":
+    async def __aenter__(self) -> APIClient:
         """Enter the async context manager."""
         return self
 
@@ -149,6 +167,21 @@ class APIClient:
                     )
                     raise
 
+                # S-80: the backend walls off unconfirmed addresses. Without
+                # this the user gets a bare "403 Forbidden" on every command
+                # and no idea that a link is sitting in their inbox. Same shape
+                # as the 401 branch above: explain, name the fix, re-raise.
+                if e.response.status_code == 403 and _is_email_unverified(e.response):
+                    rich_console = get_console()
+                    rich_console.print(
+                        "\n[yellow]⚠ Your email address isn't confirmed yet.[/yellow]"
+                    )
+                    rich_console.print(
+                        "[dim]Click the link we emailed you, or request a new "
+                        "one:[/dim] [cyan]todopro auth resend-verification[/cyan]\n"
+                    )
+                    raise
+
                 # Don't retry other client errors (4xx)
                 if 400 <= e.response.status_code < 500:
                     raise
@@ -193,6 +226,32 @@ class APIClient:
     async def delete(self, path: str) -> httpx.Response:
         """Make a DELETE request."""
         return await self.request("DELETE", path)
+
+    async def download(self, url: str) -> bytes:
+        """Fetch raw bytes from ``url``, authenticated.
+
+        Unlike :meth:`request`, ``url`` may be absolute or site-root-relative
+        (e.g. a ``/media/...`` download link). Those live outside the ``/api``
+        prefix baked into ``base_url``, so they cannot go through the normal
+        client, but they still need the Authorization header (S-48 re-checks
+        ownership on media serves).
+        """
+        if not url.startswith(("http://", "https://")):
+            path = url if url.startswith("/") else f"/{url}"
+            origin = httpx.URL(self.base_url)
+            url = str(origin.copy_with(path=path, query=None, fragment=None))
+
+        async with httpx.AsyncClient(
+            timeout=self.timeout, follow_redirects=True
+        ) as client:
+            headers = {
+                k: v
+                for k, v in self._get_headers().items()
+                if k.lower() != "content-type"
+            }
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+            return response.content
 
 
 def get_client() -> APIClient:

@@ -191,3 +191,35 @@ def test_sounddevice_and_numpy_available_flags_set_when_importable():
         sys.modules.pop("sounddevice", None)
         sys.modules.pop("numpy", None)
         importlib.reload(recorder)
+
+
+def test_import_survives_oserror_from_missing_portaudio():
+    """Regression: sounddevice raises OSError (not ImportError) at import time
+    when the PortAudio system library is missing (common on headless servers).
+
+    The module-level guard must catch OSError too, otherwise importing recorder
+    — which every startup does transitively via main.py — crashes the entire CLI
+    (``todopro --help`` exited 1 before this fix). Assert the import degrades to
+    SOUNDDEVICE_AVAILABLE=False instead of propagating.
+    """
+    import builtins
+    import importlib
+
+    real_import = builtins.__import__
+
+    def _raising_import(name, *args, **kwargs):
+        if name == "sounddevice":
+            raise OSError("PortAudio library not found")
+        return real_import(name, *args, **kwargs)
+
+    sys.modules.pop("sounddevice", None)
+    try:
+        with patch.object(builtins, "__import__", _raising_import):
+            importlib.reload(recorder)  # must NOT raise
+        assert recorder.SOUNDDEVICE_AVAILABLE is False
+        ok, msg = recorder.check_dependencies()
+        assert ok is False
+        assert "sounddevice" in msg
+    finally:
+        sys.modules.pop("sounddevice", None)
+        importlib.reload(recorder)

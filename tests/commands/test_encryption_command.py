@@ -16,9 +16,6 @@ from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
 from todopro_cli.commands.encryption_command import app
-from todopro_cli.models.crypto.exceptions import (
-    InvalidRecoveryPhraseError,
-)
 
 runner = CliRunner()
 
@@ -129,176 +126,78 @@ class TestStatusCommand:
 # ---------------------------------------------------------------------------
 
 
-class TestShowRecoveryCommand:
-    def test_no_key_exits_with_code_1(self):
-        svc = _make_service(key_exists=False)
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(app, ["show-recovery", "--yes"])
-        assert result.exit_code == 1
-        assert "No encryption key" in result.output or "❌" in result.output
+class TestDiscontinuedCommands:
+    """ADR-0024: show-recovery / recover / rotate-key are inert notices.
 
-    def test_show_recovery_with_yes_flag_displays_phrase(self):
-        svc = _make_service(key_exists=True)
-        svc.get_recovery_phrase.return_value = "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
+    They must not touch EncryptionService, must not prompt, and must exit 0 —
+    matching the already-stubbed `setup` / `status` pattern.
+    """
 
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(app, ["show-recovery", "--yes"])
+    COMMANDS = ["show-recovery", "recover", "rotate-key"]
+
+    def test_all_print_discontinued_notice(self):
+        for command in self.COMMANDS:
+            result = runner.invoke(app, [command])
+            assert result.exit_code == 0, command
+            assert "discontinued" in result.output.lower(), command
+            assert "adr-0024" in result.output.lower(), command
+
+    def test_none_touch_the_encryption_service(self):
+        for command in self.COMMANDS:
+            svc = _make_service(key_exists=True)
+            with patch(
+                "todopro_cli.commands.encryption_command.get_encryption_service",
+                return_value=svc,
+            ):
+                # Empty stdin: a surviving prompt would abort instead of exit 0.
+                result = runner.invoke(app, [command], input="")
+            assert result.exit_code == 0, command
+            svc.get_recovery_phrase.assert_not_called()
+            svc.recover.assert_not_called()
+            svc.save_manager.assert_not_called()
+            svc.storage.has_key.assert_not_called()
+
+    def test_no_dead_end_pointer_back_to_setup(self):
+        """The old code told users to run the (also discontinued) `setup`."""
+        for command in self.COMMANDS:
+            result = runner.invoke(app, [command])
+            assert "todopro encryption setup" not in result.output, command
+
+    def test_no_stale_encryption_claims(self):
+        """No copy may still imply live encryption or a future capability."""
+        banned = [
+            "your encrypted data",
+            "recovery phrase in plain text",
+            "not yet implemented",
+            "planned for future release",
+            "24-word",
+            "12-word",
+        ]
+        for command in self.COMMANDS:
+            output = runner.invoke(app, [command]).output.lower()
+            for phrase in banned:
+                assert phrase not in output, f"{command}: {phrase}"
+
+    def test_show_recovery_yes_flag_still_accepted(self):
+        """Scripts passing --yes must not start failing on an unknown flag."""
+        result = runner.invoke(app, ["show-recovery", "--yes"])
         assert result.exit_code == 0
-        assert "word1" in result.output
 
-    def test_show_recovery_prompts_for_confirmation_when_no_yes_flag_decline(self):
-        svc = _make_service(key_exists=True)
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            # User answers "n" to the confirmation prompt
-            result = runner.invoke(app, ["show-recovery"], input="n\n")
+
+class TestGroupHelp:
+    def test_group_help_is_marked_discontinued(self):
+        result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        # User declined – phrase should not be shown
-        svc.get_recovery_phrase.assert_not_called()
+        assert "discontinued" in result.output.lower()
+        assert "manage end-to-end encryption" not in result.output.lower()
 
-    def test_show_recovery_prompts_for_confirmation_when_no_yes_flag_accept(self):
-        svc = _make_service(key_exists=True)
-        svc.get_recovery_phrase.return_value = "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima"
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(app, ["show-recovery"], input="y\n")
-        assert result.exit_code == 0
-        svc.get_recovery_phrase.assert_called_once()
-
-    def test_show_recovery_exception_exits_with_code_1(self):
-        svc = _make_service(key_exists=True)
-        svc.get_recovery_phrase.side_effect = RuntimeError("Decryption failed")
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(app, ["show-recovery", "--yes"])
-        assert result.exit_code == 1
-        assert "Error" in result.output or "❌" in result.output
+    def test_group_stays_visible_so_users_can_discover_the_notice(self):
+        """Deliberately NOT hidden: a command-not-found is worse than a notice."""
+        result = runner.invoke(app, ["--help"])
+        for command in ["show-recovery", "recover", "rotate-key", "setup", "status"]:
+            assert command in result.output
 
 
-# ---------------------------------------------------------------------------
-# recover command
-# ---------------------------------------------------------------------------
-
-
-class TestRecoverCommand:
-    def test_recover_success_no_existing_key(self):
-        svc = _make_service(key_exists=False)
-        mock_manager = MagicMock()
-        svc.recover.return_value = mock_manager
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(
-                app,
-                ["recover"],
-                input="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12\n",
-            )
-        assert result.exit_code == 0
-        assert "recovered successfully" in result.output.lower() or "✅" in result.output
-
-    def test_recover_crypto_error_exits_with_code_1(self):
-        svc = _make_service(key_exists=False)
-        svc.recover.side_effect = InvalidRecoveryPhraseError("Bad phrase")
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(
-                app,
-                ["recover"],
-                input="bad phrase\n",
-            )
-        assert result.exit_code == 1
-        assert "Recovery failed" in result.output or "❌" in result.output
-
-    def test_recover_unexpected_error_exits_with_code_1(self):
-        svc = _make_service(key_exists=False)
-        svc.recover.side_effect = RuntimeError("unexpected")
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(
-                app,
-                ["recover"],
-                input="any phrase here\n",
-            )
-        assert result.exit_code == 1
-
-    def test_recover_with_existing_key_user_declines(self):
-        svc = _make_service(key_exists=True)
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(app, ["recover"], input="n\n")
-        assert result.exit_code == 0
-        svc.recover.assert_not_called()
-
-    def test_recover_with_existing_key_user_accepts(self):
-        svc = _make_service(key_exists=True)
-        mock_manager = MagicMock()
-        svc.recover.return_value = mock_manager
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            result = runner.invoke(
-                app,
-                ["recover"],
-                input="y\nword1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12\n",
-            )
-        assert result.exit_code == 0
-        svc.recover.assert_called_once()
-
-    def test_recover_saves_manager_on_success(self):
-        svc = _make_service(key_exists=False)
-        mock_manager = MagicMock()
-        svc.recover.return_value = mock_manager
-
-        with patch(
-            "todopro_cli.commands.encryption_command.get_encryption_service",
-            return_value=svc,
-        ):
-            runner.invoke(
-                app,
-                ["recover"],
-                input="valid phrase words here now ok go\n",
-            )
-        svc.save_manager.assert_called_once_with(mock_manager)
-
-
-# ---------------------------------------------------------------------------
-# rotate-key command
-# ---------------------------------------------------------------------------
-
-
-class TestRotateKeyCommand:
-    def test_rotate_key_exits_cleanly(self):
-        """rotate-key is a stub that prints a message and exits."""
-        result = runner.invoke(app, ["rotate-key"])
-        assert result.exit_code == 0
-        assert "not yet implemented" in result.output.lower()
 
 
 # ---------------------------------------------------------------------------

@@ -521,7 +521,6 @@ def _make_mock_ctx(name="main", ctx_type="local", source="/tmp/main.db", **kwarg
     ctx.source = source
     ctx.description = kwargs.get("description", "")
     ctx.user = kwargs.get("user")
-    ctx.workspace_id = kwargs.get("workspace_id")
     # Encryption: disabled by default (falsy)
     ctx.encryption = None
     return ctx
@@ -623,16 +622,6 @@ class TestShowCurrentContextInfoExtra:
         assert result.exit_code == 0
         assert "alice@example.com" not in result.output
 
-    def test_json_output_includes_workspace_when_set(self):
-        """Lines 53-54: JSON output includes workspace field when ctx.workspace_id is truthy."""
-        ctx = _make_mock_ctx("myctx", "local", "/tmp/myctx.db", workspace_id="ws-xyz")
-        svc = MagicMock()
-        svc.get_current_context.return_value = ctx
-        with _patch_svc(svc):
-            result = runner.invoke(app, ["--output", "json"])
-        assert result.exit_code == 0
-        assert "ws-xyz" in result.output
-
     def test_json_output_remote_context_includes_user_info(self):
         """Line 58: JSON output for remote context calls _get_user_info_sync."""
         ctx = _make_mock_ctx("prod", "remote", "https://api.example.com")
@@ -685,25 +674,15 @@ class TestShowCurrentContextInfoExtra:
         assert result.exit_code == 0
         assert "bob@example.com" not in result.output
 
-    def test_text_output_shows_workspace_when_set(self):
-        """Line 72: text output includes workspace_id when provided."""
-        ctx = _make_mock_ctx("myctx", "local", "/tmp/myctx.db", workspace_id="ws-abc123")
+    def test_text_output_never_mentions_workspace(self):
+        """Workspaces are gone from the product (backend phase 4) — no stray label."""
+        ctx = _make_mock_ctx("myctx", "local", "/tmp/myctx.db")
         svc = MagicMock()
         svc.get_current_context.return_value = ctx
         with _patch_svc(svc):
             result = runner.invoke(app, [])
         assert result.exit_code == 0
-        assert "ws-abc123" in result.output
-
-    def test_text_output_omits_workspace_when_not_set(self):
-        """Line 71: workspace block skipped when ctx.workspace_id is falsy."""
-        ctx = _make_mock_ctx("myctx", "local", "/tmp/myctx.db", workspace_id=None)
-        svc = MagicMock()
-        svc.get_current_context.return_value = ctx
-        with _patch_svc(svc):
-            result = runner.invoke(app, [])
-        assert result.exit_code == 0
-        assert "Workspace:" not in result.output
+        assert "Workspace" not in result.output
 
     def test_local_context_with_existing_db_shows_file_stats(self, tmp_path):
         """Lines 80-114: local context with existing db file shows file size and counts."""

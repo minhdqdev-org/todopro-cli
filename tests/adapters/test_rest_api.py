@@ -73,7 +73,6 @@ def _project_dict(**kwargs) -> dict:
         "color": None,
         "is_favorite": False,
         "is_archived": False,
-        "workspace_id": None,
         "created_at": _NOW.isoformat(),
         "updated_at": _NOW.isoformat(),
     }
@@ -464,15 +463,15 @@ class TestRestApiProjectRepository:
         assert projects[0].name == "Groceries"
 
     @pytest.mark.asyncio
-    async def test_list_all_filter_workspace(self):
+    async def test_list_all_ignores_server_only_fields(self):
+        """The API sends more per project than this model declares."""
         mock_api = MagicMock()
         mock_api.list_projects = AsyncMock(return_value={"projects": [
-            _project_dict(id="p1", workspace_id="ws-1"),
-            _project_dict(id="p2", workspace_id=None),
+            _project_dict(id="p1", is_default=True, task_count=3, permission="owner"),
         ]})
         repo = self._make_repo(mock_api)
-        projects = await repo.list_all(ProjectFilters(workspace_id="ws-1"))
-        assert all(p.workspace_id == "ws-1" for p in projects)
+        projects = await repo.list_all(ProjectFilters())
+        assert [p.id for p in projects] == ["p1"]
 
     @pytest.mark.asyncio
     async def test_get_returns_project(self):

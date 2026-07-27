@@ -156,7 +156,6 @@ class Project(BaseModel):
         is_favorite: Whether project is marked as favorite
         is_archived: Whether project is archived
         protected: Whether project is protected (e.g. Inbox) and cannot be deleted/archived
-        workspace_id: Optional reference to parent workspace
         created_at: Creation timestamp
         updated_at: Last update timestamp
     """
@@ -167,7 +166,6 @@ class Project(BaseModel):
     is_favorite: bool = False
     is_archived: bool = False
     protected: bool = False
-    workspace_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -179,13 +177,11 @@ class ProjectCreate(BaseModel):
         name: Project name (required)
         color: Optional hex color code
         is_favorite: Whether to mark as favorite
-        workspace_id: Optional reference to parent workspace
     """
 
     name: str
     color: str | None = None
     is_favorite: bool = False
-    workspace_id: str | None = None
 
 
 class ProjectUpdate(BaseModel):
@@ -198,14 +194,12 @@ class ProjectUpdate(BaseModel):
         color: Hex color code
         is_favorite: Favorite status
         is_archived: Archived status
-        workspace_id: Reference to parent workspace
     """
 
     name: str | None = None
     color: str | None = None
     is_favorite: bool | None = None
     is_archived: bool | None = None
-    workspace_id: str | None = None
 
 
 class ProjectFilters(BaseModel):
@@ -215,14 +209,12 @@ class ProjectFilters(BaseModel):
         id_prefix: Filter by ID prefix (for UUID resolution)
         is_favorite: Filter by favorite status
         is_archived: Filter by archived status
-        workspace_id: Filter by workspace ID
         search: Text search query
     """
 
     id_prefix: str | None = None
     is_favorite: bool | None = None
     is_archived: bool | None = None
-    workspace_id: str | None = None
     search: str | None = None
 
 

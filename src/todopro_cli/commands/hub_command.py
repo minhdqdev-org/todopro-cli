@@ -80,9 +80,17 @@ def list_items(
     ),
     link: str | None = typer.Option(None, "--link", help="Filter by project link id"),
     limit: int = typer.Option(50, "--limit", help="Max items to display"),
+    output: str = typer.Option(
+        "pretty", "--output", "-o", help="Output format (pretty, json, yaml)"
+    ),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
 ) -> None:
     """List aggregated external items across linked providers (Pro)."""
     _require_remote_context()
+    if json_opt:
+        output = "json"
 
     params: dict[str, object] = {"limit": limit}
     if provider:
@@ -125,6 +133,13 @@ def list_items(
 
     items = data.get("items", [])
     count = data.get("count", len(items))
+
+    if output != "pretty":
+        from todopro_cli.utils.ui.formatters import format_output
+
+        format_output(data, output)
+        return
+
     if not items:
         console.print("No hub items found.")
         return

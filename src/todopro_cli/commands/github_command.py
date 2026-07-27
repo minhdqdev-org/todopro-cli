@@ -184,8 +184,16 @@ def list_issues(
     ),
     state: str = typer.Option("open", "--state", help="Issue state (open/closed/all)"),
     limit: int = typer.Option(20, "--limit", help="Max issues to display"),
+    output: str = typer.Option(
+        "pretty", "--output", "-o", help="Output format (pretty, json, yaml)"
+    ),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
 ) -> None:
     """List GitHub Issues in a repository."""
+    if json_opt:
+        output = "json"
     gh_token = token or os.environ.get("GITHUB_TOKEN")
     if not gh_token:
         console.print(
@@ -205,6 +213,12 @@ def list_issues(
         raise typer.Exit(1) from exc
 
     issues = [i for i in issues if i.get("pull_request") is None]
+
+    if output != "pretty":
+        from todopro_cli.utils.ui.formatters import format_output
+
+        format_output(issues, output)
+        return
 
     if not issues:
         console.print(f"No {state} issues found in {repo}")
@@ -443,8 +457,17 @@ def _handle_pro_required(response: httpx.Response) -> None:
 
 
 @app.command("projects")
-def list_projects() -> None:
+def list_projects(
+    output: str = typer.Option(
+        "pretty", "--output", "-o", help="Output format (pretty, json, yaml)"
+    ),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
+) -> None:
     """List your GitHub Projects v2 visible to the connected PAT (Pro)."""
+    if json_opt:
+        output = "json"
     _require_remote_context()
 
     async def _do() -> dict:
@@ -480,6 +503,13 @@ def list_projects() -> None:
         raise typer.Exit(1) from exc
 
     projects = data.get("projects", [])
+
+    if output != "pretty":
+        from todopro_cli.utils.ui.formatters import format_output
+
+        format_output(data, output)
+        return
+
     if not projects:
         console.print("No GitHub Projects found.")
         return
@@ -631,8 +661,17 @@ def unlink_project(
 
 
 @app.command("links")
-def list_links() -> None:
+def list_links(
+    output: str = typer.Option(
+        "pretty", "--output", "-o", help="Output format (pretty, json, yaml)"
+    ),
+    json_opt: bool = typer.Option(
+        False, "--json", help="Output as JSON (alias for --output json)"
+    ),
+) -> None:
     """List TodoPro ↔ GitHub Project links (Pro)."""
+    if json_opt:
+        output = "json"
     _require_remote_context()
 
     async def _do() -> dict:
@@ -668,6 +707,13 @@ def list_links() -> None:
         raise typer.Exit(1) from exc
 
     links = data.get("links", [])
+
+    if output != "pretty":
+        from todopro_cli.utils.ui.formatters import format_output
+
+        format_output(data, output)
+        return
+
     if not links:
         console.print(
             "No links found. Create one with [cyan]todopro github link[/cyan]."

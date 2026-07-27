@@ -26,7 +26,6 @@ class ProjectService:
         *,
         is_favorite: bool | None = None,
         is_archived: bool | None = None,
-        workspace_id: str | None = None,
         search: str | None = None,
     ) -> list[Project]:
         """List projects with filtering.
@@ -34,7 +33,6 @@ class ProjectService:
         Args:
             is_favorite: Filter by favorite status
             is_archived: Filter by archived status
-            workspace_id: Filter by workspace ID
             search: Text search query
 
         Returns:
@@ -43,7 +41,6 @@ class ProjectService:
         filters = ProjectFilters(
             is_favorite=is_favorite,
             is_archived=is_archived,
-            workspace_id=workspace_id,
             search=search,
         )
         return await self.repository.list_all(filters)
@@ -65,7 +62,6 @@ class ProjectService:
         *,
         color: str | None = None,
         is_favorite: bool = False,
-        workspace_id: str | None = None,
     ) -> Project:
         """Create a new project.
 
@@ -73,7 +69,6 @@ class ProjectService:
             name: Project name (required)
             color: Optional hex color code
             is_favorite: Whether to mark as favorite
-            workspace_id: Optional parent workspace ID
 
         Returns:
             Created Project object
@@ -82,7 +77,6 @@ class ProjectService:
             name=name,
             color=color,
             is_favorite=is_favorite,
-            workspace_id=workspace_id,
         )
         return await self.repository.create(project_data)
 
@@ -94,7 +88,6 @@ class ProjectService:
         color: str | None = None,
         is_favorite: bool | None = None,
         is_archived: bool | None = None,
-        workspace_id: str | None = None,
     ) -> Project:
         """Update an existing project.
 
@@ -104,7 +97,6 @@ class ProjectService:
             color: Updated hex color code
             is_favorite: Updated favorite status
             is_archived: Updated archived status
-            workspace_id: Updated parent workspace ID
 
         Returns:
             Updated Project object
@@ -114,7 +106,6 @@ class ProjectService:
             color=color,
             is_favorite=is_favorite,
             is_archived=is_archived,
-            workspace_id=workspace_id,
         )
         if name is not None:
             current = await self.repository.get(project_id)

@@ -3,7 +3,6 @@
 import typer
 
 from todopro_cli.services.config_service import get_config_service
-from todopro_cli.services.goal_service import get_goal_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
 from todopro_cli.utils.ui.formatters import format_success
@@ -42,5 +41,16 @@ async def reset_goals(
         if not confirm:
             raise typer.Exit(0)
 
-    get_goal_service().reset_goals()
+    # Was `GoldService.reset_goals()` — a misspelled stub that only re-saved the
+    # config without touching a single goal. Reset the focus goals for real.
+    config_service = get_config_service()
+    config = config_service.load_config()
+    config.focus_goals = {
+        "daily_sessions": 8,
+        "daily_minutes": 200,
+        "weekly_sessions": 40,
+        "weekly_minutes": 1000,
+        "streak_target": 30,
+    }
+    config_service.save_config()
     format_success("All goals reset")

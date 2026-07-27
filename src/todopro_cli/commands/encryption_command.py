@@ -1,23 +1,31 @@
 """Encryption management commands for TodoPro CLI.
 
 Deprecated: end-to-end encryption was dropped per ADR-0024
-(`docs/adr/ADR-0024-drop-e2ee.md`). `setup` no longer generates a key or
-enables encryption, and `status` reports the feature as discontinued. The
-commands stay registered (so scripts/`--help` don't break), and the
-recovery/rotate commands are left as dormant, unreachable code paths since
-nothing can enable encryption anymore.
+(`docs/adr/ADR-0024-drop-e2ee.md`). No command in this group can enable,
+recover or rotate an encryption key any more — every one of them only prints
+a discontinuation notice.
+
+The group stays registered (so scripts and `--help` get a clear
+"discontinued" message instead of a confusing command-not-found), and stays
+*visible* in `--help` for the same reason: a user following an old runbook
+needs to be able to discover why the feature stopped working.
 """
 
 import typer
-from rich.panel import Panel
-from rich.text import Text
 
-from todopro_cli.models.crypto.exceptions import TodoProCryptoError
 from todopro_cli.services.encryption_service import EncryptionService
 from todopro_cli.utils.ui.console import get_console
 
-app = typer.Typer(help="Manage end-to-end encryption")
+app = typer.Typer(help="[Discontinued] End-to-end encryption (ADR-0024)")
 console = get_console()
+
+
+def _print_discontinued() -> None:
+    """Print the shared ADR-0024 discontinuation notice."""
+    console.print(
+        "\n[yellow]End-to-end encryption has been discontinued (ADR-0024).[/yellow]"
+    )
+    console.print("Your tasks now sync as plaintext; no encryption key is needed.\n")
 
 
 def get_encryption_service() -> EncryptionService:
@@ -71,116 +79,53 @@ def status():
 
 @app.command("show-recovery")
 def show_recovery(
-    confirm: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
+    confirm: bool = typer.Option(  # noqa: ARG001 — kept so existing scripts passing --yes don't break
+        False, "--yes", "-y", help="Ignored (kept for backwards compatibility)"
+    ),
 ):
     """
-    Display your recovery phrase.
+    [Discontinued] Display an E2EE recovery phrase (ADR-0024).
 
-    ⚠️  WARNING: Anyone with your recovery phrase can access your encrypted data!
-    Only use this command in a secure, private environment.
+    E2EE has been dropped as a shipped feature. There is no recovery phrase to
+    display — nothing can enable encryption any more, so no key is in use.
+    See `docs/adr/ADR-0024-drop-e2ee.md`.
     """
-    service = get_encryption_service()
-
-    if not service.storage.has_key():
-        console.print("\n[red]❌ No encryption key found[/red]")
-        console.print("   Run: [cyan]todopro encryption setup[/cyan]\n")
-        raise typer.Exit(code=1)
-
-    # Security warning
-    if not confirm:
-        console.print(
-            "\n[bold yellow]⚠️  WARNING: This will display your recovery phrase in plain text![/bold yellow]\n"
-        )
-        if not typer.confirm("Are you in a secure, private location?"):
-            console.print("[dim]Cancelled.[/dim]\n")
-            raise typer.Exit()
-
-    # Load key and get recovery phrase
-    try:
-        recovery_phrase = service.get_recovery_phrase()
-
-        console.print()
-        console.print(
-            Panel.fit(
-                Text(recovery_phrase, style="bold yellow", justify="center"),
-                title="[bold]Your Recovery Phrase[/bold]",
-                border_style="yellow",
-                padding=(1, 2),
-            )
-        )
-        console.print()
-        console.print("[dim]Keep this phrase secret and safe![/dim]\n")
-
-    except Exception as e:
-        console.print(f"\n[red]❌ Error: {e}[/red]\n")
-        raise typer.Exit(code=1) from e
+    _print_discontinued()
+    console.print(
+        "[dim]There is no recovery phrase to display: recovery phrases only "
+        "protected E2EE keys, and no key is used for your data any more.[/dim]\n"
+    )
 
 
 @app.command("recover")
 def recover():
     """
-    Recover your encryption key from recovery phrase.
+    [Discontinued] Recover an E2EE key from a recovery phrase (ADR-0024).
 
-    Use this if you lost your encryption key but have your 24-word recovery phrase.
+    E2EE has been dropped as a shipped feature. There is nothing to recover —
+    your data is not encrypted with a client-side key.
+    See `docs/adr/ADR-0024-drop-e2ee.md`.
     """
-    console.print("\n[bold cyan]🔑 Recover Encryption Key[/bold cyan]\n")
-
-    service = get_encryption_service()
-
-    # Warn if key already exists
-    if service.storage.has_key():
-        console.print("[yellow]⚠️  An encryption key already exists![/yellow]")
-        console.print(f"   Location: {service.storage.get_key_path()}\n")
-
-        if not typer.confirm("Do you want to replace it with a recovered key?"):
-            console.print("[dim]Recovery cancelled.[/dim]\n")
-            raise typer.Exit()
-
-    # Prompt for recovery phrase
-    console.print("[dim]Enter your 24-word recovery phrase:[/dim]")
-    phrase = typer.prompt("Recovery phrase", hide_input=True)
-
-    # Attempt recovery
-    try:
-        console.print("\n[dim]Recovering encryption key...[/dim]")
-        manager = service.recover(phrase)
-
-        # Save recovered key
-        service.save_manager(manager)
-
-        console.print()
-        console.print(
-            "[bold green]✅ Encryption key recovered successfully![/bold green]"
-        )
-        console.print(
-            f"   Key stored at: [cyan]{service.storage.get_key_path()}[/cyan]"
-        )
-        console.print()
-
-    except TodoProCryptoError as e:
-        console.print(f"\n[bold red]❌ Recovery failed: {e}[/bold red]")
-        console.print("   Make sure you entered the correct 12-word phrase.\n")
-        raise typer.Exit(code=1) from e
-    except Exception as e:
-        console.print(f"\n[bold red]❌ Unexpected error: {e}[/bold red]\n")
-        raise typer.Exit(code=1) from e
+    _print_discontinued()
+    console.print(
+        "[dim]Nothing to recover: your data is not protected by a client-side "
+        "encryption key, so a recovery phrase would not unlock anything.[/dim]\n"
+    )
 
 
 @app.command("rotate-key")
 def rotate_key():
     """
-    Rotate encryption key (advanced feature).
+    [Discontinued] Rotate an E2EE key (ADR-0024).
 
-    This will:
-    1. Generate a new master key
-    2. Download all encrypted data
-    3. Re-encrypt with new key
-    4. Upload re-encrypted data
-    5. Display new recovery phrase
+    E2EE has been dropped as a shipped feature. Key rotation was never
+    implemented and will not be — there is no key to rotate.
+    See `docs/adr/ADR-0024-drop-e2ee.md`.
     """
-    console.print("\n[bold yellow]⚠️  Key rotation not yet implemented[/bold yellow]")
-    console.print("   This is an advanced feature planned for future release.\n")
-    raise typer.Exit()
+    _print_discontinued()
+    console.print(
+        "[dim]Nothing to rotate: no client-side encryption key is in use.[/dim]\n"
+    )
 
 
 if __name__ == "__main__":

@@ -418,3 +418,73 @@ class TestHttpVerbHelpers:
         client.request = AsyncMock(return_value=_make_response())
         await client.delete("/v1/items/1")
         client.request.assert_called_once_with("DELETE", "/v1/items/1")
+
+
+# ---------------------------------------------------------------------------
+# download()
+# ---------------------------------------------------------------------------
+
+
+class TestDownload:
+    """Media/export links live outside the /api prefix baked into base_url."""
+
+    @staticmethod
+    def _patch_httpx(monkeypatch):
+        seen: dict = {}
+
+        async def _get(_self, url, headers=None):
+            seen["url"] = str(url)
+            seen["headers"] = headers
+            return httpx.Response(
+                status_code=200,
+                content=b"zip-bytes",
+                request=httpx.Request("GET", str(url)),
+            )
+
+        monkeypatch.setattr(httpx.AsyncClient, "get", _get)
+        return seen
+
+    @pytest.mark.asyncio
+    async def test_root_relative_url_is_resolved_against_the_origin(self, monkeypatch):
+        seen = self._patch_httpx(monkeypatch)
+        client = _make_client()
+        client.base_url = "https://api.example.com/api"
+
+        content = await client.download("/media/exports/u/j.zip")
+
+        assert content == b"zip-bytes"
+        # NOT https://api.example.com/api/media/... — the /api prefix must go.
+        assert seen["url"] == "https://api.example.com/media/exports/u/j.zip"
+
+    @pytest.mark.asyncio
+    async def test_absolute_url_is_used_as_is(self, monkeypatch):
+        seen = self._patch_httpx(monkeypatch)
+        client = _make_client()
+
+        await client.download("https://cdn.example.net/x.zip")
+
+        assert seen["url"] == "https://cdn.example.net/x.zip"
+
+    @pytest.mark.asyncio
+    async def test_sends_the_authorization_header(self, monkeypatch):
+        seen = self._patch_httpx(monkeypatch)
+        client = _make_client(token="tok-123")
+
+        await client.download("/media/x.zip")
+
+        assert seen["headers"]["Authorization"] == "Bearer tok-123"
+        # A JSON content-type on a binary GET confuses some proxies.
+        assert "Content-Type" not in seen["headers"]
+
+    @pytest.mark.asyncio
+    async def test_raises_on_error_status(self, monkeypatch):
+        async def _get(_self, url, headers=None):  # noqa: ARG001
+            return httpx.Response(
+                status_code=404, request=httpx.Request("GET", str(url))
+            )
+
+        monkeypatch.setattr(httpx.AsyncClient, "get", _get)
+        client = _make_client()
+
+        with pytest.raises(httpx.HTTPStatusError):
+            await client.download("/media/missing.zip")

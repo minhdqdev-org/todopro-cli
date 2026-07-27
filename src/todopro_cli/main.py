@@ -23,7 +23,7 @@ from .commands.hub_command import app as hub_app
 from .commands.import_command import app as import_app
 from .commands.labels import app as labels_app
 from .commands.projects import app as projects_app
-from .commands.ramble_command import app as ramble_app
+from .commands.dictate_command import app as dictate_app
 from .commands.reopen_command import app as reopen_app
 from .commands.reschedule_command import app as reschedule_command_app
 from .commands.scratchpad_command import app as scratchpad_app
@@ -58,7 +58,7 @@ app.add_typer(reschedule_command_app, name="", help="Reschedule tasks to today")
 app.add_typer(edit_command_app, name="", help="Edit a task interactively or via flags")
 app.add_typer(today_command_app, name="", help="View today's tasks in interactive mode")
 app.add_typer(reopen_app, name="", help="Reopen a completed task")
-app.add_typer(ramble_app, name="ramble", help="Ramble — voice-to-tasks")
+app.add_typer(dictate_app, name="dictate", help="Dictate — voice-to-tasks")
 
 # ── Resource groups ───────────────────────────────────────────────────────────
 app.add_typer(auth_app, name="auth", help="Authentication — login, logout, signup")
@@ -86,7 +86,9 @@ app.add_typer(
 )
 app.add_typer(sync_app, name="sync", help="Sync — push, pull, status")
 app.add_typer(data_app, name="data", help="Data — export and import")
-app.add_typer(encryption_app, name="encryption", help="End-to-end encryption")
+app.add_typer(
+    encryption_app, name="encryption", help="[Discontinued] Encryption (ADR-0024)"
+)
 app.add_typer(template_app, name="template", help="Task templates")
 app.add_typer(github_app, name="github", help="GitHub Issues integration")
 app.add_typer(hub_app, name="hub", help="Productivity hub — unified external items")

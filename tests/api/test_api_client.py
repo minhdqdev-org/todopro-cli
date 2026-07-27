@@ -13,10 +13,11 @@ from todopro_cli.services.config_service import ConfigService
 def mock_config_manager(tmp_path):
     """Create a mock config manager."""
     tmpdir = str(tmp_path)
-    with patch(
-        "todopro_cli.services.config_service.user_config_dir", return_value=tmpdir
-    ), patch(
-        "todopro_cli.services.config_service.user_data_dir", return_value=tmpdir
+    with (
+        patch(
+            "todopro_cli.services.config_service.user_config_dir", return_value=tmpdir
+        ),
+        patch("todopro_cli.services.config_service.user_data_dir", return_value=tmpdir),
     ):
         config_manager = ConfigService()
         yield config_manager
@@ -451,15 +452,19 @@ async def test_request_401_prints_relogin_hint_and_raises(mock_config_manager):
         return_value=mock_config_manager,
     ):
         client = APIClient()
-        with patch.object(
-            httpx.AsyncClient,
-            "request",
-            new_callable=AsyncMock,
-            side_effect=error_401,
-        ), patch(
-            "todopro_cli.services.api.client.get_console",
-            return_value=fake_console,
-        ), pytest.raises(httpx.HTTPStatusError):
+        with (
+            patch.object(
+                httpx.AsyncClient,
+                "request",
+                new_callable=AsyncMock,
+                side_effect=error_401,
+            ),
+            patch(
+                "todopro_cli.services.api.client.get_console",
+                return_value=fake_console,
+            ),
+            pytest.raises(httpx.HTTPStatusError),
+        ):
             await client.request("GET", "/secret", retry=0)
 
     printed = " ".join(
@@ -484,18 +489,20 @@ async def test_request_401_skip_auth_raises_without_relogin_hint(mock_config_man
         return_value=mock_config_manager,
     ):
         client = APIClient()
-        with patch.object(
-            httpx.AsyncClient,
-            "request",
-            new_callable=AsyncMock,
-            side_effect=error_401,
-        ), patch(
-            "todopro_cli.services.api.client.get_console",
-            return_value=fake_console,
-        ), pytest.raises(httpx.HTTPStatusError):
-            await client.request(
-                "POST", "/v1/auth/login", retry=0, skip_auth=True
-            )
+        with (
+            patch.object(
+                httpx.AsyncClient,
+                "request",
+                new_callable=AsyncMock,
+                side_effect=error_401,
+            ),
+            patch(
+                "todopro_cli.services.api.client.get_console",
+                return_value=fake_console,
+            ),
+            pytest.raises(httpx.HTTPStatusError),
+        ):
+            await client.request("POST", "/v1/auth/login", retry=0, skip_auth=True)
 
     fake_console.print.assert_not_called()
 
@@ -515,18 +522,23 @@ async def test_request_request_error_sets_last_exception(mock_config_manager):
         return_value=mock_config_manager,
     ):
         client = APIClient()
-        with patch.object(
-            httpx.AsyncClient,
-            "request",
-            new_callable=AsyncMock,
-            side_effect=req_error,
-        ), pytest.raises(httpx.RequestError):
+        with (
+            patch.object(
+                httpx.AsyncClient,
+                "request",
+                new_callable=AsyncMock,
+                side_effect=req_error,
+            ),
+            pytest.raises(httpx.RequestError),
+        ):
             await client.request("GET", "/test", retry=0)
         await client.close()
 
 
 @pytest.mark.asyncio
-async def test_request_request_error_with_retries_eventually_raises(mock_config_manager):
+async def test_request_request_error_with_retries_eventually_raises(
+    mock_config_manager,
+):
     """Lines 183-184: RequestError on all retry attempts → last one re-raised."""
     req_error = httpx.ConnectError("timeout")
 
@@ -535,17 +547,18 @@ async def test_request_request_error_with_retries_eventually_raises(mock_config_
             "todopro_cli.services.api.client.get_config_service",
             return_value=mock_config_manager,
         ),
-        patch(
-            "todopro_cli.services.api.client.asyncio.sleep", new_callable=AsyncMock
-        ),
+        patch("todopro_cli.services.api.client.asyncio.sleep", new_callable=AsyncMock),
     ):
         client = APIClient()
-        with patch.object(
-            httpx.AsyncClient,
-            "request",
-            new_callable=AsyncMock,
-            side_effect=req_error,
-        ), pytest.raises(httpx.RequestError):
+        with (
+            patch.object(
+                httpx.AsyncClient,
+                "request",
+                new_callable=AsyncMock,
+                side_effect=req_error,
+            ),
+            pytest.raises(httpx.RequestError),
+        ):
             await client.request("GET", "/test", retry=2)
         await client.close()
 
@@ -561,3 +574,47 @@ async def test_request_empty_retry_range_raises_runtime_error(mock_config_manage
         with pytest.raises(RuntimeError, match="Request failed after all retries"):
             await client.request("GET", "/test", retry=-1)
         await client.close()
+
+
+class TestEmailVerificationWallDetection:
+    """S-80: telling the verification wall apart from a real 403.
+
+    The distinction drives what the user is told — "click the link in your
+    inbox" versus "you don't have access" — so a 403 must never be assumed to
+    be one or the other without reading the envelope.
+    """
+
+    def _response(self, body, status=403):
+        return httpx.Response(
+            status_code=status,
+            content=body,
+            headers={"content-type": "application/json"},
+            request=httpx.Request("GET", "https://example.invalid/api/v1/tasks"),
+        )
+
+    def test_recognises_the_wall(self):
+        from todopro_cli.services.api.client import _is_email_unverified
+
+        resp = self._response(
+            b'{"error": {"code": "email_not_verified", '
+            b'"message": "Confirm your email address to continue."}}'
+        )
+        assert _is_email_unverified(resp) is True
+
+    def test_ignores_an_ordinary_permission_denial(self):
+        from todopro_cli.services.api.client import _is_email_unverified
+
+        resp = self._response(b'{"error": {"code": "PERMISSION_DENIED"}}')
+        assert _is_email_unverified(resp) is False
+
+    def test_ignores_a_body_it_cannot_parse(self):
+        from todopro_cli.services.api.client import _is_email_unverified
+
+        assert _is_email_unverified(self._response(b"<html>403</html>")) is False
+
+    def test_ignores_a_flat_string_error(self):
+        """Legacy endpoints answer `{"error": "..."}` instead of the envelope."""
+        from todopro_cli.services.api.client import _is_email_unverified
+
+        resp = self._response(b'{"error": "forbidden"}')
+        assert _is_email_unverified(resp) is False
