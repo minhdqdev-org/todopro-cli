@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 import typer
 from typer.testing import CliRunner
@@ -147,6 +148,111 @@ class TestCommandWrapper:
 
         assert result.exit_code == 2
         mock_fmt.assert_called_once_with("test error")
+
+    @staticmethod
+    def _http_error(status: int, body) -> httpx.HTTPStatusError:
+        request = httpx.Request("DELETE", "https://api.example.com/v1/thing")
+        response = httpx.Response(status, json=body, request=request)
+        return httpx.HTTPStatusError("boom", request=request, response=response)
+
+    def test_http_error_surfaces_server_error_string(self):
+        """An ad-hoc `{"error": ...}` body is shown, not "Client error '409 ...'"."""
+        err = self._http_error(
+            409,
+            {
+                "error": "“In progress” mirrors a column on the linked GitHub project.",
+                "code": "section_managed_by_integration",
+            },
+        )
+
+        @command_wrapper(auth_required=False)
+        def failing_cmd():
+            raise err
+
+        app_test = typer.Typer()
+        app_test.command()(failing_cmd)
+
+        with patch("todopro_cli.commands.decorators.format_error") as mock_fmt:
+            result = runner.invoke(app_test, [])
+
+        assert result.exit_code == 1
+        mock_fmt.assert_called_once_with(
+            "“In progress” mirrors a column on the linked GitHub project."
+        )
+
+    def test_http_error_surfaces_wrapped_envelope_message(self):
+        """The backend's standard `{"error": {"message": ...}}` envelope."""
+        err = self._http_error(
+            402, {"error": {"code": "pro_required", "message": "Upgrade to Pro."}}
+        )
+
+        @command_wrapper(auth_required=False)
+        def failing_cmd():
+            raise err
+
+        app_test = typer.Typer()
+        app_test.command()(failing_cmd)
+
+        with patch("todopro_cli.commands.decorators.format_error") as mock_fmt:
+            result = runner.invoke(app_test, [])
+
+        assert result.exit_code == 1
+        mock_fmt.assert_called_once_with("Upgrade to Pro.")
+
+    def test_http_error_unparseable_body_falls_back_to_status(self):
+        """A non-JSON error body still produces something better than a traceback."""
+        request = httpx.Request("GET", "https://api.example.com/v1/thing")
+        response = httpx.Response(500, text="<html>oops</html>", request=request)
+        err = httpx.HTTPStatusError("boom", request=request, response=response)
+
+        @command_wrapper(auth_required=False)
+        def failing_cmd():
+            raise err
+
+        app_test = typer.Typer()
+        app_test.command()(failing_cmd)
+
+        with patch("todopro_cli.commands.decorators.format_error") as mock_fmt:
+            result = runner.invoke(app_test, [])
+
+        assert result.exit_code == 1
+        mock_fmt.assert_called_once_with("Request failed with HTTP 500.")
+
+    def test_http_401_stays_silent(self):
+        """`APIClient.request` already printed the re-login guidance."""
+        err = self._http_error(401, {"detail": "Invalid token."})
+
+        @command_wrapper(auth_required=False)
+        def failing_cmd():
+            raise err
+
+        app_test = typer.Typer()
+        app_test.command()(failing_cmd)
+
+        with patch("todopro_cli.commands.decorators.format_error") as mock_fmt:
+            result = runner.invoke(app_test, [])
+
+        assert result.exit_code == 1
+        mock_fmt.assert_not_called()
+
+    def test_http_email_unverified_stays_silent(self):
+        """S-80 wall: `APIClient.request` already named the fix (resend-verification)."""
+        err = self._http_error(
+            403, {"error": {"code": "email_not_verified", "message": "Confirm email."}}
+        )
+
+        @command_wrapper(auth_required=False)
+        def failing_cmd():
+            raise err
+
+        app_test = typer.Typer()
+        app_test.command()(failing_cmd)
+
+        with patch("todopro_cli.commands.decorators.format_error") as mock_fmt:
+            result = runner.invoke(app_test, [])
+
+        assert result.exit_code == 1
+        mock_fmt.assert_not_called()
 
     def test_typer_exit_reraises(self):
         """typer.Exit is re-raised without modification."""

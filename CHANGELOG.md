@@ -38,10 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `todopro task list` default sort — tasks now sorted by `priority ASC, project ASC, created_at DESC` instead of insertion order
 - Raised default `--limit` in `task list` from 30 → 250
 - Fixed `data_command.py` project filter bug: `ProjectFilters(name=...)` silently accepted unknown field; changed to `ProjectFilters(search=...)` with explicit exact-match check
+- Server error messages are no longer swallowed. Any command that didn't handle an HTTP error itself reported `An unexpected error occurred: Client error '409 Conflict' for url ...`, hiding the server's explanation. The reason is now shown instead (e.g. `todopro section delete` on a section mirroring a linked GitHub board column). 401 and the email-verification wall are unchanged — those already print their own guidance
 
 ---
 
-## [4.0.0] - 2026-02-24 (MVP4 Release — Ramble)
+## [4.0.0] - 2026-02-24 (MVP1 Release — Ramble)
 
 **Ramble: voice-to-tasks is here.** 🎙️
 

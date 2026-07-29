@@ -1,4 +1,4 @@
-"""Unit tests for MVP2.2 recurring task creation options in create_command."""
+"""Unit tests for MVP1.2 recurring task creation options in create_command."""
 
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch

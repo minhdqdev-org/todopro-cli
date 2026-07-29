@@ -4,10 +4,12 @@ import asyncio
 import functools
 from collections.abc import Callable
 
+import httpx
 import typer
 
 from todopro_cli.services.auth_service import AuthService
 from todopro_cli.services.config_service import get_config_service
+from todopro_cli.services.sync_auto_fix import parse_api_error
 from todopro_cli.utils.ui.formatters import format_error
 
 
@@ -66,6 +68,30 @@ def command_wrapper(_func: Callable | None = None, *, auth_required: bool = True
             except typer.Exit:
                 # Re-raise Typer's own exits (like --help or explicit Exit(0))
                 raise
+
+            except httpx.HTTPStatusError as e:
+                # The server's own explanation is the useful part; `str(e)` is
+                # just "Client error '409 Conflict' for url ...", which told the
+                # user nothing about *why* (e.g. `section delete` refused
+                # because the section mirrors a linked GitHub board column).
+                # Commands that catch HTTPStatusError themselves — most of
+                # `github_command`, `hub_command`, `import_command` — never
+                # reach here; this is the fallback for the ones that don't.
+                status = e.response.status_code if e.response is not None else None
+                err = parse_api_error(e)
+
+                # `APIClient.request` already prints actionable guidance for an
+                # expired session and the email-verification wall. Repeating the
+                # raw server string under it would only add noise.
+                if status == 401 or err.code == "email_not_verified":
+                    raise typer.Exit(code=1) from e
+
+                # Ad-hoc backend responses use `{"error": "..."}`; prefer that
+                # over `first_reason`, whose "first non-empty value" scan can
+                # land on a sibling key like `code` depending on JSON order.
+                reason = err.detail.get("error") or err.first_reason
+                format_error(reason or f"Request failed with HTTP {status}.")
+                raise typer.Exit(code=1) from e
 
             except Exception as e:
                 # Generic fallback for unexpected crashes
