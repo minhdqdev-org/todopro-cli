@@ -18,6 +18,78 @@ except ImportError:
     HAS_DATEPARSER = False
 
 
+# ── URL / email masking ───────────────────────────────────────────────────────
+# Every token this parser strips — "#project", "@label", "p1", "!reminder",
+# "{deadline}" — and every date pattern it recognises also occurs *inside* URLs.
+# Left alone, "read this https://site.com/2026/08/14/slug" both sets a bogus due
+# date and rewrites the link to ".../2026//slug", destroying the one part of the
+# text a user cannot retype from memory. So URLs (and bare email addresses, for
+# "@label") are lifted out into opaque placeholders before any extraction runs
+# and put back verbatim at the end. Mirror of the backend (natural_language.py)
+# and SPA (lib/nlp/urls.ts) implementations — keep all three in step.
+#
+# The placeholder uses Unicode Private Use Area code points on purpose: they are
+# not word characters, not digits, not whitespace and not ASCII, so no pattern
+# here can match inside one or split one apart.
+_MASK_OPEN = "\ue000"
+_MASK_CLOSE = "\ue001"
+_MASK_FIRST = 0xE100
+_MASK_MAX = 0x400
+
+_URL_RE = re.compile(
+    r"""(?:
+          [a-z][a-z0-9+.\-]*://\S+                    # scheme://host/path
+        | www\.\S+                                    # www.host/path
+        | [\w.+\-]+@[\w\-]+(?:\.[\w\-]+)+\b        # bare email address
+        | \b[\w\-]+(?:\.[\w\-]+)*\.[a-z]{2,}/\S*   # bare host with a path
+    )""",
+    re.IGNORECASE | re.VERBOSE,
+)
+# Sentence punctuation that follows a URL far more often than it belongs to one.
+_URL_TRAILING = ".,;:!?'\"“”‘’"
+_URL_BRACKETS = {")": "(", "]": "[", "}": "{", ">": "<"}
+
+
+def _trim_url(url: str) -> str:
+    """Drop trailing punctuation that belongs to the sentence, not the URL."""
+    while url:
+        last = url[-1]
+        if last in _URL_TRAILING:
+            url = url[:-1]
+            continue
+        opener = _URL_BRACKETS.get(last)
+        if opener and url.count(opener) < url.count(last):
+            url = url[:-1]
+            continue
+        break
+    return url
+
+
+def mask_urls(text: str) -> tuple[str, list[str]]:
+    """Replace URLs/emails with inert placeholders. Returns (masked, originals)."""
+    text = text.replace(_MASK_OPEN, "").replace(_MASK_CLOSE, "")
+    originals: list[str] = []
+
+    def _swap(match: re.Match[str]) -> str:
+        url = _trim_url(match.group(0))
+        if not url or len(originals) >= _MASK_MAX:
+            return match.group(0)
+        placeholder = f"{_MASK_OPEN}{chr(_MASK_FIRST + len(originals))}{_MASK_CLOSE}"
+        originals.append(url)
+        return placeholder + match.group(0)[len(url) :]
+
+    return _URL_RE.sub(_swap, text), originals
+
+
+def unmask_urls(text: str, originals: list[str]) -> str:
+    """Put the original URLs back where their placeholders ended up."""
+    if not originals:
+        return text
+    for index, url in enumerate(originals):
+        text = text.replace(f"{_MASK_OPEN}{chr(_MASK_FIRST + index)}{_MASK_CLOSE}", url)
+    return text
+
+
 # ── Reminder parsing (Todoist-style "!" / "remind" tokens) ────────────────────
 # Shared, language-portable grammar — mirror of the SPA (nlp-parser.ts) and backend
 # (natural_language.py) reminder parsers. Each parsed reminder is one of:
@@ -473,9 +545,16 @@ _WD_TIME_AFTER = (
 )
 _WD_CUE_BEFORE = r"on|by|due|next|this|before|after|from"
 _WEEKDAY_ABBR_TO_FULL = {
-    "mon": "monday", "tue": "tuesday", "tues": "tuesday", "wed": "wednesday",
-    "thu": "thursday", "thur": "thursday", "thurs": "thursday", "fri": "friday",
-    "sat": "saturday", "sun": "sunday",
+    "mon": "monday",
+    "tue": "tuesday",
+    "tues": "tuesday",
+    "wed": "wednesday",
+    "thu": "thursday",
+    "thur": "thursday",
+    "thurs": "thursday",
+    "fri": "friday",
+    "sat": "saturday",
+    "sun": "sunday",
 }
 # No variable-width lookbehind in stdlib re: capture the optional cue/after context
 # and decide in a callback. Participating groups are preserved so only the weekday
@@ -507,6 +586,37 @@ def _expand_free_text_abbreviations(text: str) -> str:
         return (m.group("cue") or "") + full + (m.group("after") or "")
 
     return _CONTEXT_WEEKDAY_RE.sub(_repl, text)
+
+
+# A bare ordinal ("21st") is a day-of-month only when something in the sentence
+# says so — otherwise "enters the 21st century" becomes a task due on the 21st
+# with the words cut out of its title. Same shape as `_weekday_has_context`.
+_ORDINAL_CUE_ALT = r"on|by|due|before|after|from|until|till|starting|ending"
+_ORDINAL_BARE_RE = re.compile(
+    rf"\b(?:(?:{_ORDINAL_CUE_ALT})\s+)?(?:the\s+)?"
+    rf"\d{{1,2}}(?:st|nd|rd|th)(?:\s+of(?:\s+the)?\s+month)?\b",
+    re.IGNORECASE,
+)
+# Trailing context that still reads as a date: nothing, a clock, and/or masked
+# URLs (a link after the ordinal doesn't make it any less of a date).
+_ORDINAL_TAIL_RE = re.compile(
+    rf"^(?:\s*{_MASK_OPEN}.{_MASK_CLOSE})*\s*(?:at\s+)?(?:{_RCLOCK})?"
+    rf"(?:\s*{_MASK_OPEN}.{_MASK_CLOSE})*\s*$",
+    re.IGNORECASE,
+)
+_ORDINAL_CUE_BEFORE_RE = re.compile(
+    rf"\b(?:{_ORDINAL_CUE_ALT})\s+(?:the\s+)?$", re.IGNORECASE
+)
+
+
+def _ordinal_is_date(match: re.Match[str], text: str) -> bool:
+    """Does this bare ordinal actually name a day of the month?"""
+    matched = match.group(0).lower()
+    if re.match(rf"\s*(?:{_ORDINAL_CUE_ALT})\b", matched) or "month" in matched:
+        return True
+    if _ORDINAL_CUE_BEFORE_RE.search(text[: match.start()]):
+        return True
+    return bool(_ORDINAL_TAIL_RE.match(text[match.end() :]))
 
 
 def _ordinal_suffix(n: int) -> str:
@@ -628,7 +738,7 @@ def _parse_calendar_date(text_lower: str, now: datetime) -> datetime | None:
         return _resolve_md(month, int(m.group(2)), year, now)
     # <day>[ordinal] <month>[, year]
     m = re.search(
-        rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+({_MONTH_ALT})(?:,?\s+(\d{{4}}))?\b",
+        rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+(?:of\s+)?({_MONTH_ALT})(?:,?\s+(\d{{4}}))?\b",
         text_lower,
     )
     if m:
@@ -698,6 +808,11 @@ class LocalNLPParser:
             "labels": [],
             "reminders": [],
         }
+
+        # URLs/emails out of the way first: every token pattern below (and every
+        # date pattern) otherwise matches inside them and both mis-parses the
+        # task and mangles the link. Put back on `content` at the end.
+        text, urls = mask_urls(text)
 
         # Extract priority
         for pattern, priority in self.priority_patterns.items():
@@ -775,7 +890,7 @@ class LocalNLPParser:
             text = self._remove_date_phrases(text)
 
         # Clean up the content
-        result["content"] = " ".join(text.split()).strip()
+        result["content"] = unmask_urls(" ".join(text.split()).strip(), urls)
 
         return result
 
@@ -1166,13 +1281,17 @@ class LocalNLPParser:
                 return _apply_time(target)
 
         # Day-of-month ordinals: "1st", "on the 24th", "2nd of month" → next such day
-        ordinal_match = re.search(
-            r"\b(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)"
-            r"(?:\s+of(?:\s+the)?\s+month)?\b",
-            text_lower,
+        ordinal_match = next(
+            (
+                m
+                for m in _ORDINAL_BARE_RE.finditer(text_lower)
+                if _ordinal_is_date(m, text_lower)
+            ),
+            None,
         )
         if ordinal_match:
-            day = int(ordinal_match.group(1))
+            day_digits = re.search(r"\d{1,2}", ordinal_match.group(0))
+            day = int(day_digits.group(0)) if day_digits else 0
             if 1 <= day <= 31:
                 today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
                 target = today_midnight.replace(day=1)
@@ -1220,7 +1339,7 @@ class LocalNLPParser:
             # Calendar dates: ISO, month-name (both orders), numeric
             r"\b\d{4}-\d{1,2}-\d{1,2}\b",
             rf"\b(?:{_MONTH_ALT})\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,?\s+\d{{4}})?\b",
-            rf"\b\d{{1,2}}(?:st|nd|rd|th)?\s+(?:{_MONTH_ALT})(?:,?\s+\d{{4}})?\b",
+            rf"\b\d{{1,2}}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:{_MONTH_ALT})(?:,?\s+\d{{4}})?\b",
             r"\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b",
             # Weekdays (optionally prefixed by next/this), full + abbreviated
             rf"\b(?:next|this)\s+(?:{_WEEKDAY_ALT})\b",
@@ -1231,8 +1350,6 @@ class LocalNLPParser:
             r"\bfriday\b",
             r"\bsaturday\b",
             r"\bsunday\b",
-            # Day-of-month ordinals: "1st", "on the 24th", "2nd of month"
-            r"\b(?:on\s+)?(?:the\s+)?\d{1,2}(?:st|nd|rd|th)(?:\s+of(?:\s+the)?\s+month)?\b",
             # Time-of-day words
             r"\b(?:in the\s+|this\s+|at\s+)?(?:morning|afternoon|evening|night|noon|midnight)\b",
             # Time
@@ -1253,6 +1370,12 @@ class LocalNLPParser:
             return (m.group("cue") or "") + " " + (m.group("after") or "")
 
         text = _CONTEXT_WEEKDAY_RE.sub(_strip_wd, text)
+        # Bare ordinals are contextual (see `_ordinal_is_date`), so they are not
+        # in `date_phrases` — matched here against the untouched text, for the
+        # same reason weekday abbreviations are.
+        text = _ORDINAL_BARE_RE.sub(
+            lambda m: "" if _ordinal_is_date(m, text) else m.group(0), text
+        )
 
         for pattern in date_phrases:
             text = re.sub(pattern, "", text, flags=re.IGNORECASE)

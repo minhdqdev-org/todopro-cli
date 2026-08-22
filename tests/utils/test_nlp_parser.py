@@ -951,3 +951,97 @@ class TestReminderParsing:
         result = parse_natural_language("Ship it !important")
         assert result["reminders"] == []
         assert "important" in result["content"]
+
+
+# ---------------------------------------------------------------------------
+# URLs and bare ordinals
+#
+# Quick-add must never rewrite a URL. Every token this parser strips —
+# "#project", "@label", "p1", "!reminder" — and every date pattern it knows also
+# occurs inside real links, so "read https://site.com/2026/08/14/slug" used to
+# both invent a due date and rewrite the link to ".../2026//slug". Mirrors
+# tests/test_nl_parser_urls.py in todopro-core-svc and nlp-parser.test.ts in the
+# SPA — keep all three in step.
+# ---------------------------------------------------------------------------
+class TestUrlsSurviveParsing:
+    def test_dated_path_is_not_rewritten_and_sets_no_due_date(self) -> None:
+        url = "https://www.axios.com/2026/08/14/stripe-openrouter-deal"
+        result = parse_natural_language(f"[TLDR] Stripe clinches OpenRouter {url}")
+
+        assert url in result["content"]
+        assert result["due_date"] is None
+
+    def test_fragment_is_not_a_project(self) -> None:
+        url = "https://github.com/foo/bar/issues/123#issuecomment-456"
+        result = parse_natural_language(f"Bug report {url}")
+
+        assert url in result["content"]
+        assert result["project_name"] is None
+
+    def test_at_handle_in_path_is_not_a_label(self) -> None:
+        url = "https://twitter.com/@jack/status/1"
+        result = parse_natural_language(f"Follow {url}")
+
+        assert url in result["content"]
+        assert result["labels"] == []
+
+    def test_query_parameter_is_not_a_priority(self) -> None:
+        url = "https://example.com/a?b=1&p1=2"
+        result = parse_natural_language(f"Ping {url}")
+
+        assert url in result["content"]
+        assert result["priority"] is None
+
+    def test_email_address_is_not_a_label(self) -> None:
+        result = parse_natural_language("Email bob@example.com about the migration")
+
+        assert "bob@example.com" in result["content"]
+        assert result["labels"] == []
+
+    def test_tokens_outside_a_url_are_still_parsed(self) -> None:
+        url = "https://example.com/2026/08/14/x"
+        result = parse_natural_language(f"Read {url} tomorrow #Reading @news p1")
+
+        assert url in result["content"]
+        assert result["project_name"] == "Reading"
+        assert result["labels"] == ["news"]
+        assert result["priority"] == 1
+        assert result["due_date"] is not None
+
+
+class TestBareOrdinalNeedsContext:
+    def test_ordinal_in_prose_is_not_a_date(self) -> None:
+        result = parse_natural_language("Theory of fluids enters the 21st century")
+
+        assert result["content"] == "Theory of fluids enters the 21st century"
+        assert result["due_date"] is None
+
+    def test_cue_word_makes_it_a_date(self) -> None:
+        result = parse_natural_language("Pay rent on the 15th")
+
+        assert result["content"] == "Pay rent"
+        assert result["due_date"].day == 15
+
+    def test_non_on_cue_word_is_consumed_too(self) -> None:
+        result = parse_natural_language("Pay rent by the 15th")
+
+        assert result["content"] == "Pay rent"
+        assert result["due_date"].day == 15
+
+    def test_trailing_ordinal_is_a_date(self) -> None:
+        result = parse_natural_language("Dentist 3rd")
+
+        assert result["content"] == "Dentist"
+        assert result["due_date"].day == 3
+
+    def test_ordinal_followed_by_a_clock_is_a_date(self) -> None:
+        result = parse_natural_language("Call mom 5th at 6pm")
+
+        assert result["content"] == "Call mom"
+        assert result["due_date"].day == 5
+
+    def test_day_of_month_name_resolves_to_that_month(self) -> None:
+        result = parse_natural_language("Book table for the 4th of July")
+
+        assert result["due_date"].month == 7
+        assert result["due_date"].day == 4
