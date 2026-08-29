@@ -26,6 +26,12 @@ ERROR_NOT_FOUND = 5
 # Permission denied
 ERROR_PERMISSION_DENIED = 6
 
+# Request timed out - used when a request exceeds the allowed time limit
+ERROR_TIMEOUT = 7
+
+# Rate limit exceeded - used when the API rate limit has been hit
+ERROR_RATE_LIMITED = 8
+
 
 def get_exit_code_name(code: int) -> str:
     """Get the name of an exit code for display purposes."""
@@ -37,6 +43,8 @@ def get_exit_code_name(code: int) -> str:
         ERROR_NETWORK: "ERROR_NETWORK",
         ERROR_NOT_FOUND: "ERROR_NOT_FOUND",
         ERROR_PERMISSION_DENIED: "ERROR_PERMISSION_DENIED",
+        ERROR_TIMEOUT: "ERROR_TIMEOUT",
+        ERROR_RATE_LIMITED: "ERROR_RATE_LIMITED",
     }
     return code_names.get(code, f"UNKNOWN({code})")
 
@@ -51,6 +59,8 @@ def get_exit_code_description(code: int) -> str:
         ERROR_NETWORK: "Network or API error - check connection",
         ERROR_NOT_FOUND: "Resource not found",
         ERROR_PERMISSION_DENIED: "Permission denied",
+        ERROR_TIMEOUT: "Request timed out",
+        ERROR_RATE_LIMITED: "Rate limit exceeded",
     }
     return descriptions.get(code, "Unknown error")
 
@@ -64,6 +74,8 @@ AGENT_ACTIONS = {
     ERROR_NETWORK: "Wait and retry with exponential backoff",
     ERROR_NOT_FOUND: "Verify resource exists or create it",
     ERROR_PERMISSION_DENIED: "Check user permissions or escalate",
+    ERROR_TIMEOUT: "Wait and retry with exponential backoff",
+    ERROR_RATE_LIMITED: "Wait for rate limit window to reset, then retry",
 }
 
 
