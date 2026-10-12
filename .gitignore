@@ -80,3 +80,4 @@ Thumbs.db
 *.tmp
 *.log
 .gitnexus
+coverage.json

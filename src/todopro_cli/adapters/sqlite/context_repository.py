@@ -46,8 +46,6 @@ class SqliteLocationContextRepository(LocationContextRepository):
         self._user_id = get_or_create_local_user(self.connection)
         return self._user_id
 
-        return self._user_id
-
     async def list_all(self) -> list[LocationContext]:
         """List all contexts."""
         user_id = self._get_user_id()
