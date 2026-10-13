@@ -391,7 +391,7 @@ def format_task_item(
     task: dict,
     indent: str = "",
     suffix_map: dict[str, int] | None = None,
-    _compact: bool = False,
+    compact: bool = False,  # noqa: ARG001
 ) -> None:
     """Format a single task item."""
     # Status icon
@@ -698,7 +698,10 @@ def format_project_item(
                 console.print(meta_line)
 
 
-def format_generic_list_pretty(items: list[dict], _compact: bool = False) -> None:
+def format_generic_list_pretty(
+    items: list[dict],
+    compact: bool = False,  # noqa: ARG001
+) -> None:
     """Format generic list of items."""
     for item in items:
         if "name" in item:

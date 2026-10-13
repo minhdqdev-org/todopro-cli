@@ -105,7 +105,7 @@ def import_issues(
         "github", "--label", help="Label to apply to imported tasks"
     ),
     _profile: str = typer.Option(
-        "default", "--_profile", help="TodoPro _profile to use"
+        "default", "--profile", help="TodoPro profile to use"
     ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview without importing"),
 ) -> None:

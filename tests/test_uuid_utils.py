@@ -172,7 +172,7 @@ async def test_uuid_case_insensitivity(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_task_full_uuid_not_found(_tmp_path):
+async def test_task_full_uuid_not_found(tmp_path):
     """Test that a full UUID that doesn't exist raises ValueError (line 101)."""
     from unittest.mock import AsyncMock, MagicMock
 
@@ -216,7 +216,7 @@ async def test_task_ambiguous_uuid_many_matches(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_project_full_uuid_not_found(_tmp_path):
+async def test_project_full_uuid_not_found(tmp_path):
     """Test that a full UUID for project that doesn't exist raises ValueError (line 152)."""
     from unittest.mock import AsyncMock, MagicMock
 

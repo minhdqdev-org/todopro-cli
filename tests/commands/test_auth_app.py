@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 
 from todopro_cli.commands.auth_app import app
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 def _invoke(*args, **kwargs):

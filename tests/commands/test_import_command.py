@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 from todopro_cli.commands.import_command import app
 from todopro_cli.services.todoist.models import TodoistImportResult
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 # ---------------------------------------------------------------------------

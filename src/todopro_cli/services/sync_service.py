@@ -415,7 +415,7 @@ class SyncPushService(SyncService):
         source_context: str,
         target_context: str,
         dry_run: bool = False,
-        _full_sync: bool = False,
+        full_sync: bool = False,  # noqa: ARG002
         strategy: Literal["local_wins", "remote_wins"] = "local_wins",
     ) -> SyncResult:
         """Push data from source to target.

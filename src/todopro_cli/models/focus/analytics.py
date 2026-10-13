@@ -365,7 +365,7 @@ class FocusAnalytics:
             "longest_streak_end": longest_end.isoformat() if longest_end else None,
         }
 
-    def get_productivity_score(self, _days: int = 7) -> dict[str, Any]:
+    def get_productivity_score(self, days: int = 7) -> dict[str, Any]:  # noqa: ARG002
         """
         Calculate productivity score (0-100) based on multiple factors.
 

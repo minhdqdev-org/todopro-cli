@@ -149,7 +149,7 @@ class TestRemoteStorageStrategy:
                 "context": mock_context,
             }
 
-    def test_storage_type_is_remote(self, _mock_rest_repos):
+    def test_storage_type_is_remote(self, mock_rest_repos):
         strategy = RemoteStorageStrategy()
         assert strategy.storage_type == "remote"
 
@@ -173,7 +173,7 @@ class TestRemoteStorageStrategy:
         repo = strategy.get_location_context_repository()
         assert repo is mock_rest_repos["context"]
 
-    def test_get_achievement_repository_raises(self, _mock_rest_repos):
+    def test_get_achievement_repository_raises(self, mock_rest_repos):
         strategy = RemoteStorageStrategy()
         with pytest.raises(NotImplementedError):
             strategy.get_achievement_repository()
@@ -224,19 +224,19 @@ class TestStorageStrategyContext:
         mock_strategy.get_location_context_repository.assert_called_once()
         assert repo is mock_strategy.get_location_context_repository.return_value
 
-    def test_storage_type_delegates(self, context, _mock_strategy):
+    def test_storage_type_delegates(self, context, mock_strategy):
         assert context.storage_type == "mock"
 
     def test_strategy_property_returns_current_strategy(self, context, mock_strategy):
         assert context.strategy is mock_strategy
 
-    def test_switch_strategy_updates_strategy(self, context, _mock_strategy):
+    def test_switch_strategy_updates_strategy(self, context, mock_strategy):
         new_strategy = MagicMock(spec=StorageStrategy)
         new_strategy.storage_type = "new"
         context.switch_strategy(new_strategy)
         assert context.strategy is new_strategy
         assert context.storage_type == "new"
 
-    def test_achievement_repository_delegates(self, context, _mock_strategy):
+    def test_achievement_repository_delegates(self, context, mock_strategy):
         with pytest.raises(NotImplementedError):
             _ = context.achievement_repository

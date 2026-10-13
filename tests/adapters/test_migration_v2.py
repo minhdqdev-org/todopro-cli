@@ -369,7 +369,7 @@ def test_run_migration_creates_indexes(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_run_migration_returns_false_when_execute_fails(_tmp_path):
+def test_run_migration_returns_false_when_execute_fails(tmp_path):
     """If cursor.execute() fails inside the try block, run_migration returns False."""
     from unittest.mock import MagicMock
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -425,7 +425,7 @@ def test_verify_migration_fails_wrong_version(tmp_path):
     assert verify_migration(conn) is False
 
 
-def test_verify_migration_handles_exception(_tmp_path):
+def test_verify_migration_handles_exception(tmp_path):
     """When cursor.execute() raises inside verify_migration, it returns False."""
     from unittest.mock import MagicMock
     mock_conn = MagicMock(spec=sqlite3.Connection)

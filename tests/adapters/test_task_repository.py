@@ -432,10 +432,10 @@ class TestBulkUpdate:
 
 
 class TestLabelContextHelpers:
-    def test_get_task_labels_empty(self, repo, _db):
+    def test_get_task_labels_empty(self, repo, db):
         assert repo._get_task_labels("nonexistent") == []
 
-    def test_get_task_contexts_empty(self, repo, _db):
+    def test_get_task_contexts_empty(self, repo, db):
         assert repo._get_task_contexts("nonexistent") == []
 
     def test_set_and_get_task_labels(self, repo, db):

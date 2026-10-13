@@ -925,7 +925,7 @@ class TestGetProductivityScore:
         assert result["score"] <= 100
 
     def test_grade_thresholds(
-        self, analytics: FocusAnalytics, _db_conn: sqlite3.Connection
+        self, analytics: FocusAnalytics, db_conn: sqlite3.Connection
     ) -> None:
         """Verify that grade boundaries map correctly to letter grades."""
         # We'll test different session counts to produce varying scores

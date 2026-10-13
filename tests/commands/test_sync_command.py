@@ -106,13 +106,13 @@ class TestSyncHelp:
 class TestDisplaySyncResult:
     """Tests for _display_sync_result() covering all output branches."""
 
-    def test_success_pull_shows_complete(self, _capsys):
+    def test_success_pull_shows_complete(self, capsys):
         result = _make_sync_result(success=True, duration=2.5, tasks_conflicts=0)
         _display_sync_result(result, "pull", dry_run=False)
         # No assertion on capsys here; the helper prints to Rich console.
         # Just confirm it doesn't raise.
 
-    def test_dry_run_shows_dry_run_header(self, _capsys):
+    def test_dry_run_shows_dry_run_header(self, capsys):
         """Dry run path should not raise."""
         result = _make_sync_result(success=True, duration=0.9)
         _display_sync_result(result, "pull", dry_run=True)

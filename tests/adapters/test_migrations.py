@@ -107,7 +107,7 @@ class TestGetCurrentVersion:
     def test_returns_zero_on_fresh_db(self, runner):
         assert runner.get_current_version() == 0
 
-    def test_returns_version_after_migration(self, runner, _mem_conn):
+    def test_returns_version_after_migration(self, runner, mem_conn):
         runner.run_migration(_Migration1())
         assert runner.get_current_version() == 1
 
@@ -140,14 +140,14 @@ class TestRunMigration:
         with pytest.raises(ValueError, match="not greater than current version"):
             runner.run_migration(_Migration1())  # version 1 < current 2
 
-    def test_failing_migration_raises_runtime_error(self, runner, _mem_conn):
+    def test_failing_migration_raises_runtime_error(self, runner, mem_conn):
         # First get to version 2 so _FailingMigration (v3) is valid in order
         runner.run_migration(_Migration1())
         runner.run_migration(_Migration2())
         with pytest.raises(RuntimeError, match="Migration 3 failed"):
             runner.run_migration(_FailingMigration())
 
-    def test_failing_migration_does_not_record_version(self, runner, _mem_conn):
+    def test_failing_migration_does_not_record_version(self, runner, mem_conn):
         runner.run_migration(_Migration1())
         runner.run_migration(_Migration2())
         with contextlib.suppress(RuntimeError):
@@ -161,7 +161,7 @@ class TestRunMigration:
 
 
 class TestRunMigrations:
-    def test_applies_all_pending(self, runner, _mem_conn):
+    def test_applies_all_pending(self, runner, mem_conn):
         count = runner.run_migrations([_Migration1(), _Migration2()])
         assert count == 2
         assert runner.get_current_version() == 2

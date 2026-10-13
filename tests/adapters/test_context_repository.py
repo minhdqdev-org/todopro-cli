@@ -244,7 +244,7 @@ class TestCreate:
         assert cursor.fetchone() is not None
 
     @pytest.mark.asyncio
-    async def test_create_uses_default_radius_when_not_provided(self, repo, _db):
+    async def test_create_uses_default_radius_when_not_provided(self, repo, db):
         ctx = await repo.create(
             LocationContextCreate(name="Park", latitude=51.0, longitude=-0.5)
         )

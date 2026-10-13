@@ -188,7 +188,7 @@ class TestExecuteWithRetry:
         row = cursor.fetchone()
         assert row[0] == 7
 
-    def test_retries_on_locked_db_and_eventually_raises(self, _tmp_path):
+    def test_retries_on_locked_db_and_eventually_raises(self, tmp_path):
         locked_error = sqlite3.OperationalError("database is locked")
 
         # Use a MagicMock connection since sqlite3.Connection.execute is read-only
@@ -246,7 +246,7 @@ class TestModuleLevelGetConnection:
         conn = get_connection(db_path=str(db_file))
         assert isinstance(conn, sqlite3.Connection)
 
-    def test_execute_with_retry_max_retries_zero(self, _tmp_path):
+    def test_execute_with_retry_max_retries_zero(self, tmp_path):
         """max_retries=0 triggers the dead-code safety raise on line 176."""
         mock_conn = MagicMock(spec=sqlite3.Connection)
         with pytest.raises(sqlite3.OperationalError, match="Max retries exceeded"):

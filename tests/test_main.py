@@ -16,7 +16,7 @@ from typer.testing import CliRunner
 
 from todopro_cli.main import app, main
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 # ---------------------------------------------------------------------------

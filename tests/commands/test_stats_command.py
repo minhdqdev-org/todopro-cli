@@ -23,7 +23,7 @@ from todopro_cli.commands.stats import (
     render_progress_bar,
 )
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 
 
 # ---------------------------------------------------------------------------
