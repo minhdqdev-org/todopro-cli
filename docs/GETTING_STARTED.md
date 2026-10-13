@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:17:43+07:00
+updated_at: 2026-10-14T00:25:17+07:00
 ---
 
 # Getting Started with TodoPro CLI
@@ -289,6 +289,9 @@ todopro auth signup
 todopro auth login
 ```
 
+**Sign-up can be web-only:** the hosted service protects registration with a CAPTCHA that the CLI cannot solve.
+If `todopro auth signup` says sign-up is web-only, create the account at https://app.todopro.xyz and then run `todopro auth login`.
+
 **Password rules:** at least 8 characters, with an uppercase letter, a lowercase letter and a special character.
 
 **Confirm your email:** TodoPro only works for confirmed addresses.
@@ -337,7 +340,7 @@ A fresh install has two:
 | Context | Type | What it is |
 |---------|------|------------|
 | `local` | local | SQLite file on your machine, no account needed (default) |
-| `cloud` | remote | TodoPro Cloud at `https://todopro.minhdq.dev/api`, requires `auth login` |
+| `cloud` | remote | TodoPro Cloud at `https://api.todopro.xyz/api`, requires `auth login` |
 
 ```bash
 # List contexts (the active one is marked with *)

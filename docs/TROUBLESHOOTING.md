@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:17:43+07:00
+updated_at: 2026-10-14T00:25:17+07:00
 ---
 
 # TodoPro CLI - Troubleshooting Guide
@@ -285,7 +285,7 @@ todopro context use cloud
 
 ```bash
 $ todopro task list
-Error: Not logged in. Use 'todopro login' to authenticate.
+Error: Not logged in. Use 'todopro auth login' to authenticate.
 ```
 
 **Cause:** You are in a remote context (such as `cloud`) but have not signed in to it yet.
@@ -365,6 +365,12 @@ Error: Login failed: ...
 2. Account doesn't exist
 3. Network issues
 4. For signup, a password that breaks the rules (at least 8 characters, with an uppercase letter, a lowercase letter and a special character)
+5. For signup on the hosted service, a CAPTCHA the CLI cannot solve (see below)
+
+**Signup says "Sign-up is web-only on this server":**
+
+The server rejected the registration with `400 captcha_failed` because it requires a CAPTCHA.
+Create the account on the web at https://app.todopro.xyz, then sign in from the CLI with `todopro auth login`.
 
 **Solutions:**
 
@@ -862,12 +868,12 @@ cat ~/.config/todopro_cli/config.json | jq .
     {
       "name": "cloud",
       "type": "remote",
-      "source": "https://todopro.minhdq.dev/api",
+      "source": "https://api.todopro.xyz/api",
       "description": "TodoPro Cloud (requires login)"
     }
   ],
   "api": {
-    "endpoint": "https://todopro.minhdq.dev/api",
+    "endpoint": "https://api.todopro.xyz/api",
     "timeout": 30,
     "retry": 3
   }

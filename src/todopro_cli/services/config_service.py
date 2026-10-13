@@ -18,7 +18,12 @@ from pathlib import Path
 
 from platformdirs import user_config_dir, user_data_dir
 
-from todopro_cli.models.config_models import AppConfig, Context
+from todopro_cli.models.config_models import (
+    DEFAULT_API_ENDPOINT,
+    LEGACY_API_ENDPOINT,
+    AppConfig,
+    Context,
+)
 from todopro_cli.models.storage_strategy import (
     LocalStorageStrategy,
     RemoteStorageStrategy,
@@ -79,7 +84,8 @@ class ConfigService:
 
                 # Persist a freshly-generated client_id for configs written
                 # before the field existed, so it stays stable across runs.
-                if "client_id" not in raw:
+                migrated = self._migrate_legacy_endpoint()
+                if "client_id" not in raw or migrated:
                     self.save_config()
 
                 # After loading config, initialize the storage strategy context
@@ -102,6 +108,23 @@ class ConfigService:
             raise RuntimeError(f"Failed to load config: {e}") from e
 
         return self.config
+
+    def _migrate_legacy_endpoint(self) -> bool:
+        """Rewrite the dead legacy default endpoint to the current default.
+
+        Only an exact match of the old default is touched, so a custom
+        endpoint is never rewritten. Returns True when anything changed.
+        """
+        assert self._config is not None
+        changed = False
+        for ctx in self._config.contexts:
+            if ctx.type == "remote" and ctx.source.rstrip("/") == LEGACY_API_ENDPOINT:
+                ctx.source = DEFAULT_API_ENDPOINT
+                changed = True
+        if self._config.api.endpoint.rstrip("/") == LEGACY_API_ENDPOINT:
+            self._config.api.endpoint = DEFAULT_API_ENDPOINT
+            changed = True
+        return changed
 
     def save_config(self):
         """Save the current configuration to storage."""
@@ -157,7 +180,7 @@ class ConfigService:
         cloud_context = Context(
             name="cloud",
             type="remote",
-            source="https://todopro.minhdq.dev/api",
+            source=DEFAULT_API_ENDPOINT,
             description="TodoPro Cloud (requires login)",
         )
 

@@ -2,7 +2,28 @@
 
 import contextlib
 
+import httpx
+
 from todopro_cli.services.api.client import APIClient
+
+SIGNUP_WEB_URL = "https://app.todopro.xyz"
+
+
+class SignupCaptchaRequired(Exception):
+    """The server demands a CAPTCHA token that the CLI cannot produce."""
+
+
+def _is_captcha_failure(response: httpx.Response) -> bool:
+    """Is this 400 the Turnstile gate (`code: captcha_failed`)?"""
+    try:
+        body = response.json()
+    except Exception:
+        return False
+    if not isinstance(body, dict):
+        return False
+    envelope = body.get("error")
+    code = envelope.get("code") if isinstance(envelope, dict) else body.get("code")
+    return code == "captcha_failed"
 
 
 class AuthAPI:
@@ -37,11 +58,16 @@ class AuthAPI:
 
     async def signup(self, email: str, password: str) -> dict:
         """Create a new account."""
-        response = await self.client.post(
-            "/v1/auth/register",
-            json={"email": email, "password": password},
-            skip_auth=True,
-        )
+        try:
+            response = await self.client.post(
+                "/v1/auth/register",
+                json={"email": email, "password": password},
+                skip_auth=True,
+            )
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 400 and _is_captcha_failure(e.response):
+                raise SignupCaptchaRequired() from e
+            raise
         return response.json()
 
     async def resend_verification(self, email: str | None = None) -> dict:

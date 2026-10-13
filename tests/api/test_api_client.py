@@ -31,7 +31,7 @@ async def test_client_initialization(mock_config_manager):
         return_value=mock_config_manager,
     ):
         client = APIClient()
-        assert client.base_url == "https://todopro.minhdq.dev/api"
+        assert client.base_url == "https://api.todopro.xyz/api"
         assert client.timeout == 30
         assert client._client is None
 
@@ -435,7 +435,7 @@ async def test_get_headers_context_creds_missing_falls_back_to_default(
 
 @pytest.mark.asyncio
 async def test_request_401_prints_relogin_hint_and_raises(mock_config_manager):
-    """A 401 on an authed request points the user at `todopro login`, then raises.
+    """A 401 on an authed request points the user at `todopro auth login`, then raises.
 
     Knox tokens have no client-side refresh, so there is no refresh attempt.
     """
@@ -470,7 +470,7 @@ async def test_request_401_prints_relogin_hint_and_raises(mock_config_manager):
     printed = " ".join(
         str(c.args[0]) for c in fake_console.print.call_args_list if c.args
     )
-    assert "todopro login" in printed
+    assert "todopro auth login" in printed
 
 
 @pytest.mark.asyncio

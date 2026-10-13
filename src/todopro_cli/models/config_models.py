@@ -11,11 +11,15 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+DEFAULT_API_ENDPOINT = "https://api.todopro.xyz/api"
+# Previous default; the host no longer serves the API.
+LEGACY_API_ENDPOINT = "https://todopro.minhdq.dev/api"
+
 
 class APIConfig(BaseModel):
     """API configuration."""
 
-    endpoint: str = Field(default="https://todopro.minhdq.dev/api")
+    endpoint: str = Field(default=DEFAULT_API_ENDPOINT)
     timeout: int = Field(default=30)
     retry: int = Field(default=3)
 

@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:11:01+07:00
+updated_at: 2026-10-14T00:25:17+07:00
 ---
 
 # TodoPro CLI - Frequently Asked Questions (FAQ)
@@ -115,7 +115,7 @@ On macOS the configuration lives next to the database in `~/Library/Application 
 A **context** is a named place where your tasks live. Two exist out of the box:
 
 - `local` (the default): a SQLite database on your machine
-- `cloud`: the TodoPro API at `https://todopro.minhdq.dev/api`, which needs a login
+- `cloud`: the TodoPro API at `https://api.todopro.xyz/api`, which needs a login
 
 Switch with `todopro context use <name>`. See [How do I use multiple contexts?](#how-do-i-use-multiple-contexts).
 

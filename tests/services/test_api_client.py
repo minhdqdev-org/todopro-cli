@@ -340,7 +340,7 @@ class TestRequest:
         printed = " ".join(
             str(c.args[0]) for c in fake_console.print.call_args_list if c.args
         )
-        assert "todopro login" in printed
+        assert "todopro auth login" in printed
 
     @pytest.mark.asyncio
     async def test_401_with_skip_auth_does_not_prompt(self):

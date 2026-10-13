@@ -2,9 +2,10 @@
 
 from unittest.mock import AsyncMock, MagicMock
 
+import httpx
 import pytest
 
-from todopro_cli.services.api.auth import AuthAPI
+from todopro_cli.services.api.auth import AuthAPI, SignupCaptchaRequired
 from todopro_cli.services.api.client import APIClient
 
 
@@ -86,6 +87,55 @@ async def test_logout_exception_is_silenced(mock_client):
     await auth_api.logout()
 
     mock_client.post.assert_called_once_with("/v1/auth/logout")
+
+
+def _http_error(status, body):
+    request = httpx.Request("POST", "https://api.example.com/v1/auth/register")
+    response = httpx.Response(status, json=body, request=request)
+    return httpx.HTTPStatusError("error", request=request, response=response)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"code": "captcha_failed", "detail": "CAPTCHA verification failed."},
+        {"error": {"code": "captcha_failed"}},
+    ],
+)
+async def test_signup_captcha_failed_raises_dedicated_error(mock_client, body):
+    mock_client.post.side_effect = _http_error(400, body)
+
+    with pytest.raises(SignupCaptchaRequired):
+        await AuthAPI(mock_client).signup("a@b.com", "Passw0rd!")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "status,body",
+    [
+        (400, {"password": ["too weak"]}),
+        (400, {"code": "something_else"}),
+        (429, {"code": "captcha_failed"}),
+    ],
+)
+async def test_signup_other_errors_pass_through(mock_client, status, body):
+    mock_client.post.side_effect = _http_error(status, body)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await AuthAPI(mock_client).signup("a@b.com", "Passw0rd!")
+
+
+@pytest.mark.asyncio
+async def test_signup_non_json_400_passes_through(mock_client):
+    request = httpx.Request("POST", "https://api.example.com/v1/auth/register")
+    response = httpx.Response(400, text="<html>bad</html>", request=request)
+    mock_client.post.side_effect = httpx.HTTPStatusError(
+        "error", request=request, response=response
+    )
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await AuthAPI(mock_client).signup("a@b.com", "Passw0rd!")
 
 
 @pytest.mark.asyncio

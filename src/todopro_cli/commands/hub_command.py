@@ -117,7 +117,7 @@ def list_items(
             raise typer.Exit(1) from exc
         if status == 401:
             console.print(
-                "[red]Error: Not authenticated. Run [cyan]todopro login[/cyan] first.[/red]"
+                "[red]Error: Not authenticated. Run [cyan]todopro auth login[/cyan] first.[/red]"
             )
             raise typer.Exit(1) from exc
         console.print(f"[red]Error: {_extract_error_message(exc.response)}[/red]")

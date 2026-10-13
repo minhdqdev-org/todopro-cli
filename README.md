@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:11:01+07:00
+updated_at: 2026-10-14T00:25:17+07:00
 ---
 
 # TodoPro CLI
@@ -144,7 +144,7 @@ todopro complete <task-id>
 
 ### ☁️ Optional: Cloud Sync
 
-Two contexts exist out of the box: `local` (SQLite, the default) and `cloud` (the TodoPro API at `https://todopro.minhdq.dev/api`). `auth` commands only work in a remote context.
+Two contexts exist out of the box: `local` (SQLite, the default) and `cloud` (the TodoPro API at `https://api.todopro.xyz/api`). `auth` commands only work in a remote context.
 
 ```bash
 # 1. Create an account in the cloud context
@@ -248,7 +248,7 @@ todopro task list
 todopro context use local
 ```
 
-The remote API defaults to `https://todopro.minhdq.dev/api`. To point a remote context at another server, pass `--endpoint` to `todopro auth login`, create a context with `todopro context create <name> --type remote --source <url>`, or set the `TODOPRO_BACKEND_URL` environment variable.
+The remote API defaults to `https://api.todopro.xyz/api`. To point a remote context at another server, pass `--endpoint` to `todopro auth login`, create a context with `todopro context create <name> --type remote --source <url>`, or set the `TODOPRO_BACKEND_URL` environment variable.
 
 ### Sync & Backup
 

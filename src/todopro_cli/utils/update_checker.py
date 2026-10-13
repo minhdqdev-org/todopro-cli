@@ -11,13 +11,14 @@ from packaging import version
 from platformdirs import user_cache_dir
 
 from todopro_cli import __version__
+from todopro_cli.models.config_models import DEFAULT_API_ENDPOINT
 from todopro_cli.utils.ui.console import get_console
 
 CACHE_DIR = Path(user_cache_dir("todopro"))
 CACHE_FILE = CACHE_DIR / "update_check.json"
 
 CHECK_INTERVAL = 3600  # 1 hour in seconds
-DEFAULT_BACKEND_URL = "https://todopro.minhdq.dev/api"
+DEFAULT_BACKEND_URL = DEFAULT_API_ENDPOINT
 
 
 def check_for_updates() -> None:

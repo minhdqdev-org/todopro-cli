@@ -6,7 +6,7 @@ import json
 import typer
 from rich.prompt import Prompt
 
-from todopro_cli.services.api.auth import AuthAPI
+from todopro_cli.services.api.auth import SIGNUP_WEB_URL, AuthAPI, SignupCaptchaRequired
 from todopro_cli.services.api.client import get_client
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.typer_helpers import SuggestingGroup
@@ -195,6 +195,16 @@ def signup(
                 # Create account
                 try:
                     result = await auth_api.signup(email, password)  # type: ignore
+                except SignupCaptchaRequired:
+                    format_error(
+                        "Sign-up is web-only on this server (it requires a CAPTCHA "
+                        "the CLI cannot solve)."
+                    )
+                    console.print(
+                        f"[dim]Create your account at[/dim] [cyan]{SIGNUP_WEB_URL}[/cyan]"
+                        "[dim], then run[/dim] [cyan]todopro auth login[/cyan]"
+                    )
+                    raise typer.Exit(1) from None
                 except Exception as e:
                     # Try to extract error message from response
                     error_msg = str(e)
@@ -238,11 +248,13 @@ def signup(
                             "[yellow]Auto-login failed. Please login manually with:[/yellow]"
                         )
                         console.print(
-                            f"[yellow]  todopro login --email {user_email}[/yellow]"
+                            f"[yellow]  todopro auth login --email {user_email}[/yellow]"
                         )
                 else:
                     console.print("\n[dim]You can now login with:[/dim]")
-                    console.print(f"[dim]  todopro login --email {user_email}[/dim]")
+                    console.print(
+                        f"[dim]  todopro auth login --email {user_email}[/dim]"
+                    )
 
             finally:
                 await client.close()
@@ -319,7 +331,7 @@ def timezone(
         # Check if logged in
         credentials = config_service.load_credentials()
         if not credentials:
-            format_error("Not logged in. Use 'todopro login' to authenticate.")
+            format_error("Not logged in. Use 'todopro auth login' to authenticate.")
             raise typer.Exit(1)
 
         async def handle_timezone() -> None:

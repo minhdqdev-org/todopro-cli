@@ -163,7 +163,7 @@ class APIClient:
                         "\n[yellow]⚠ Your session has expired or is no longer valid.[/yellow]"
                     )
                     rich_console.print(
-                        "[dim]Please login again:[/dim] [cyan]todopro login[/cyan]\n"
+                        "[dim]Please login again:[/dim] [cyan]todopro auth login[/cyan]\n"
                     )
                     raise
 

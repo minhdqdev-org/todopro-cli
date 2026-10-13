@@ -13,6 +13,7 @@ from typer.testing import CliRunner
 
 from todopro_cli.commands.auth import app
 from todopro_cli.models.config_models import Context
+from todopro_cli.services.api.auth import SignupCaptchaRequired
 
 runner = CliRunner()
 
@@ -321,6 +322,47 @@ class TestSignup:
         assert "Account created" in strip_ansi(result.stdout)
         assert "Logged in as" in strip_ansi(result.stdout)
         svc.save_credentials.assert_called_once()
+
+    def test_signup_captcha_required_points_to_web(self):
+        """A captcha_failed rejection explains that sign-up is web-only."""
+        ctx = _make_context()
+        svc = _mock_config_service(context=ctx)
+        auth_api_mock = _make_auth_api_mock(signup_side_effect=SignupCaptchaRequired())
+        p_client, mock_client = _patch_get_client()
+
+        with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
+            result = runner.invoke(
+                app,
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
+            )
+
+        out = strip_ansi(result.stdout)
+        assert result.exit_code == 1
+        assert "web-only" in out
+        assert "https://app.todopro.xyz" in out
+        assert "todopro auth login" in out
+        assert "Signup failed" not in out
+        auth_api_mock.login.assert_not_called()
+        svc.save_credentials.assert_not_called()
+        mock_client.close.assert_awaited()
+
+    def test_signup_other_error_keeps_generic_message(self):
+        """Non-captcha failures still surface as 'Signup failed'."""
+        ctx = _make_context()
+        svc = _mock_config_service(context=ctx)
+        auth_api_mock = _make_auth_api_mock(signup_side_effect=RuntimeError("boom"))
+        p_client, _ = _patch_get_client()
+
+        with _patch_config_service(svc), p_client, _patch_auth_api(auth_api_mock):
+            result = runner.invoke(
+                app,
+                ["signup", "--email", "a@b.com", "--password", "Passw0rd!"],
+            )
+
+        out = strip_ansi(result.stdout)
+        assert result.exit_code == 1
+        assert "Signup failed: boom" in out
+        assert "web-only" not in out
 
     def test_signup_success_no_auto_login(self):
         """Successful signup with --no-auto-login."""

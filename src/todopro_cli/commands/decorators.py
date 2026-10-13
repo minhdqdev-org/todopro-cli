@@ -33,7 +33,7 @@ def _require_auth() -> None:
 
     # Require authentication for remote contexts
     if not AuthService.is_authenticated():
-        format_error("Not logged in. Use 'todopro login' to authenticate.")
+        format_error("Not logged in. Use 'todopro auth login' to authenticate.")
         raise typer.Exit(1)
 
 

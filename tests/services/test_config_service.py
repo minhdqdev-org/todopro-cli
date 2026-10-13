@@ -146,6 +146,80 @@ class TestLoadConfig:
         gcs.cache_clear()
 
 
+class TestLegacyEndpointMigration:
+    """The dead pre-2026 default endpoint is rewritten on load, and only that."""
+
+    LEGACY = "https://todopro.minhdq.dev/api"
+    CURRENT = "https://api.todopro.xyz/api"
+
+    def _load(self, tmp_path, contexts, api_endpoint):
+        from todopro_cli.services.config_service import get_config_service as gcs
+
+        gcs.cache_clear()
+        with (
+            patch("todopro_cli.services.config_service.user_config_dir", return_value=str(tmp_path)),
+            patch("todopro_cli.services.config_service.user_data_dir", return_value=str(tmp_path)),
+        ):
+            first = ConfigService()
+            first.config_path.write_text(
+                json.dumps(
+                    {
+                        "current_context_name": contexts[0]["name"],
+                        "client_id": "fixed-client-id",
+                        "contexts": contexts,
+                        "api": {"endpoint": api_endpoint},
+                    }
+                )
+            )
+            service = ConfigService()
+            _ = service.config
+        gcs.cache_clear()
+        return service
+
+    def test_legacy_default_is_rewritten_and_persisted(self, tmp_path):
+        service = self._load(
+            tmp_path,
+            [{"name": "cloud", "type": "remote", "source": self.LEGACY}],
+            self.LEGACY,
+        )
+        assert service.config.get_context("cloud").source == self.CURRENT
+        assert service.config.api.endpoint == self.CURRENT
+        on_disk = json.loads(service.config_path.read_text())
+        assert on_disk["contexts"][0]["source"] == self.CURRENT
+        assert on_disk["api"]["endpoint"] == self.CURRENT
+        assert on_disk["client_id"] == "fixed-client-id"
+
+    def test_trailing_slash_variant_is_rewritten(self, tmp_path):
+        service = self._load(
+            tmp_path,
+            [{"name": "cloud", "type": "remote", "source": self.LEGACY + "/"}],
+            self.CURRENT,
+        )
+        assert service.config.get_context("cloud").source == self.CURRENT
+
+    def test_custom_endpoints_are_untouched(self, tmp_path):
+        custom = "https://todopro.minhdq.dev/api/v2"
+        service = self._load(
+            tmp_path,
+            [
+                {"name": "cloud", "type": "remote", "source": custom},
+                {"name": "mine", "type": "remote", "source": "https://my.example.com/api"},
+            ],
+            "http://localhost:8000/api",
+        )
+        assert service.config.get_context("cloud").source == custom
+        assert service.config.get_context("mine").source == "https://my.example.com/api"
+        assert service.config.api.endpoint == "http://localhost:8000/api"
+
+    def test_local_context_with_legacy_source_is_untouched(self, tmp_path):
+        service = self._load(
+            tmp_path,
+            [{"name": "odd", "type": "local", "source": self.LEGACY}],
+            self.CURRENT,
+        )
+        assert service.config.get_context("odd").source == self.LEGACY
+
+
 # ===========================================================================
 # save_config
 # ===========================================================================
