@@ -375,6 +375,7 @@ async def test_async_context_manager_exit_closes_client(mock_config_manager):
 @pytest.mark.asyncio
 async def test_get_headers_no_current_context_no_auth(mock_config_manager):
     """Line 50: when get_current_context() is None, credentials = None → no Authorization header."""
+    _ = mock_config_manager.config
     mock_config_manager.get_current_context = lambda: None
     with patch(
         "todopro_cli.services.api.client.get_config_service",
