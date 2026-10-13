@@ -7,7 +7,7 @@ import sqlite3
 from todopro_cli.adapters.sqlite.connection import get_connection
 from todopro_cli.adapters.sqlite.user_manager import get_or_create_local_user
 from todopro_cli.adapters.sqlite.utils import generate_uuid, now_iso, row_to_dict
-from todopro_cli.models import Label, LabelCreate
+from todopro_cli.models import Label, LabelCreate, LabelUpdate
 from todopro_cli.repositories import LabelRepository
 
 
@@ -88,6 +88,34 @@ class SqliteLabelRepository(LabelRepository):
         except sqlite3.IntegrityError as e:
             if "UNIQUE constraint" in str(e):
                 raise ValueError(f"Label '{data['name']}' already exists") from e
+            raise
+
+        return await self.get(label_id)
+
+    async def update(self, label_id: str, updates: LabelUpdate) -> Label:
+        """Update an existing label."""
+        user_id = self._get_user_id()
+        update_dict = updates.model_dump(exclude_none=True)
+
+        # Raises ValueError if the label does not exist.
+        current = await self.get(label_id)
+        if not update_dict:
+            return current
+
+        set_parts = [f"{key} = ?" for key in update_dict]
+        params = list(update_dict.values())
+        set_parts.extend(["updated_at = ?", "version = version + 1"])
+        params.extend([now_iso(), label_id, user_id])
+
+        try:
+            self.connection.execute(
+                f"UPDATE labels SET {', '.join(set_parts)} WHERE id = ? AND user_id = ?",
+                params,
+            )
+            self.connection.commit()
+        except sqlite3.IntegrityError as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValueError(f"Label '{update_dict['name']}' already exists") from e
             raise
 
         return await self.get(label_id)

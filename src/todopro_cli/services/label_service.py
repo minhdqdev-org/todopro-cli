@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from todopro_cli.models import Label, LabelCreate
+from todopro_cli.models import Label, LabelCreate, LabelUpdate
 from todopro_cli.repositories import LabelRepository
 
 
@@ -57,6 +57,27 @@ class LabelService:
         """
         label_data = LabelCreate(name=name, color=color)
         return await self.repository.create(label_data)
+
+    async def update_label(
+        self,
+        label_id: str,
+        *,
+        name: str | None = None,
+        color: str | None = None,
+    ) -> Label:
+        """Update an existing label.
+
+        Args:
+            label_id: Label ID to update
+            name: Updated label name
+            color: Updated hex color code
+
+        Returns:
+            Updated Label object
+        """
+        return await self.repository.update(
+            label_id, LabelUpdate(name=name, color=color)
+        )
 
     async def delete_label(self, label_id: str) -> bool:
         """Delete a label.

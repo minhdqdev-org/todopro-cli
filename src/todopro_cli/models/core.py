@@ -31,6 +31,20 @@ class LabelCreate(BaseModel):
     color: str | None = None
 
 
+class LabelUpdate(BaseModel):
+    """Model for updating an existing label.
+
+    All fields are optional - only provided fields will be updated.
+
+    Attributes:
+        name: Label name
+        color: Hex color code
+    """
+
+    name: str | None = None
+    color: str | None = None
+
+
 class Section(BaseModel):
     """Section model representing a named group of tasks within a project.
 

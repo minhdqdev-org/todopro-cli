@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from todopro_cli.models import (
     Label,
     LabelCreate,
+    LabelUpdate,
     Project,
     ProjectCreate,
     ProjectFilters,
@@ -372,6 +373,26 @@ class LabelRepository(ABC):
         """
         raise NotImplementedError(
             "LabelRepository.create() must be implemented by adapter"
+        )
+
+    @abstractmethod
+    async def update(self, label_id: str, updates: LabelUpdate) -> Label:
+        """Update an existing label.
+
+        Args:
+            label_id: Unique identifier for the label
+            updates: LabelUpdate object with fields to update
+
+        Returns:
+            Updated Label object
+
+        Raises:
+            NotImplementedError: Must be implemented by concrete adapter
+            NotFoundError: If label does not exist
+            ValidationError: If update data is invalid
+        """
+        raise NotImplementedError(
+            "LabelRepository.update() must be implemented by adapter"
         )
 
     @abstractmethod

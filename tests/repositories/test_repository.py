@@ -13,6 +13,7 @@ import pytest
 from todopro_cli.models import (
     Label,
     LabelCreate,
+    LabelUpdate,
     Project,
     ProjectCreate,
     ProjectFilters,
@@ -97,6 +98,9 @@ class _ConcreteLabelRepo(LabelRepository):
 
     async def create(self, label_data: LabelCreate) -> Label:
         return await super().create(label_data)
+
+    async def update(self, label_id: str, updates: LabelUpdate) -> Label:
+        return await super().update(label_id, updates)
 
     async def delete(self, label_id: str) -> bool:
         return await super().delete(label_id)
@@ -277,6 +281,11 @@ class TestLabelRepositoryAbstractMethods:
     async def test_create_raises(self, label_repo):
         with pytest.raises(NotImplementedError, match="create"):
             await label_repo.create(LabelCreate(name="tag"))
+
+    @pytest.mark.asyncio
+    async def test_update_raises(self, label_repo):
+        with pytest.raises(NotImplementedError):
+            await label_repo.update("l-id", LabelUpdate(name="tag"))
 
     @pytest.mark.asyncio
     async def test_delete_raises(self, label_repo):

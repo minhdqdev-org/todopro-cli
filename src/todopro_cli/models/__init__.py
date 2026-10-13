@@ -10,6 +10,7 @@ from .config_models import Context as ConfigContext
 from .core import (
     Label,
     LabelCreate,
+    LabelUpdate,
     LocationContext,
     LocationContextCreate,
     Project,
@@ -53,6 +54,7 @@ __all__ = [
     # Label models
     "Label",
     "LabelCreate",
+    "LabelUpdate",
     # Context/Location models
     "LocationContext",
     "LocationContextCreate",

@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from todopro_cli.models import (
     Label,
     LabelCreate,
+    LabelUpdate,
     LocationContext,
     LocationContextCreate,
     Project,
@@ -379,6 +380,12 @@ class RestApiLabelRepository(LabelRepository):
         """Create a new label."""
         data = label_data.model_dump(exclude_none=True)
         result = await self.labels_api.create_label(**data)
+        return Label(**result)
+
+    async def update(self, label_id: str, updates: LabelUpdate) -> Label:
+        """Update an existing label."""
+        update_data = updates.model_dump(exclude_none=True)
+        result = await self.labels_api.update_label(label_id, **update_data)
         return Label(**result)
 
     async def delete(self, label_id: str) -> bool:

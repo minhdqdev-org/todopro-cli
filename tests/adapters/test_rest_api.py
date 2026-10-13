@@ -587,6 +587,25 @@ class TestRestApiLabelRepository:
         assert label.name == "home"
 
     @pytest.mark.asyncio
+    async def test_update_patches_only_given_fields(self):
+        """Real LabelsAPI; only the HTTP client underneath is faked."""
+        from todopro_cli.models import LabelUpdate
+        from todopro_cli.services.api.labels import LabelsAPI
+
+        response = MagicMock()
+        response.json.return_value = _label_dict(name="office")
+        client = MagicMock()
+        client.patch = AsyncMock(return_value=response)
+        repo = self._make_repo(LabelsAPI(client))
+
+        label = await repo.update("lbl-001", LabelUpdate(name="office"))
+
+        client.patch.assert_awaited_once_with(
+            "/v1/labels/lbl-001", json={"name": "office"}
+        )
+        assert label.name == "office"
+
+    @pytest.mark.asyncio
     async def test_delete_returns_true(self):
         mock_api = MagicMock()
         mock_api.delete_label = AsyncMock(return_value=None)
