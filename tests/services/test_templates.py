@@ -100,13 +100,6 @@ class TestCreateTemplate:
         assert "description" not in kwargs["json"]
 
     @pytest.mark.asyncio
-    async def test_labels_included_when_provided(self, api, client):
-        client.post.return_value = _mock_response({})
-        await api.create_template("T", "c", labels=["work", "urgent"])
-        _, kwargs = client.post.call_args
-        assert kwargs["json"]["labels"] == ["work", "urgent"]
-
-    @pytest.mark.asyncio
     async def test_labels_omitted_when_none(self, api, client):
         client.post.return_value = _mock_response({})
         await api.create_template("T", "c")

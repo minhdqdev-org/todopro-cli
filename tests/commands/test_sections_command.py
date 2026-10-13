@@ -68,11 +68,11 @@ def _invoke(args, svc):
 from contextlib import ExitStack  # noqa: E402
 
 
-def invoke(args, svc):
+def invoke(args, svc, input=None):
     with ExitStack() as stack:
         for p in _patches(svc):
             stack.enter_context(p)
-        return runner.invoke(app, args)
+        return runner.invoke(app, args, input=input)
 
 
 def test_list_sections(mock_section_service):
@@ -138,9 +138,9 @@ def test_delete_section_with_yes_flag(mock_section_service):
 
 def test_delete_section_cancel(mock_section_service):
     """delete without --yes prompts and exits cleanly on 'n'."""
-    result = invoke(["delete", PROJECT_ID, SECTION_ID], mock_section_service)
-    # Default input is empty → typer treats empty as "n"
+    result = invoke(["delete", PROJECT_ID, SECTION_ID], mock_section_service, input="n\n")
     assert result.exit_code == 0
+    mock_section_service.delete_section.assert_not_called()
 
 
 def test_reorder_sections(mock_section_service):

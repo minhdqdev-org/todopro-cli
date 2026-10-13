@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from unittest.mock import MagicMock
 
+import pytest
 
 import todopro_cli.services.audio.local_stt as stt
 
@@ -36,9 +37,11 @@ def _make_fake_faster_whisper(segments=None, model_info=None):
 # ---------------------------------------------------------------------------
 
 
-def test_transcribe_audio_raises_when_not_available():
-    """Raises RuntimeError immediately when WHISPER_AVAILABLE is False."""
-    stt.transcribe_audio(b"fake audio data")
+def test_transcribe_audio_raises_when_not_available(monkeypatch):
+    """Raises ImportError when faster_whisper cannot be imported."""
+    monkeypatch.setitem(sys.modules, "faster_whisper", None)
+    with pytest.raises(ImportError):
+        stt.transcribe_audio(b"fake audio data")
 
 
 # ---------------------------------------------------------------------------

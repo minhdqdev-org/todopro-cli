@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -465,7 +464,6 @@ class TestResolveProjectNameFuzzyMultiple:
         p = MagicMock()
         p.id = id_
         p.name = name
-        p.name.lower = lambda: name.lower()
         return p
 
     def test_fuzzy_single_candidate_returns_id(self):
@@ -493,20 +491,34 @@ class TestResolveProjectNameFuzzyMultiple:
         assert result == "p-fuzzy-1"
 
     def test_fuzzy_multiple_candidates_non_interactive(self):
-        """Lines 64-69: multiple candidates → non-interactive uses first (no prefix match)."""
+        """Multiple fuzzy candidates with no TTY → first candidate wins."""
         import asyncio
 
         from todopro_cli.commands.edit_command import _resolve_project_name
 
-        # Two projects that don't prefix-match the input "xyz" but might fuzzy-match
-        # Use input that doesn't prefix-match but the code reaches the fuzzy branch
-        # Workaround: No exact match, no prefix match, no fuzzy match → ValueError
-        # OR: no exact/prefix match but has fuzzy matches
-        # The dict.fromkeys bug means we can't get multiple candidates.
-        # Instead test: no matches → ValueError (lines 58-61)
-        mock_p = MagicMock()
-        mock_p.id = "p-xyz"
-        mock_p.name = "XYZProject"
+        first = self._make_mock_project("p-1", "Marketing")
+        second = self._make_mock_project("p-2", "Marketting")
+
+        mock_strategy = MagicMock()
+        mock_strategy.project_repository = MagicMock()
+
+        mock_proj_svc = MagicMock()
+        mock_proj_svc.list_projects = AsyncMock(return_value=[first, second])
+
+        with (
+            patch("todopro_cli.commands.edit_command.ProjectService", return_value=mock_proj_svc),
+            patch("sys.stdin.isatty", return_value=False),
+        ):
+            result = asyncio.run(_resolve_project_name("Marketng", mock_strategy))
+        assert result == "p-1"
+
+    def test_no_candidates_raises_value_error(self):
+        """No exact, prefix or fuzzy match → ValueError listing available names."""
+        import asyncio
+
+        from todopro_cli.commands.edit_command import _resolve_project_name
+
+        mock_p = self._make_mock_project("p-xyz", "XYZProject")
 
         mock_strategy = MagicMock()
         mock_strategy.project_repository = MagicMock()
@@ -515,10 +527,8 @@ class TestResolveProjectNameFuzzyMultiple:
         mock_proj_svc.list_projects = AsyncMock(return_value=[mock_p])
 
         with (
-            (
             patch("todopro_cli.commands.edit_command.ProjectService", return_value=mock_proj_svc),
-        ),
-            contextlib.suppress(ValueError, Exception),
+            pytest.raises(ValueError, match="No project matching"),
         ):
             asyncio.run(_resolve_project_name("zzzznotfound", mock_strategy))
 

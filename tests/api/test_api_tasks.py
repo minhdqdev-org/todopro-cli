@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, MagicMock
 
+import httpx
 import pytest
 
 from todopro_cli.services.api.client import APIClient
@@ -519,8 +520,9 @@ async def test_quick_add_exception_with_response(mock_client):
     mock_error_response = MagicMock()
     mock_error_response.json.return_value = error_body
 
-    exc = Exception("Unprocessable entity")
-    exc.response = mock_error_response
+    exc = httpx.HTTPStatusError(
+        "Unprocessable entity", request=MagicMock(), response=mock_error_response
+    )
 
     mock_client.post.side_effect = exc
 

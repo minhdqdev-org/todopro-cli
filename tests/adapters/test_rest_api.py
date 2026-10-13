@@ -642,6 +642,13 @@ class TestRestApiLabelRepository:
 # ---------------------------------------------------------------------------
 
 
+def _json_response(payload) -> MagicMock:
+    response = MagicMock()
+    response.json.return_value = payload
+    response.raise_for_status.return_value = None
+    return response
+
+
 class TestRestApiLocationContextRepository:
     def _make_repo(self, client_mock=None):
         repo = RestApiLocationContextRepository()
@@ -652,7 +659,7 @@ class TestRestApiLocationContextRepository:
     @pytest.mark.asyncio
     async def test_list_all_returns_contexts(self):
         mock_client = MagicMock()
-        mock_client.get = AsyncMock(return_value=[_context_dict()])
+        mock_client.get = AsyncMock(return_value=_json_response([_context_dict()]))
         repo = self._make_repo(mock_client)
         contexts = await repo.list_all()
         assert len(contexts) == 1
@@ -669,7 +676,7 @@ class TestRestApiLocationContextRepository:
     @pytest.mark.asyncio
     async def test_get_returns_context(self):
         mock_client = MagicMock()
-        mock_client.get = AsyncMock(return_value=_context_dict())
+        mock_client.get = AsyncMock(return_value=_json_response(_context_dict()))
         repo = self._make_repo(mock_client)
         ctx = await repo.get("ctx-001")
         assert isinstance(ctx, LocationContext)
@@ -686,7 +693,7 @@ class TestRestApiLocationContextRepository:
     @pytest.mark.asyncio
     async def test_create_returns_context(self):
         mock_client = MagicMock()
-        mock_client.post = AsyncMock(return_value=_context_dict(name="@home"))
+        mock_client.post = AsyncMock(return_value=_json_response(_context_dict(name="@home")))
         repo = self._make_repo(mock_client)
         ctx = await repo.create(LocationContextCreate(name="@home", latitude=37.7, longitude=-122.4, radius=100.0))
         assert ctx.name == "@home"
@@ -718,10 +725,10 @@ class TestRestApiLocationContextRepository:
     @pytest.mark.asyncio
     async def test_get_available_returns_contexts(self):
         mock_client = MagicMock()
-        mock_client.post = AsyncMock(return_value={
+        mock_client.post = AsyncMock(return_value=_json_response({
             "available": [_context_dict()],
             "unavailable": [],
-        })
+        }))
         repo = self._make_repo(mock_client)
         contexts = await repo.get_available(37.7749, -122.4194)
         assert len(contexts) == 1
@@ -738,7 +745,7 @@ class TestRestApiLocationContextRepository:
     @pytest.mark.asyncio
     async def test_get_available_empty_available(self):
         mock_client = MagicMock()
-        mock_client.post = AsyncMock(return_value={"available": [], "unavailable": []})
+        mock_client.post = AsyncMock(return_value=_json_response({"available": [], "unavailable": []}))
         repo = self._make_repo(mock_client)
         contexts = await repo.get_available(37.7749, -122.4194)
         assert contexts == []

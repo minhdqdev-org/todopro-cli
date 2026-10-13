@@ -11,6 +11,7 @@ from packaging import version
 from platformdirs import user_cache_dir
 
 from todopro_cli import __version__
+from todopro_cli.utils.ui.console import get_console
 
 CACHE_DIR = Path(user_cache_dir("todopro"))
 CACHE_FILE = CACHE_DIR / "update_check.json"
@@ -59,7 +60,14 @@ def check_for_updates() -> None:
 
     # 3. Display notification if newer version available
     if latest_version and version.parse(latest_version) > version.parse(__version__):
-        pass
+        console = get_console(highlight=False)
+        console.print(
+            f"\n[yellow]New version available: {latest_version} "
+            f"(Current: {__version__})[/yellow]",
+        )
+        console.print(
+            "[yellow]Run: 'uv tool upgrade todopro-cli' to update.[/yellow]\n",
+        )
 
 
 def get_latest_version() -> str | None:

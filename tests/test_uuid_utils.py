@@ -1,5 +1,7 @@
 """Tests for UUID utilities and integration."""
 
+import itertools
+
 import pytest
 
 from todopro_cli.adapters.sqlite import SqliteProjectRepository, SqliteTaskRepository
@@ -13,6 +15,25 @@ from todopro_cli.utils.uuid_utils import (
     shorten_uuid,
     validate_uuid_field,
 )
+
+
+@pytest.fixture(autouse=True)
+def distinct_prefix_ids(monkeypatch):
+    """Mint ids whose first 8 hex chars differ.
+
+    Real ids are UUIDv7, whose leading 32 bits are a timestamp that stays
+    constant for about a minute, so rows created back to back share an
+    8-char prefix and short-id resolution would be ambiguous.
+    """
+    counter = itertools.count(1)
+
+    def fake_generate_uuid() -> str:
+        return f"{next(counter) * 0x01010101:08x}-0000-4000-8000-000000000000"
+
+    for module in ("task_repository", "project_repository"):
+        monkeypatch.setattr(
+            f"todopro_cli.adapters.sqlite.{module}.generate_uuid", fake_generate_uuid
+        )
 
 
 def test_uuid_validation():
