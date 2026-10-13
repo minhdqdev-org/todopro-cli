@@ -1,10 +1,12 @@
-.TH "TODOPRO ENCRYPTION RECOVER" "1" "2026-02-27" "1.0.0" "todopro encryption recover Manual"
+.TH "TODOPRO ENCRYPTION RECOVER" "1" "2026-10-13" "1.0.0" "todopro encryption recover Manual"
 .SH NAME
-todopro\-encryption\-recover \- Recover your encryption key from recovery...
+todopro\-encryption\-recover \- [Discontinued] Recover an E2EE key from a...
 .SH SYNOPSIS
 .B todopro encryption recover
 [OPTIONS]
 .SH DESCRIPTION
-Recover your encryption key from recovery phrase.
+[Discontinued] Recover an E2EE key from a recovery phrase (ADR-0024).
 .PP
-Use this if you lost your encryption key but have your 24-word recovery phrase.
+E2EE has been dropped as a shipped feature. There is nothing to recover —
+your data is not encrypted with a client-side key.
+See `docs/adr/ADR-0024-drop-e2ee.md`.

@@ -1,4 +1,4 @@
-.TH "TODOPRO ADD" "1" "2026-02-27" "1.0.0" "todopro add Manual"
+.TH "TODOPRO ADD" "1" "2026-10-13" "1.0.0" "todopro add Manual"
 .SH NAME
 todopro\-add \- Quick add a task using natural language.
 .SH SYNOPSIS
@@ -11,13 +11,16 @@ Examples:
   todopro add "Review PR tomorrow at 2pm #Work p1 @urgent"
   todopro add "Buy groceries every Friday @Shopping"
   todopro add "Team standup every monday at 9am #Work"
+  todopro add "File taxes" --deadline "April 15"
 .PP
 Syntax:
   #ProjectName - Assign to project
   @label - Add label
   p1-p4 or !!1-!!4 - Set priority (p1/!!1=urgent, p4/!!4=low)
   Natural dates - tomorrow, next monday, at 3pm
-  Recurrence - every day/week/monday, etc.
+  Recurrence - every day/week/monday, etc. ("every!" re-anchors to completion)
+  Reminder - "!30m before" / "!6pm" / "!tmr 3pm" / "!every sat 9am" (or "remind …")
+  --deadline - Hard "must finish by" date (does not advance on recurrence)
 .PP
 Note: Natural language parsing requires cloud context.
 For local context, creates a simple task with the text as content.
@@ -25,6 +28,9 @@ For local context, creates a simple task with the text as content.
 .TP
 \fB\-p,\fP \-\-project TEXT
 Project name or ID (overrides #project in text)
+.TP
+\fB\-\-deadline\fP TEXT
+Hard 'must finish by' date in natural language (overrides parsed deadline)
 .TP
 \fB\-o,\fP \-\-output TEXT
 Output format (pretty/json/table)  [default: pretty]

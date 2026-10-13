@@ -1,15 +1,15 @@
-.TH "TODOPRO TASK LIST" "1" "2026-02-27" "1.0.0" "todopro task list Manual"
+.TH "TODOPRO TASK LIST" "1" "2026-10-13" "1.0.0" "todopro task list Manual"
 .SH NAME
 todopro\-task\-list \- List tasks.
 .SH SYNOPSIS
 .B todopro task list
 [OPTIONS]
 .SH DESCRIPTION
-List tasks.
+List tasks. Completed tasks are hidden by default.
 .SH OPTIONS
 .TP
 \fB\-\-status\fP TEXT
-Filter by status
+Filter by status (active/completed/all)
 .TP
 \fB\-\-project\fP TEXT
 Filter by project ID
@@ -19,6 +19,9 @@ Filter by priority
 .TP
 \fB\-\-search\fP TEXT
 Search tasks
+.TP
+\fB\-\-show\-completed\fP
+Include completed tasks
 .TP
 \fB\-\-limit\fP INTEGER
 Limit results  [default: 250]

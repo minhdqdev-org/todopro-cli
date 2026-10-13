@@ -1,16 +1,22 @@
-.TH "TODOPRO DATA EXPORT" "1" "2026-02-27" "1.0.0" "todopro data export Manual"
+.TH "TODOPRO DATA EXPORT" "1" "2026-10-13" "1.0.0" "todopro data export Manual"
 .SH NAME
-todopro\-data\-export \- Export all your data (tasks, projects,...
+todopro\-data\-export \- Export your data.
 .SH SYNOPSIS
 .B todopro data export
 [OPTIONS]
 .SH DESCRIPTION
-Export all your data (tasks, projects, labels, contexts) to JSON.
+Export your data.
+.PP
+By default this exports tasks, projects, labels and contexts as JSON.
+Use --archive for the *complete* export (every record group plus your
+uploaded attachments) as a ZIP — this is the one to use for a genuine
+data-portability / GDPR copy of your account.
 .PP
 Examples:
     todopro data export
     todopro data export --output backup.json
     todopro data export --compress
+    todopro data export --archive --output my-todopro-data.zip
 .SH OPTIONS
 .TP
 \fB\-o,\fP \-\-output TEXT
@@ -18,3 +24,9 @@ Output file path (default: todopro-export-{timestamp}.json)
 .TP
 \fB\-z,\fP \-\-compress
 Compress output with gzip
+.TP
+\fB\-a,\fP \-\-archive
+Complete export: a ZIP with data.json plus your uploaded attachments (remote contexts only). Generated server-side.
+.TP
+\fB\-\-timeout\fP INTEGER
+Seconds to wait for an --archive export to finish  [default: 600]

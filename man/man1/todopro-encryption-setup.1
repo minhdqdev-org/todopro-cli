@@ -1,14 +1,12 @@
-.TH "TODOPRO ENCRYPTION SETUP" "1" "2026-02-27" "1.0.0" "todopro encryption setup Manual"
+.TH "TODOPRO ENCRYPTION SETUP" "1" "2026-10-13" "1.0.0" "todopro encryption setup Manual"
 .SH NAME
-todopro\-encryption\-setup \- Set up end-to-end encryption for the first...
+todopro\-encryption\-setup \- [Discontinued] End-to-end encryption setup...
 .SH SYNOPSIS
 .B todopro encryption setup
 [OPTIONS]
 .SH DESCRIPTION
-Set up end-to-end encryption for the first time.
+[Discontinued] End-to-end encryption setup (ADR-0024).
 .PP
-This will:
-1. Generate a new master encryption key
-2. Display your 24-word recovery phrase (SAVE THIS!)
-3. Verify you saved the recovery phrase
-4. Store the key locally and backup to server
+E2EE has been dropped as a shipped feature. This command no longer
+generates a key, displays a recovery phrase, or enables encryption —
+it only prints a notice. See `docs/adr/ADR-0024-drop-e2ee.md`.

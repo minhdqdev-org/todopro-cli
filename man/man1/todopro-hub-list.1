@@ -1,0 +1,27 @@
+.TH "TODOPRO HUB LIST" "1" "2026-10-13" "1.0.0" "todopro hub list Manual"
+.SH NAME
+todopro\-hub\-list \- List aggregated external items across...
+.SH SYNOPSIS
+.B todopro hub list
+[OPTIONS]
+.SH DESCRIPTION
+List aggregated external items across linked providers (Pro).
+.SH OPTIONS
+.TP
+\fB\-\-provider\fP TEXT
+Filter by provider (e.g. github)
+.TP
+\fB\-\-state\fP TEXT
+Filter by item state (e.g. open, closed)
+.TP
+\fB\-\-link\fP TEXT
+Filter by project link id
+.TP
+\fB\-\-limit\fP INTEGER
+Max items to display  [default: 50]
+.TP
+\fB\-o,\fP \-\-output TEXT
+Output format (pretty, json, yaml)  [default: pretty]
+.TP
+\fB\-\-json\fP
+Output as JSON (alias for --output json)

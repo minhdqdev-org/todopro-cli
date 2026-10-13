@@ -1,0 +1,15 @@
+.TH "TODOPRO GITHUB CONNECT" "1" "2026-10-13" "1.0.0" "todopro github connect Manual"
+.SH NAME
+todopro\-github\-connect \- Connect a GitHub PAT, stored securely on...
+.SH SYNOPSIS
+.B todopro github connect
+[OPTIONS]
+.SH DESCRIPTION
+Connect a GitHub PAT, stored securely on the TodoPro server.
+.PP
+The token is sent to the TodoPro backend and is NEVER written to local
+config or credentials. Requires a Pro subscription.
+.SH OPTIONS
+.TP
+\fB\-\-pat\fP TEXT
+GitHub Personal Access Token (omit to be prompted securely)

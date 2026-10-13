@@ -1,0 +1,24 @@
+.TH "TODOPRO GITHUB LINK" "1" "2026-10-13" "1.0.0" "todopro github link Manual"
+.SH NAME
+todopro\-github\-link \- Link a TodoPro project to a GitHub Project...
+.SH SYNOPSIS
+.B todopro github link
+[OPTIONS]
+.SH DESCRIPTION
+Link a TodoPro project to a GitHub Project v2 (Pro).
+.SH OPTIONS
+.TP
+\fB\-\-todopro\-project\fP TEXT
+TodoPro project id to link  [required]
+.TP
+\fB\-\-github\-project\fP TEXT
+GitHub Project NODE id (the 'ID' from 'github projects', not the number)  [required]
+.TP
+\fB\-\-name\fP TEXT
+Display name for the linked project
+.TP
+\fB\-\-url\fP TEXT
+URL of the GitHub project
+.TP
+\fB\-\-direction\fP TEXT
+Sync direction: pull, push, or both  [default: pull]
