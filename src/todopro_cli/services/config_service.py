@@ -72,6 +72,15 @@ class ConfigService:
         )
         return self._storage_strategy_context
 
+    def _build_storage_strategy_context(self) -> StorageStrategyContext:
+        """Build the storage strategy for the current context."""
+        context = self.get_current_context()
+        if context.type == "remote":
+            strategy = RemoteStorageStrategy()
+        else:
+            strategy = LocalStorageStrategy(db_path=context.source)
+        return StorageStrategyContext(strategy)
+
     def load_config(self) -> AppConfig:
         """Load configuration from storage."""
         if self._config is not None:
@@ -88,21 +97,13 @@ class ConfigService:
                 if "client_id" not in raw or migrated:
                     self.save_config()
 
-                # After loading config, initialize the storage strategy context
-                context = self.get_current_context()
-                if context.type == "remote":
-                    strategy = RemoteStorageStrategy()
-                else:
-                    strategy = LocalStorageStrategy(db_path=context.source)
-                self._storage_strategy_context = StorageStrategyContext(strategy)
+                self._storage_strategy_context = self._build_storage_strategy_context()
 
         except FileNotFoundError:
             # Config file doesn't exist yet - create default config
             # This is expected on first run
             self._config = self.create_default_cloud_config()
-            self._storage_strategy_context = StorageStrategyContext(
-                strategy=RemoteStorageStrategy()
-            )
+            self._storage_strategy_context = self._build_storage_strategy_context()
             self.save_config()
         except Exception as e:
             raise RuntimeError(f"Failed to load config: {e}") from e

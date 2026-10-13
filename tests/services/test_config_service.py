@@ -533,3 +533,11 @@ class TestGetConfigServiceFactory:
             b = get_config_service()
             assert a is not b
         get_config_service.cache_clear()
+
+
+class TestFirstRunStrategy:
+    def test_fresh_install_uses_local_storage(self, svc):
+        from todopro_cli.models.storage_strategy import LocalStorageStrategy
+
+        assert svc.get_current_context().type == "local"
+        assert isinstance(svc.storage_strategy_context.strategy, LocalStorageStrategy)

@@ -110,15 +110,12 @@ class TestEncryptionEdgeCases:
         """Test that recovery phrase with wrong word order fails."""
         service = EncryptionService()
 
-        # Setup with one phrase
-        manager, phrase = service.setup()
-        words = phrase.split()
-
-        # Shuffle words (wrong order)
-        shuffled_phrase = " ".join(reversed(words))
+        # "abandon x11 about" is a valid phrase; moving "about" breaks the checksum.
+        # A random phrase reversed is sometimes still valid (4-bit checksum).
+        wrong_order = " ".join(["abandon"] * 10 + ["about", "abandon"])
 
         with pytest.raises(InvalidRecoveryPhraseError):
-            service.recover(shuffled_phrase)
+            service.recover(wrong_order)
 
     def test_recover_with_extra_spaces(self, tmp_path):
         """Test that recovery phrase with extra spaces still works."""
