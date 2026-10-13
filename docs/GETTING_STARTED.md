@@ -1,6 +1,13 @@
+---
+updated_at: 2026-10-14T00:12:13+07:00
+---
+
 # Getting Started with TodoPro CLI
 
 Welcome to TodoPro! This guide will help you get up and running in less than 5 minutes.
+
+The CLI is installed as `todopro` and as the short alias `tp`.
+Both names run the same program, so every example below works with either.
 
 ---
 
@@ -8,14 +15,18 @@ Welcome to TodoPro! This guide will help you get up and running in less than 5 m
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [First Task](#first-task)
+- [First Task](#first-task---interactive-tutorial)
 - [Basic Workflows](#basic-workflows)
 - [Offline vs Online](#offline-vs-online)
+- [Understanding Contexts](#understanding-contexts)
+- [Essential Commands](#essential-commands)
 - [Next Steps](#next-steps)
 
 ---
 
 ## Installation
+
+TodoPro CLI requires **Python 3.14 or newer**.
 
 ### Using uv (Recommended)
 
@@ -44,18 +55,25 @@ todopro version
 git clone https://github.com/minhdqdev/todopro.git
 cd todopro/todopro-cli
 
-# Install with uv
-uv pip install -e .
+# Install the dependencies into a virtual environment
+uv sync
 
-# Or with pip
-pip install -e .
+# Run the CLI from the checkout
+uv run todopro version
+```
+
+### Updating
+
+```bash
+todopro update
 ```
 
 ---
 
 ## Quick Start
 
-TodoPro works **offline by default**. No signup or internet required!
+TodoPro works **offline by default**.
+On first run it creates a `local` context backed by a SQLite file on your machine, so no signup or internet is required.
 
 ### Create Your First Task
 
@@ -63,42 +81,53 @@ TodoPro works **offline by default**. No signup or internet required!
 # Quick add (simplest way)
 todopro add "Buy groceries"
 
-# With more details
-todopro add "Buy groceries" --priority 1 --due today
+# Add it to a project
+todopro add "Buy groceries" --project Personal
 ```
 
 **Output:**
 ```
-Success: ✓ Task created: Buy groceries
+Success: Task created successfully!
+
+Task: Buy groceries
+
+Task ID: 01a1363c-757f-72b4-90c4-755ae3b65182
 ```
+
+In the local context `todopro add` stores your text as the task title.
+The `#project`, `@label`, `p1`-`p4` and natural-language date shortcuts (for example `todopro add "Review PR tomorrow at 2pm #Work p1 @urgent"`) are parsed only in the cloud context.
+To set a priority or due date locally, use `todopro task create` as shown below.
 
 ### View Your Tasks
 
 ```bash
-# See today's tasks
+# See today's tasks (overdue + due today)
 todopro today
 
-# List all tasks
-todopro list tasks
+# List all active tasks
+todopro task list
 ```
 
 **Output:**
 ```
-┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓
-┃ Task               ┃ Priority ┃ Due Date ┃ Status ┃
-┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━┩
-│ Buy groceries      │ P1       │ Today    │ Active │
-└────────────────────┴──────────┴──────────┴────────┘
+○ Buy groceries
+   └─ #2
 ```
+
+The short `#2` is the task's ID suffix.
+You can pass it, or the full ID, to any command that takes a task ID.
 
 ### Complete a Task
 
 ```bash
-# Mark task as done
+# Mark task as done (full ID or the short suffix shown in the list)
 todopro complete <task-id>
+```
 
-# Or use task number from list
-todopro complete 1
+**Output:**
+```
+Success: ✓ Completed: Buy groceries
+To undo: tp reopen 2
 ```
 
 **Congratulations! 🎉** You've created and completed your first task in TodoPro.
@@ -113,27 +142,35 @@ Let's walk through a complete workflow:
 
 ```bash
 # Create a project to organize tasks
-todopro create project "Personal" --description "Personal tasks and errands"
+todopro project create "Personal"
 ```
+
+The command prints the new project's ID.
+You can look it up again at any time with `todopro project list`.
 
 ### Step 2: Add Tasks to Project
 
 ```bash
-# Add task with project
-todopro add "Read productivity book" --project Personal --priority 2
+# Add task with project (project name or ID)
+todopro add "Read productivity book" --project Personal
 
-# Add another task
-todopro add "Call dentist for appointment" --project Personal --due tomorrow
+# Add another task with a priority and a due date
+todopro task create "Call dentist for appointment" --project <project-id> --priority 2 --due 2026-03-01
 ```
+
+`task create` takes `--project` as an ID, `--priority` from 1 (highest) to 4 (lowest, the default), and `--due` as an ISO date such as `2026-03-01`.
 
 ### Step 3: View Your Tasks
 
 ```bash
-# See all tasks
-todopro list tasks
+# See all active tasks
+todopro task list
 
 # Filter by project
-todopro list tasks --project Personal
+todopro task list --project <project-id>
+
+# Include completed tasks
+todopro task list --show-completed
 
 # See only today's tasks
 todopro today
@@ -143,12 +180,14 @@ todopro today
 
 ```bash
 # Create labels
-todopro create label "urgent" --color red
-todopro create label "health" --color green
+todopro label create "urgent" --color red
+todopro label create "health" --color green
 
-# Add label to task
-todopro update task <task-id> --label health
+# See your labels
+todopro label list
 ```
+
+In the cloud context you attach a label while adding a task, for example `todopro add "Book check-up @health"`.
 
 ### Step 5: Complete Tasks
 
@@ -171,7 +210,7 @@ todopro reopen <task-id>
 todopro today
 
 # Add new tasks throughout the day
-todopro add "Respond to emails" --due today --priority 1
+todopro task create "Respond to emails" --due 2026-03-01 --priority 1
 
 # Mark tasks complete as you finish
 todopro complete <task-id>
@@ -184,34 +223,36 @@ todopro today
 
 ```bash
 # Review all active tasks
-todopro list tasks --status active
+todopro task list --status active
 
-# Reschedule overdue tasks
-todopro reschedule --overdue
+# Move every overdue task to today
+todopro reschedule
 
-# Add tasks for upcoming week
-todopro add "Team meeting prep" --due monday
-todopro add "Submit report" --due friday
+# Move one task to a specific date
+todopro reschedule <task-id> --date 2026-03-06
+
+# Search your tasks
+todopro task list --search "meeting"
 ```
 
 ### Project Management
 
 ```bash
 # Create project
-todopro create project "Website Redesign" --description "Q1 redesign project"
+todopro project create "Website Redesign"
 
 # View project
-todopro describe project "Website Redesign"
+todopro project describe <project-id>
 
 # Add tasks to project
-todopro add "Design mockups" --project "Website Redesign" --priority 1
-todopro add "Write content" --project "Website Redesign" --priority 2
+todopro add "Design mockups" --project "Website Redesign"
+todopro add "Write content" --project "Website Redesign"
 
 # View project's tasks
-todopro list tasks --project "Website Redesign"
+todopro task list --project <project-id>
 
 # Archive when done
-todopro archive project "Website Redesign"
+todopro project archive <project-id>
 ```
 
 ---
@@ -222,7 +263,7 @@ todopro archive project "Website Redesign"
 
 TodoPro works offline by default. All your data is stored locally in SQLite.
 
-**Location:**
+**Location** (resolved with `platformdirs`):
 - Linux: `~/.local/share/todopro_cli/todopro.db`
 - macOS: `~/Library/Application Support/todopro_cli/todopro.db`
 - Windows: `%LOCALAPPDATA%\todopro_cli\todopro.db`
@@ -230,113 +271,97 @@ TodoPro works offline by default. All your data is stored locally in SQLite.
 **Benefits:**
 - ✅ Works without internet
 - ✅ Fast and responsive
-- ✅ Complete privacy (data never leaves your device)
-- ✅ Free forever
+- ✅ Your data stays on your device
 
-### Online Mode (Optional Sync)
+### Online Mode (Optional)
 
-Sign up for a free account to sync across devices:
+Create a TodoPro account to use the cloud and to sync across devices.
+Signing in only works in a remote context, so switch to the built-in `cloud` context first:
 
 ```bash
-# Sign up for account
-todopro signup
+# Switch to the cloud context
+todopro context use cloud
 
-# Login on another device
-todopro login
+# Create an account (or use the website)
+todopro auth signup
 
-# Sync your data
-todopro sync push   # Upload local data
-todopro sync pull   # Download remote data
+# Sign in
+todopro auth login
+```
+
+**Password rules:** at least 8 characters, with an uppercase letter, a lowercase letter and a special character.
+
+**Confirm your email:** TodoPro only works for confirmed addresses.
+Until you click the link in the confirmation email, the API answers every request with `403 email_not_verified` and the CLI tells you your email isn't confirmed yet.
+To get a fresh link, run:
+
+```bash
+todopro auth resend-verification
 ```
 
 **When to use online mode:**
 - Multiple devices (laptop, desktop, phone)
-- Team collaboration (future feature)
 - Cloud backup of tasks
+- Natural-language quick add (`#project`, `@label`, dates, reminders)
 
-**Privacy:** TodoPro uses **end-to-end encryption** (E2EE) when syncing. The server never sees your plaintext data.
+**Privacy:** Sync is **not** end-to-end encrypted.
+End-to-end encryption was discontinued, and the `todopro encryption` commands are stubs that only print a notice.
+Tasks sync to the server as plaintext over HTTPS.
+
+### Moving Data Between Local and Cloud
+
+`todopro sync` copies data between a local context and a remote one:
+
+```bash
+# Run from the local context. Push local data to the cloud context
+todopro context use local
+todopro sync push --context cloud
+
+# Pull cloud data into the local context
+todopro sync pull --context cloud
+
+# See when you last synced
+todopro sync status
+```
+
+Useful flags are `--dry-run` (preview), `--full` (ignore the last sync time) and `--strategy local-wins|remote-wins` (conflict resolution).
+You must be signed in to the cloud context before you sync.
+
+> **Known issue:** in the current release `sync push` and `sync pull` stop with `'StorageStrategyContext' object has no attribute 'context_repository'`.
+> Until that is fixed, move data with `todopro data export` and `todopro data import` (see [Data Management](#data-management)).
 
 ---
 
 ## Understanding Contexts
 
-TodoPro uses **contexts** to manage different storage locations:
+TodoPro uses **contexts** to manage different storage locations.
+A fresh install has two:
 
-### Local Context (Default)
-
-```bash
-# Your data is stored locally
-# No account or internet needed
-```
-
-### Remote Context (After Login)
+| Context | Type | What it is |
+|---------|------|------------|
+| `local` | local | SQLite file on your machine, no account needed (default) |
+| `cloud` | remote | TodoPro Cloud at `https://todopro.minhdq.dev/api`, requires `auth login` |
 
 ```bash
-# Switch to remote (cloud) storage
-todopro use cloud
+# List contexts (the active one is marked with *)
+todopro context list
 
-# Your data syncs with the server
-# Accessible from any device
+# Use cloud storage
+todopro context use cloud
+
+# Go back to local storage
+todopro context use local
 ```
 
-### Switch Between Contexts
+You can add more contexts, for example a self-hosted server:
 
 ```bash
-# Use local storage
-todopro use local
-
-# Use cloud storage (after login)
-todopro use cloud
-
-# List available contexts
-todopro list contexts
+todopro context create work --type remote --source https://todo.example.com/api
 ```
 
-**Tip:** Use local context when offline, remote when you need sync.
+Sign-in credentials are stored per context, so you sign in once per remote context.
 
----
-
-## End-to-End Encryption (E2EE)
-
-TodoPro encrypts your data before syncing to the cloud:
-
-### Set Up Encryption
-
-```bash
-# Enable E2EE (one-time setup)
-todopro encryption setup
-
-# Save your 24-word recovery phrase (shown on screen)
-# ⚠️ CRITICAL: Write it down and store securely!
-```
-
-### Check Encryption Status
-
-```bash
-# Verify E2EE is enabled
-todopro encryption status
-```
-
-**Output:**
-```
-Encryption Status: ✅ Enabled
-Key Location: ~/.config/todopro_cli/encryption.key
-Key Fingerprint: a1b2c3...
-```
-
-### Recover on New Device
-
-```bash
-# If you lost your encryption key
-todopro encryption recover
-
-# Enter your 24-word recovery phrase when prompted
-```
-
-**Important:**
-- ✅ Server never sees your plaintext data
-- ✅ All task content and descriptions are encrypted
-- ⚠️ If you lose your recovery phrase, your data is unrecoverable!
+**Tip:** Use the local context when offline, the cloud context when you need sync.
 
 ---
 
@@ -347,63 +372,62 @@ todopro encryption recover
 ```bash
 # Add
 todopro add "Task title"
-todopro add "Task" --due tomorrow --priority 1 --project "Work"
+todopro task create "Task" --due 2026-03-01 --priority 1 --project <project-id>
 
 # List
-todopro list tasks
+todopro task list
 todopro today
-todopro list tasks --filter=overdue
+todopro task list --status completed
+todopro task list --priority 1
 
 # Update
-todopro update task <id> --content "New title"
-todopro update task <id> --due "next monday"
+todopro task update <id> --content "New title"
+todopro task update <id> --due 2026-03-08
+todopro edit <id>   # interactive
 
 # Complete
 todopro complete <id>
 todopro reopen <id>
 
 # Delete
-todopro delete task <id>
+todopro task delete <id>
 ```
 
 ### Project Commands
 
 ```bash
 # Create
-todopro create project "Project Name"
+todopro project create "Project Name"
 
 # List
-todopro list projects
+todopro project list
 
 # Update
-todopro update project <id> --name "New Name"
+todopro project update <id> --name "New Name"
 
 # Archive
-todopro archive project <id>
-todopro unarchive project <id>
+todopro project archive <id>
+todopro project unarchive <id>
 ```
 
 ### Label Commands
 
 ```bash
 # Create
-todopro create label "urgent" --color red
+todopro label create "urgent" --color red
 
 # List
-todopro list labels
-
-# Update
-todopro update label <id> --color blue
+todopro label list
 ```
 
 ### Sync Commands
 
 ```bash
-# Push local changes to server
-todopro sync push
+# Push local changes to a remote context
+todopro sync push --context cloud
 
-# Pull server changes to local
-todopro sync pull
+# Pull remote changes into the local context
+todopro sync pull --context cloud
 
 # Check sync status
 todopro sync status
@@ -416,9 +440,12 @@ todopro sync status
 todopro data export --output backup.json
 
 # Export compressed
-todopro data export --output backup.json.gz --compress
+todopro data export --compress --output backup.json.gz
 
-# Import data (restore)
+# Complete export with attachments, as a ZIP (cloud context only)
+todopro data export --archive --output my-todopro-data.zip
+
+# Import data (restore). Existing items with the same name are skipped
 todopro data import backup.json
 ```
 
@@ -431,35 +458,32 @@ todopro data import backup.json
 1. **Use Tab Completion:**
    ```bash
    todopro --install-completion  # One-time setup
-   todopro add <TAB>             # Auto-complete
    ```
 
-2. **Natural Language Dates:**
+2. **Natural Language Dates (cloud context):**
    ```bash
-   todopro add "Task" --due today
-   todopro add "Task" --due tomorrow
-   todopro add "Task" --due "next friday"
-   todopro add "Task" --due "2026-03-01"
+   todopro add "Task tomorrow"
+   todopro add "Task next friday at 3pm"
+   todopro add "Water plants every monday"
+   todopro add "File taxes" --deadline "April 15"
    ```
+   In the local context, pass dates to `task create --due` as ISO dates (`2026-03-01`).
 
 3. **Priority Levels:**
-   - P1 = Highest (urgent & important)
-   - P2 = High (important but not urgent)
-   - P3 = Medium (default)
-   - P4 = Low (nice to have)
+   - P1 = Highest (urgent)
+   - P2 = High
+   - P3 = Medium
+   - P4 = Low (default for new tasks)
 
 4. **JSON Output (for scripting):**
    ```bash
-   todopro list tasks --format json | jq '.[]'
+   todopro task list --json | jq '.tasks[]'
    ```
 
-5. **Bulk Operations:**
+5. **Bulk Completion:**
    ```bash
    # Complete multiple tasks
    todopro complete <id1> <id2> <id3>
-   
-   # Delete multiple
-   todopro delete task <id1> <id2>
    ```
 
 ---
@@ -472,13 +496,9 @@ todopro data import backup.json
 #!/bin/bash
 # Save as ~/bin/todopro-daily
 
-# Show today's tasks
+# Show overdue and today's tasks
 echo "📅 Today's Tasks:"
 todopro today
-
-# Show overdue tasks
-echo "\n⚠️  Overdue:"
-todopro list tasks --filter=overdue
 ```
 
 Make it executable:
@@ -506,23 +526,24 @@ crontab -e
 # Add: 0 9 * * 1 ~/bin/todopro-backup  # Every Monday 9am
 ```
 
-### Pomodoro Timer Script
+### Pomodoro Timer
+
+TodoPro has a built-in focus timer, so you do not need a script:
 
 ```bash
-#!/bin/bash
-# pomodoro.sh - Simple Pomodoro with TodoPro
+# Start a 25-minute focus session on a task
+todopro focus start <task-id>
 
-TASK_ID=$1
-MINUTES=${2:-25}
+# Pick a duration or a template (deep_work, standard, quick_task)
+todopro focus start <task-id> --duration 50
+todopro focus start <task-id> --template deep_work
 
-echo "🍅 Pomodoro: $MINUTES minutes"
-echo "Working on task: $(todopro get task $TASK_ID --format json | jq -r '.content')"
+# Check on it and stop it
+todopro focus status
+todopro focus stop
 
-# Timer
-sleep ${MINUTES}m
-
-# Mark progress (add comment or update)
-echo "✅ Pomodoro completed!"
+# See your totals
+todopro stats today
 ```
 
 ---
@@ -537,7 +558,7 @@ todopro --help
 
 # Command-specific help
 todopro add --help
-todopro list --help
+todopro task --help
 todopro sync --help
 ```
 
@@ -559,32 +580,28 @@ todopro sync --help
 
 Now that you're familiar with the basics:
 
-1. ✅ **Set up E2EE** (if using online sync):
+1. ✅ **Create your project structure:**
    ```bash
-   todopro encryption setup
+   todopro project create "Work"
+   todopro project create "Personal"
+   todopro project create "Learning"
    ```
 
-2. ✅ **Create your project structure:**
+2. ✅ **Set up labels:**
    ```bash
-   todopro create project "Work"
-   todopro create project "Personal"
-   todopro create project "Learning"
+   todopro label create "urgent" --color red
+   todopro label create "important" --color yellow
+   todopro label create "delegated" --color blue
    ```
 
-3. ✅ **Set up labels:**
-   ```bash
-   todopro create label "urgent" --color red
-   todopro create label "important" --color yellow
-   todopro create label "delegated" --color blue
-   ```
-
-4. ✅ **Configure auto-backup:**
+3. ✅ **Configure auto-backup:**
    - See "Weekly Backup" workflow above
 
-5. ✅ **Explore advanced features:**
-   - Filtering: `todopro list tasks --filter=today --project=Work`
-   - Searching: `todopro list tasks --search "meeting"`
-   - Bulk operations: `todopro complete <id1> <id2> <id3>`
+4. ✅ **Explore advanced features:**
+   - Searching: `todopro task list --search "meeting"`
+   - Bulk completion: `todopro complete <id1> <id2> <id3>`
+   - Focus timer and stats: `todopro focus start <task-id>`, `todopro stats today`
+   - Templates: `todopro template list`
 
 ---
 
@@ -594,8 +611,8 @@ You're all set! TodoPro is designed to be simple yet powerful. Start with basic 
 
 **Remember:**
 - 🖥️ Works offline by default
-- 🔐 End-to-end encrypted sync (optional)
+- ☁️ Optional cloud account for sync across devices
 - 🚀 Fast and keyboard-friendly
-- 🎯 Privacy-focused (your data, your control)
+- 🎯 Your local data stays on your device
 
 Happy tasking! 📝

@@ -1,10 +1,10 @@
 ---
-updated_at: 2026-07-20T10:04:19+07:00
+updated_at: 2026-10-14T00:12:13+07:00
 ---
 
 # TodoPro CLI - Troubleshooting Guide
 
-**Last Updated:** 2026-07-20
+**Last Updated:** 2026-10-14
 
 This guide helps you resolve common issues with TodoPro CLI.
 
@@ -22,16 +22,18 @@ which todopro
 todopro version
 
 # Test basic command
-todopro list tasks
+todopro task list
 ```
 
 **Expected Output:**
 
+`todopro version` prints the version number on a single line.
+
 ```
-TodoPro CLI v1.0.0
-Python: 3.12.x
-Platform: Linux/macOS/Windows
+1.0.0
 ```
+
+On a fresh install `todopro task list` prints nothing (or an empty list) and creates the local database for you.
 
 ---
 
@@ -63,7 +65,10 @@ uv tool install todopro-cli
 **Option 2: Fix PATH**
 
 ```bash
-# Find where TodoPro is installed
+# Let uv add its tool directory to your shell profile
+uv tool update-shell
+
+# Or find where TodoPro is installed
 pip show todopro-cli | grep Location
 
 # Add to PATH (Linux/macOS)
@@ -81,8 +86,10 @@ source ~/.bashrc
 which todopro
 
 # Or use Python module
-python -m todopro_cli --help
+python -m todopro_cli.main --help
 ```
+
+The short alias `tp` is installed alongside `todopro`, so if one is missing the other will be too.
 
 ---
 
@@ -101,13 +108,33 @@ ModuleNotFoundError: No module named 'todopro_cli'
 
 ```bash
 # Check Python version
-python --version  # Should be 3.10+
+python --version  # Should be 3.14+
 
 # Install TodoPro
 pip install todopro-cli
 
 # Or with specific Python version
-python3.12 -m pip install todopro-cli
+python3.14 -m pip install todopro-cli
+```
+
+---
+
+### Problem: pip refuses to install ("requires a different Python")
+
+**Symptoms:**
+
+```bash
+$ pip install todopro-cli
+ERROR: Package 'todopro-cli' requires a different Python: 3.12.3 not in '>=3.14'
+```
+
+**Cause:** TodoPro CLI needs Python 3.14 or newer.
+
+**Solution:**
+
+```bash
+# uv downloads a suitable Python for you
+uv tool install --python 3.14 todopro-cli
 ```
 
 ---
@@ -149,16 +176,21 @@ uv tool install todopro-cli
 
 ## Database Issues
 
+The local context stores everything in a single SQLite file.
+On Linux it lives at `~/.local/share/todopro_cli/todopro.db`, and on macOS at `~/Library/Application Support/todopro_cli/todopro.db`.
+`todopro context list` shows the exact path in the `SOURCE` column.
+
 ### Problem: "Database is locked"
 
 **Symptoms:**
 
 ```bash
 $ todopro add "Task"
-Error: database is locked
+Error: An unexpected error occurred: database is locked
 ```
 
-**Cause:** Another TodoPro process is accessing the database
+**Cause:** Another TodoPro process is writing to the database.
+The CLI already retries a locked write a few times with a short back-off, so you only see this error when the other process holds the lock for longer.
 
 **Solution:**
 
@@ -168,10 +200,10 @@ Error: database is locked
 ps aux | grep todopro
 ```
 
-**Step 2: Kill stale processes**
+**Step 2: Stop stale processes**
 
 ```bash
-pkill todopro
+kill <pid>
 ```
 
 **Step 3: Try again**
@@ -180,15 +212,8 @@ pkill todopro
 todopro add "Task"
 ```
 
-**If problem persists:**
-
-```bash
-# Check for .db-lock files
-ls -la ~/.local/share/todopro_cli/
-
-# Remove lock file
-rm ~/.local/share/todopro_cli/*.db-lock
-```
+**Note:** The database runs in WAL mode, so `todopro.db-wal` and `todopro.db-shm` files next to `todopro.db` are normal while TodoPro is running.
+Do not delete them by hand, because recent writes may still be in them.
 
 ---
 
@@ -197,8 +222,8 @@ rm ~/.local/share/todopro_cli/*.db-lock
 **Symptoms:**
 
 ```bash
-$ todopro list tasks
-Error: database disk image is malformed
+$ todopro task list
+Error: An unexpected error occurred: database disk image is malformed
 ```
 
 **Cause:** Database corruption (power loss, disk error, etc.)
@@ -225,7 +250,7 @@ sqlite3 ~/todopro-corrupt.db ".dump" | sqlite3 ~/todopro-recovered.db
 mv ~/todopro-recovered.db ~/.local/share/todopro_cli/todopro.db
 
 # Test
-todopro list tasks
+todopro task list
 ```
 
 **Option 3: Start fresh (last resort)**
@@ -235,94 +260,103 @@ todopro list tasks
 mv ~/.local/share/todopro_cli/todopro.db ~/todopro-old.db
 
 # TodoPro will create new database
-todopro list tasks
+todopro task list
 ```
 
 **Prevention:**
 
-- Set up regular backups: `todopro data export --compress`
-- Use cloud sync: `todopro sync push`
-
----
-
-### Problem: "No such file or directory: todopro.db"
-
-**Symptoms:**
-
-```bash
-$ todopro list tasks
-FileNotFoundError: [Errno 2] No such file or directory: '/home/user/.local/share/todopro_cli/todopro.db'
-```
-
-**Cause:** Database file doesn't exist (first run or deleted)
-
-**Solution:**
-
-**This is normal on first run!** TodoPro will create the database automatically:
-
-```bash
-# Just add a task, database will be created
-todopro add "First task"
-
-# Or list tasks (creates empty database)
-todopro list tasks
-```
-
-**If database was accidentally deleted:**
-
-```bash
-# Restore from backup
-todopro data import backup.json
-
-# Or pull from cloud (if you were syncing)
-todopro sync pull
-```
+- Set up regular backups: `todopro data export --compress --output backup.json.gz`
+- Keep a copy in the cloud context (see [Sync Issues](#sync-issues))
 
 ---
 
 ## Authentication Issues
+
+Signing in only works in a remote context.
+If you see `Login is only available for remote contexts`, switch first:
+
+```bash
+todopro context use cloud
+```
 
 ### Problem: "Not logged in"
 
 **Symptoms:**
 
 ```bash
-$ todopro sync push
+$ todopro task list
 Error: Not logged in. Use 'todopro login' to authenticate.
 ```
 
-**Cause:** Trying to use sync without logging in
+**Cause:** You are in a remote context (such as `cloud`) but have not signed in to it yet.
+Credentials are stored per context.
 
 **Solution:**
 
+The command named in the message is spelled `todopro auth login`:
+
 ```bash
 # Login with your account
-todopro login
+todopro auth login
 # Enter email and password when prompted
 
 # Verify login
-todopro list tasks
+todopro task list
 ```
 
 **If you don't have an account:**
 
 ```bash
 # Sign up first
-todopro signup
+todopro auth signup
 
 # Then login
-todopro login
+todopro auth login
+```
+
+**If you only want local, offline tasks:**
+
+```bash
+todopro context use local
 ```
 
 ---
 
-### Problem: "Invalid credentials"
+### Problem: "Your email address isn't confirmed yet"
+
+**Symptoms:**
+
+```
+⚠ Your email address isn't confirmed yet.
+Click the link we emailed you, or request a new one: todopro auth resend-verification
+```
+
+**Cause:** TodoPro only works for confirmed email addresses.
+Sign-in still succeeds, but until you click the link in the confirmation email the server answers every other request with `403 email_not_verified`.
+
+**Solution:**
+
+```bash
+# Ask for a fresh confirmation link
+todopro auth resend-verification
+
+# Or send it to a specific address
+todopro auth resend-verification --email you@example.com
+```
+
+Open the link in the email, then run your command again.
+Check your spam folder if nothing arrives.
+The server gives the same reply whether or not the address is known, so a success message does not prove that an account exists.
+
+---
+
+### Problem: Login or signup fails
 
 **Symptoms:**
 
 ```bash
-$ todopro login
-Error: Invalid email or password
+$ todopro auth login
+Error: Login failed: ...
 ```
 
 **Causes:**
@@ -330,6 +364,7 @@ Error: Invalid email or password
 1. Wrong email/password
 2. Account doesn't exist
 3. Network issues
+4. For signup, a password that breaks the rules (at least 8 characters, with an uppercase letter, a lowercase letter and a special character)
 
 **Solutions:**
 
@@ -339,59 +374,103 @@ Error: Invalid email or password
 # Verify email is correct
 # Check for typos in password
 
-# If you forgot password (TODO: reset feature)
+# There is no password-reset command in the CLI.
 # Contact support: support@todopro.minhdq.dev
 ```
 
 **Check network:**
 
 ```bash
-# Test API endpoint
-curl -I https://todopro.minhdq.dev/api/health
+# Show which server the active context talks to
+todopro context list
 
-# Should return: HTTP/2 200
+# Test that it answers (any HTTP status means it is reachable)
+curl -sS -o /dev/null -w '%{http_code}\n' <SOURCE from context list>
 ```
 
 **Create new account:**
 
 ```bash
-todopro signup
+todopro auth signup
 ```
 
 ---
 
-### Problem: "Token expired"
+### Problem: "Your session has expired or is no longer valid"
 
 **Symptoms:**
 
 ```bash
-$ todopro sync push
-Error: Authentication token expired
+$ todopro task list
+⚠ Your session has expired or is no longer valid.
 ```
 
-**Cause:** JWT token expired (default: 7 days)
+The hint printed under that line still names the old `login` command.
+The current spelling is `auth login`, as shown below.
+
+**Cause:** The stored token was rejected by the server (HTTP 401).
+It may have expired, been revoked, or been issued for a different server.
 
 **Solution:**
 
 ```bash
-# Just login again (auto-refreshes token)
-todopro login
+# Login again
+todopro auth login
 
-# Try sync again
-todopro sync push
+# Try again
+todopro task list
 ```
 
 ---
 
 ## Sync Issues
 
+`todopro sync` copies data between a **local** context and a **remote** one.
+Run it from the local context and name the remote one with `--context`:
+
+```bash
+todopro context use local
+todopro sync push --context cloud
+todopro sync pull --context cloud
+```
+
+### Problem: `'StorageStrategyContext' object has no attribute 'context_repository'`
+
+**Symptoms:**
+
+```bash
+$ todopro sync push --context cloud
+Error: 'StorageStrategyContext' object has no attribute 'context_repository'
+```
+
+**Cause:** A known bug in the current release.
+`sync push` and `sync pull` fail before any network request is made, so nothing is sent or changed.
+
+**Workaround:** Move data with an export and an import instead.
+`data export` and `data import` both act on the *current* context:
+
+```bash
+# Export from the context that has the data
+todopro data export --compress --output ~/backup.json.gz
+
+# Switch to the destination context and import
+todopro context use cloud
+todopro data import ~/backup.json.gz
+```
+
+Imports skip items whose name already exists, so re-running one does not create duplicates.
+
+**Check your context afterwards.** A failed `sync pull` can leave the active context switched, so confirm with `todopro context list` and switch back with `todopro context use local` if needed.
+
+---
+
 ### Problem: "Connection timeout"
 
 **Symptoms:**
 
 ```bash
-$ todopro sync push
-Error: Connection timeout after 30 seconds
+$ todopro task list
+# Hangs, then fails with a timeout or connection error
 ```
 
 **Causes:**
@@ -408,8 +487,9 @@ Error: Connection timeout after 30 seconds
 # Ping Google
 ping -c 3 google.com
 
-# Test TodoPro API
-curl -I https://todopro.minhdq.dev/api/health
+# Test the server of the active context
+todopro context list
+curl -sS -o /dev/null -w '%{http_code}\n' <SOURCE from context list>
 ```
 
 **Check firewall:**
@@ -422,11 +502,12 @@ curl -I https://todopro.minhdq.dev/api/health
 **Increase timeout (temporary workaround):**
 
 ```bash
-# Edit config (increase timeout to 60s)
-vim ~/.config/todopro_cli/config.json
-
-# Change "timeout": 30 to "timeout": 60
+# Default is 30 seconds
+todopro config get api.timeout
+todopro config set api.timeout 60
 ```
+
+Failed requests are retried automatically (`api.retry`, default 3) with a growing delay, so a command can take longer than one timeout before it gives up.
 
 ---
 
@@ -435,80 +516,76 @@ vim ~/.config/todopro_cli/config.json
 **Symptoms:**
 
 ```bash
-$ todopro sync push
-Warning: Conflicts detected:
-- Task "Buy milk" modified on both local and remote
+$ todopro sync push --context cloud
+  ⚠ 1 task conflicts detected
+  See ~/.todopro/sync-conflicts.json for details
+  Consider running 'todopro sync pull' first
 ```
 
-**Cause:** Same task modified on multiple devices
+**Cause:** The same task was modified on both sides.
 
 **Solutions:**
 
-**Option 1: Server wins (discard local changes)**
+Choose who wins with `--strategy`:
+
+**Option 1: Remote wins (discard local changes)**
 
 ```bash
-todopro sync pull --force
+todopro sync pull --context cloud --strategy remote-wins
 ```
 
-**Option 2: Local wins (overwrite server)**
+**Option 2: Local wins (overwrite remote)**
 
 ```bash
-todopro sync push --force
+todopro sync push --context cloud --strategy local-wins
 ```
 
-**Best Practice: Always sync before starting work**
+`pull` defaults to `remote-wins` and `push` defaults to `local-wins`.
+
+**Best Practice: preview first, and sync before starting work**
 
 ```bash
+# See what would change without applying it
+todopro sync pull --context cloud --dry-run
+
 # At start of day
-todopro sync pull
+todopro sync pull --context cloud
 
 # At end of day
-todopro sync push
+todopro sync push --context cloud
 ```
 
 ---
 
-### Problem: "Sync push/pull does nothing"
+### Problem: "Sync refuses to run"
 
-**Symptoms:**
+**Symptoms and fixes:**
+
+| Error message | What it means | Fix |
+| --- | --- | --- |
+| `--context is required to specify push target` | You did not say which remote context to push to | `todopro sync push --context cloud` |
+| `--context is required when current context is local` | Same, for pull | `todopro sync pull --context cloud` |
+| `Can only push from local contexts. Switch to a local context first.` | The active context is remote | `todopro context use local` |
+| `Cannot pull from remote to remote. Switch to a local context first.` | The active context is remote | `todopro context use local` |
+| `Context '<name>' not found` | Typo in `--context` | `todopro context list` |
+
+**Check when you last synced:**
 
 ```bash
-$ todopro sync push
-Success: ✓ Pushed 0 changes
-
-# But I have local changes!
-```
-
-**Cause:** Not in remote context
-
-**Solution:**
-
-```bash
-# Check current context
-todopro list contexts
-
-# Switch to remote context
-todopro use cloud
-
-# Try sync again
-todopro sync push
+todopro sync status
 ```
 
 ---
 
 ## Encryption (discontinued)
 
-End-to-end encryption was **discontinued** (ADR-0024). There is no client-side
-encryption key, no 24-word recovery phrase, and nothing to set up or recover before
-syncing.
+End-to-end encryption was **discontinued** (ADR-0024).
+There is no client-side encryption key, no 24-word recovery phrase, and nothing to set up or recover before syncing.
 
-The `todopro encryption` command group is still present for backwards compatibility,
-but every subcommand is a no-op stub that prints a notice and exits. If a script of
-yours still calls `todopro encryption setup` or `todopro encryption recover`, you can
-remove that step.
+The `todopro encryption` command group is still present for backwards compatibility, but every subcommand is a stub that prints a notice and exits.
+If a script of yours still calls `todopro encryption setup` or `todopro encryption recover`, you can remove that step.
 
-Data you sync to the cloud is protected in transit (HTTPS) and at rest by the server.
-It is **not** encrypted client-side, so TodoPro operators can technically access it.
+Your tasks sync to the server as plaintext, protected in transit by HTTPS.
 
 ---
 
@@ -519,7 +596,7 @@ It is **not** encrypted client-side, so TodoPro operators can technically access
 **Symptoms:**
 
 ```bash
-$ todopro list tasks
+$ todopro task list
 # Takes 5+ seconds
 ```
 
@@ -538,15 +615,22 @@ du -h ~/.local/share/todopro_cli/todopro.db
 # If >100MB, might be too large
 ```
 
+**Page through results instead of listing everything:**
+
+```bash
+# task list returns up to 250 tasks by default
+todopro task list --limit 50
+todopro task list --limit 50 --offset 50
+```
+
 **Archive old tasks:**
 
 ```bash
-# Complete old tasks
-todopro list tasks --filter=completed | grep "2025" | xargs -n1 todopro delete task
+# Export a backup first
+todopro data export --compress --output archive-2025.json.gz
 
-# Or export and start fresh
-todopro data export --output archive-2025.json
-# Delete old database, start new year
+# Then delete tasks you no longer need
+todopro task delete <task-id>
 ```
 
 **Optimize database:**
@@ -570,7 +654,7 @@ dd if=/dev/zero of=~/testfile bs=1M count=100
 **Symptoms:**
 
 ```bash
-$ todopro sync push
+$ todopro sync push --context cloud
 # Hangs for minutes
 ```
 
@@ -581,14 +665,13 @@ $ todopro sync push
 
 **Solutions:**
 
-**Check sync size:**
+**Check when you last synced:**
 
 ```bash
 todopro sync status
-# Shows pending changes
 ```
 
-**Export/import instead (for large initial sync):**
+**Export/import instead (for large initial transfer):**
 
 ```bash
 # On device 1
@@ -599,12 +682,11 @@ todopro data export --compress --output ~/backup.json.gz
 todopro data import ~/backup.json.gz
 ```
 
-**Increase sync timeout:**
+**Increase timeout:**
 
 ```bash
-# Edit config
-vim ~/.config/todopro_cli/config.json
-# Increase "timeout": 30 to "timeout": 300 (5 min)
+# 5 minutes
+todopro config set api.timeout 300
 ```
 
 ---
@@ -615,25 +697,39 @@ vim ~/.config/todopro_cli/config.json
 
 **Symptoms:**
 
-```bash
-$ todopro focus
-Error: No such command 'focus'.
+Running an old verb-first command, such as `list tasks`, fails like this:
+
+```
+Error: No such command 'list'.
 ```
 
-**Cause:** Command doesn't exist or is deferred (post-MVP1)
+**Cause:** Commands are grouped by what they act on, as `todopro <resource> <action>`.
+Older guides and scripts used the action first, which no longer works.
 
 **Solution:**
 
 ```bash
 # Check available commands
 todopro --help
-
-# For MVP1, these features are deferred:
-# - focus (focus mode)
-# - timer (pomodoro)
-# - stats (analytics)
-# - achievements
+todopro task --help
 ```
+
+| Old (does not work) | Use instead |
+| --- | --- |
+| `list tasks` | `todopro task list` (or `todopro today`) |
+| `list projects` | `todopro project list` |
+| `list labels` | `todopro label list` |
+| `list contexts` | `todopro context list` |
+| `create project "X"` | `todopro project create "X"` |
+| `create label "X"` | `todopro label create "X"` |
+| `update task <id>` | `todopro task update <id>` (or `todopro edit <id>`) |
+| `delete task <id>` | `todopro task delete <id>` |
+| `archive project <id>` | `todopro project archive <id>` |
+| `describe project <id>` | `todopro project describe <id>` |
+| `use cloud` | `todopro context use cloud` |
+| `login` / `signup` | `todopro auth login` / `todopro auth signup` |
+
+`todopro add`, `todopro today`, `todopro complete`, `todopro reopen`, `todopro reschedule` and `todopro edit` are still top-level shortcuts.
 
 ---
 
@@ -642,8 +738,8 @@ todopro --help
 **Symptoms:**
 
 ```bash
-$ todopro add
-Error: Missing argument 'CONTENT'
+$ todopro task create
+Error: Missing argument 'CONTENT'.
 ```
 
 **Cause:** Required arguments not provided
@@ -652,10 +748,35 @@ Error: Missing argument 'CONTENT'
 
 ```bash
 # Check command help
-todopro add --help
+todopro task create --help
 
 # Provide required arguments
-todopro add "Task content"
+todopro task create "Task content"
+```
+
+---
+
+### Problem: "Invalid isoformat string: 'tomorrow'"
+
+**Symptoms:**
+
+```bash
+$ todopro task create "Call dentist" --due tomorrow
+Error: An unexpected error occurred: Invalid isoformat string: 'tomorrow'
+```
+
+**Cause:** In the local context, `--due` on `task create`, `task update` and `edit` only accepts ISO dates.
+Words like `tomorrow` or `next friday` are understood by `todopro add` in the **cloud** context.
+
+**Solution:**
+
+```bash
+# Local context: use an ISO date
+todopro task create "Call dentist" --due 2026-03-01
+
+# Cloud context: natural language works in add
+todopro context use cloud
+todopro add "Call dentist tomorrow at 2pm"
 ```
 
 ---
@@ -670,7 +791,7 @@ todopro add "Task content"
 - Ran `todopro sync pull`
 - Tasks are gone
 
-**Cause:** Server data overwrote local changes
+**Cause:** `sync pull` defaults to `--strategy remote-wins`, so the remote copy overwrote your local changes.
 
 **Solution:**
 
@@ -681,12 +802,13 @@ todopro add "Task content"
 todopro data import backup.json
 ```
 
-**Best Practice: Always push before pull**
+**Best Practice: push before pull, and preview with `--dry-run`**
 
 ```bash
 # Correct order
-todopro sync push  # Upload local changes first
-todopro sync pull  # Then download remote changes
+todopro sync push --context cloud --dry-run
+todopro sync push --context cloud   # Upload local changes first
+todopro sync pull --context cloud   # Then download remote changes
 ```
 
 ---
@@ -703,27 +825,27 @@ todopro sync pull  # Then download remote changes
 **Solution:**
 
 ```bash
-# Delete duplicates manually
-todopro list tasks | grep "Duplicate"
-todopro delete task <duplicate-id>
+# Find the duplicates
+todopro task list --search "Duplicate"
 
-# Or export, deduplicate, re-import
-todopro data export --output export.json
-# Manually edit export.json to remove duplicates
-todopro data import export.json
+# Delete the extra copy
+todopro task delete <duplicate-id>
 ```
 
 ---
 
 ## Config Issues
 
+The configuration file lives at `~/.config/todopro_cli/config.json` on Linux and macOS, and sign-in credentials are stored per context in `~/.config/todopro_cli/credentials/<context>.json` (readable only by you).
+
 ### Problem: "Invalid config.json"
 
 **Symptoms:**
 
 ```bash
-$ todopro list tasks
-Error: Invalid configuration file
+$ todopro task list
+Error: An unexpected error occurred: Failed to load config: 1 validation error for AppConfig
+  Invalid JSON: ...
 ```
 
 **Cause:** Corrupted config.json
@@ -740,8 +862,11 @@ cp ~/.config/todopro_cli/config.json ~/config-backup.json
 rm ~/.config/todopro_cli/config.json
 
 # Run command (creates default config)
-todopro list tasks
+todopro task list
 ```
+
+Your tasks are not affected, because they live in the database, not the config file.
+You will need to run `todopro auth login` again only if you also deleted the `credentials` folder, and any extra contexts you created must be re-added with `todopro context create`.
 
 **Option 2: Fix manually**
 
@@ -752,7 +877,7 @@ cat ~/.config/todopro_cli/config.json | jq .
 # If errors, fix or replace with default
 ```
 
-**Default config structure:**
+**Default config structure** (shortened):
 
 ```json
 {
@@ -761,35 +886,54 @@ cat ~/.config/todopro_cli/config.json | jq .
     {
       "name": "local",
       "type": "local",
-      "source": "/path/to/todopro.db",
-      "description": "Local storage"
+      "source": "/home/you/.local/share/todopro_cli/todopro.db",
+      "description": "Local SQLite storage"
+    },
+    {
+      "name": "cloud",
+      "type": "remote",
+      "source": "https://todopro.minhdq.dev/api",
+      "description": "TodoPro Cloud (requires login)"
     }
   ],
   "api": {
     "endpoint": "https://todopro.minhdq.dev/api",
-    "timeout": 30
+    "timeout": 30,
+    "retry": 3
   }
 }
+```
+
+You can read and change single values without editing the file:
+
+```bash
+todopro config view
+todopro config get api.timeout
+todopro config set api.timeout 60
+todopro config reset api.timeout
+```
+
+`todopro config reset` with no key resets the whole configuration **and deletes your saved sign-in credentials**.
+
+### Problem: CLI talks to the wrong server
+
+**Cause:** The API address comes from the active remote context.
+The `TODOPRO_BACKEND_URL` environment variable overrides it when set.
+
+**Solution:**
+
+```bash
+# Is an override set?
+echo "$TODOPRO_BACKEND_URL"
+unset TODOPRO_BACKEND_URL
+
+# Which context and server am I using?
+todopro context list
 ```
 
 ---
 
 ## Getting More Help
-
-### Enable Debug Mode
-
-```bash
-# Set environment variable
-export TODOPRO_DEBUG=1
-
-# Run command with verbose output
-todopro list tasks
-
-# Debug logs show:
-# - SQL queries
-# - API requests
-# - Error stack traces
-```
 
 ### Collect Diagnostic Information
 
@@ -803,10 +947,10 @@ todopro version
 ls -lh ~/.local/share/todopro_cli/
 
 # Config info
-cat ~/.config/todopro_cli/config.json | jq .
+todopro config view
 
 # Test basic commands
-todopro list tasks --format json
+todopro task list --json
 ```
 
 ### Report a Bug
@@ -820,46 +964,26 @@ todopro list tasks --format json
 3. Steps to reproduce
 4. Expected vs actual behavior
 5. Full error message
-6. Debug logs (if relevant)
 
 **Example:**
 
 ```markdown
-**Bug:** Sync fails with connection timeout
+**Bug:** `todopro auth login` fails with a connection error
 
 **Environment:**
 
-- TodoPro: v1.0.0
+- TodoPro: 1.0.0
 - OS: Ubuntu 22.04
-- Python: 3.12.3
+- Python: 3.14.0
 
 **Steps to Reproduce:**
 
-1. Run `todopro login`
-2. Run `todopro sync push`
-3. Wait 30 seconds
+1. Run `todopro context use cloud`
+2. Run `todopro auth login`
+3. Enter email and password
 
-**Expected:** Data syncs successfully
-**Actual:** Connection timeout
-
-**Error:**
-```
-
-Error: Connection timeout after 30 seconds
-Traceback (most recent call last):
-...
-
-```
-
-**Debug Logs:**
-```
-
-[DEBUG] API request: POST https://todopro.minhdq.dev/api/sync
-[DEBUG] Timeout: 30s
-[ERROR] requests.exceptions.Timeout
-
-```
-
+**Expected:** Logged in
+**Actual:** Error: Login failed: ...
 ```
 
 ### Contact Support
@@ -873,16 +997,20 @@ Traceback (most recent call last):
 
 ### Quick Reference
 
-| Error Message              | Likely Cause                 | Quick Fix                        |
-| -------------------------- | ---------------------------- | -------------------------------- |
-| "Command not found"        | Not installed or not in PATH | `uv tool install todopro-cli`    |
-| "Database is locked"       | Multiple processes           | `pkill todopro`                  |
-| "Not logged in"            | Need authentication          | `todopro login`                  |
-| "Token expired"            | Session expired              | `todopro login`                  |
-| "Connection timeout"       | Network issues               | Check internet, try later        |
-| "No such command"          | Command doesn't exist        | Check `todopro --help`           |
-| "Invalid arguments"        | Missing required args        | Check `todopro <command> --help` |
-| "Database corrupt"         | File corruption              | Restore from backup              |
+| Error Message                                   | Likely Cause                       | Quick Fix                                        |
+| ----------------------------------------------- | ---------------------------------- | ------------------------------------------------ |
+| "Command not found"                             | Not installed or not in PATH       | `uv tool install todopro-cli`                    |
+| "requires a different Python"                   | Python older than 3.14             | `uv tool install --python 3.14 todopro-cli`      |
+| "database is locked"                            | Multiple processes                 | Stop the other `todopro` process                 |
+| "Not logged in"                                 | Need authentication                | `todopro auth login`                             |
+| "Login is only available for remote contexts"   | Active context is `local`          | `todopro context use cloud`                      |
+| "Your email address isn't confirmed yet"        | Confirmation link not clicked      | `todopro auth resend-verification`               |
+| "Your session has expired"                      | Token rejected by the server       | `todopro auth login`                             |
+| "No such command 'list'"                        | Old verb-first command             | `todopro task list`, see the table above         |
+| "Invalid isoformat string"                      | Natural-language date in local ctx | Use `YYYY-MM-DD`, or `add` in the cloud context  |
+| "--context is required ..."                     | `sync` without a remote context    | `todopro sync push --context cloud`              |
+| "Missing argument"                              | Missing required args              | Check `todopro <command> --help`                 |
+| "database disk image is malformed"              | File corruption                    | Restore from backup                              |
 
 ---
 
