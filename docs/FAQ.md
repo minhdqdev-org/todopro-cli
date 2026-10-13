@@ -1,6 +1,8 @@
-# TodoPro CLI - Frequently Asked Questions (FAQ)
+---
+updated_at: 2026-10-14T00:11:01+07:00
+---
 
-**Last Updated:** 2026-02-17
+# TodoPro CLI - Frequently Asked Questions (FAQ)
 
 ---
 
@@ -8,29 +10,27 @@
 
 ### What is TodoPro?
 
-TodoPro is a **CLI-first task management system** designed for power users, developers, and privacy-conscious individuals. It works offline by default, uses end-to-end encryption for cloud sync, and provides a scriptable interface for automation.
+TodoPro is a **CLI-first task management system** designed for power users, developers, and privacy-conscious individuals. It works offline by default, syncs with the TodoPro cloud when you want it to, and provides a scriptable interface for automation.
 
 **Key Features:**
 
 - 🖥️ **CLI-First:** Terminal interface with intuitive commands
 - 💾 **Offline-Capable:** Local SQLite storage, no internet required
-- 🔐 **E2EE:** Client-side encryption (AES-256-GCM) for sync
 - 🤖 **Scriptable:** JSON output, automation-ready
-- 🎯 **Privacy-Focused:** Zero-knowledge architecture
+- 🎯 **Privacy-Focused:** Local-only mode keeps your data on your machine, no account needed
 
 ---
 
 ### How is TodoPro different from Todoist?
 
-| Feature          | TodoPro                     | Todoist             |
-| ---------------- | --------------------------- | ------------------- |
-| **Interface**    | CLI (command-line)          | Web/Mobile GUI      |
-| **Offline Mode** | ✅ Works fully offline      | ⚠️ Limited offline  |
-| **Privacy**      | ✅ E2EE, zero-knowledge     | ❌ Server sees data |
-| **Pricing**      | Free offline, $3.99/mo sync | $4/mo or $5/mo      |
-| **Target User**  | Developers, power users     | General consumers   |
-| **Automation**   | ✅ Fully scriptable         | ⚠️ Limited API      |
-| **Open Source**  | ✅ Yes                      | ❌ No               |
+| Feature          | TodoPro                           | Todoist             |
+| ---------------- | --------------------------------- | ------------------- |
+| **Interface**    | CLI, plus web and mobile apps     | Web/Mobile GUI      |
+| **Offline Mode** | ✅ Works fully offline            | ⚠️ Limited offline  |
+| **Privacy**      | ✅ Local-only mode, no account    | ❌ Account required |
+| **Target User**  | Developers, power users           | General consumers   |
+| **Automation**   | ✅ Fully scriptable               | ⚠️ Limited API      |
+| **Open Source**  | ✅ Yes                            | ❌ No               |
 
 **Choose TodoPro if:**
 
@@ -42,37 +42,32 @@ TodoPro is a **CLI-first task management system** designed for power users, deve
 
 **Choose Todoist if:**
 
-- You prefer visual interfaces
-- You need mobile apps (TodoPro mobile coming later)
-- You want team collaboration (TodoPro focused on individuals for MVP1)
+- You prefer a purely visual interface and a long-established ecosystem
+
+Coming from Todoist? `todopro import todoist` migrates your projects, tasks, and labels.
 
 ---
 
 ### Is TodoPro free?
 
-**Yes!** Offline usage is **completely free** with no limitations.
+**Yes!** Offline usage in the `local` context is **completely free** with no limitations, and needs no account.
 
-**Pricing Model:**
-
-- **Free Tier:** Unlimited offline usage (local SQLite storage)
-- **Premium Tier:** $3.99/month for cloud sync
-  - Free: 5 projects, 80 tasks per project
-  - Premium: 300 projects, unlimited tasks
+A cloud account (the `cloud` context) is optional and has Free and Pro plans. Pro unlocks extras such as the productivity hub (`todopro hub list`). See the TodoPro web app for current plans and limits.
 
 **What's free forever:**
 
-- ✅ Unlimited tasks (offline)
-- ✅ Unlimited projects (offline)
-- ✅ All core features
+- ✅ Unlimited tasks and projects in a local context
+- ✅ All core task features
 - ✅ Export/import data
 - ✅ CLI interface
-- ✅ End-to-end encryption
 
 ---
 
 ## Installation & Setup
 
 ### How do I install TodoPro?
+
+TodoPro CLI requires **Python 3.14 or newer**.
 
 **Recommended (using uv):**
 
@@ -81,13 +76,15 @@ uv tool install todopro-cli
 todopro version
 ```
 
+Both `todopro` and the short alias `tp` are installed. To upgrade later, run `todopro update`.
+
 See [GETTING_STARTED.md](./GETTING_STARTED.md#installation) for detailed instructions.
 
 ---
 
 ### Where is my data stored?
 
-TodoPro stores data locally by default:
+TodoPro stores data locally by default, in the paths chosen by [platformdirs](https://pypi.org/project/platformdirs/).
 
 **Linux:**
 
@@ -101,29 +98,38 @@ TodoPro stores data locally by default:
 ~/Library/Application Support/todopro_cli/todopro.db
 ```
 
-**Windows:**
+**Windows:** under `%LOCALAPPDATA%\todopro_cli\`.
 
-```
-%LOCALAPPDATA%\todopro_cli\todopro.db
-```
-
-**Configuration:**
+**Configuration (Linux):**
 
 ```
 ~/.config/todopro_cli/config.json
 ```
 
+On macOS the configuration lives next to the database in `~/Library/Application Support/todopro_cli/`. Per-context login credentials are kept in a `credentials/` folder beside `config.json` with `0600` permissions.
+
+---
+
+### What are contexts?
+
+A **context** is a named place where your tasks live. Two exist out of the box:
+
+- `local` (the default): a SQLite database on your machine
+- `cloud`: the TodoPro API at `https://todopro.minhdq.dev/api`, which needs a login
+
+Switch with `todopro context use <name>`. See [How do I use multiple contexts?](#how-do-i-use-multiple-contexts).
+
 ---
 
 ### Can I use TodoPro without an account?
 
-**Yes!** TodoPro works completely offline without any account. Just install and start using it.
+**Yes!** TodoPro works completely offline in the `local` context without any account. Just install and start using it.
 
 You only need an account if you want to:
 
 - Sync across multiple devices
 - Back up data to the cloud
-- Access tasks from different computers
+- Use cloud-only features such as natural language quick add, Dictate, the GitHub and Calendar integrations, and the web and mobile apps
 
 ---
 
@@ -137,27 +143,32 @@ You only need an account if you want to:
 todopro add "Buy groceries"
 ```
 
-**With details:**
+In a cloud context, quick add understands natural language: `#Project`, `@label`, `p1`-`p4` for priority, dates, recurrence, and reminders.
 
 ```bash
-todopro add "Buy groceries" \
-  --due tomorrow \
-  --priority 1 \
-  --project "Personal"
+todopro add "Review PR tomorrow at 2pm #Work p1 @urgent"
+todopro add "Team standup every monday at 9am #Work"
+todopro add "File taxes" --deadline "April 15"
+todopro add "Buy groceries" --project "Personal"
 ```
 
-**Interactive mode:**
+In a local context, `add` stores the text as the task content without parsing it. Use `task create` when you want explicit fields.
+
+**With explicit fields (any context):**
 
 ```bash
-todopro create task
-# Follow the prompts
+todopro task create "Buy groceries" \
+  --due tomorrow \
+  --priority 1 \
+  --project <project-id> \
+  --labels shopping,home
 ```
 
 ---
 
 ### How do I view my tasks?
 
-**Today's tasks:**
+**Today's tasks (overdue plus due today):**
 
 ```bash
 todopro today
@@ -166,64 +177,99 @@ todopro today
 **All tasks:**
 
 ```bash
-todopro list tasks
+todopro task list
 ```
 
-**Filter by project:**
+**Filter by project (project ID):**
 
 ```bash
-todopro list tasks --project "Work"
+todopro task list --project <project-id>
 ```
 
 **Filter by status:**
 
 ```bash
-todopro list tasks --status active
-todopro list tasks --status completed
+todopro task list --status active
+todopro task list --status completed
+```
+
+**Filter by priority, or include completed tasks:**
+
+```bash
+todopro task list --priority 1
+todopro task list --show-completed
 ```
 
 **Search:**
 
 ```bash
-todopro list tasks --search "meeting"
+todopro task list --search "meeting"
+```
+
+**Saved filters:**
+
+```bash
+todopro task apply filter "My filter"
+```
+
+---
+
+### How do I complete, edit, or reschedule a task?
+
+Every task shows a short unique suffix in brackets, such as `[3f]`. Use it in place of the full ID.
+
+```bash
+todopro complete 3f 9a            # complete one or more tasks
+todopro reopen 3f                 # undo a completion
+todopro edit 3f                   # interactive
+todopro edit 3f --content "New title" --due tomorrow --priority 2
+todopro reschedule 3f             # move to today
+todopro reschedule 3f --date tomorrow
+todopro reschedule                # move all overdue tasks to today
+todopro task delete 3f
 ```
 
 ---
 
 ### What date formats are supported?
 
-TodoPro supports natural language dates:
+Natural language dates work in `todopro add` (cloud context) and in the `--due` flag of `task create`, `task update`, and `edit`:
 
 ```bash
-todopro add "Task" --due today
-todopro add "Task" --due tomorrow
-todopro add "Task" --due "next monday"
-todopro add "Task" --due "next friday"
-todopro add "Task" --due "in 3 days"
+todopro task create "Task" --due today
+todopro task create "Task" --due tomorrow
+todopro task create "Task" --due "next monday"
+todopro task create "Task" --due "in 3 days"
 ```
 
 Also ISO format:
 
 ```bash
-todopro add "Task" --due 2026-03-15
+todopro task create "Task" --due 2026-03-15
 ```
+
+`todopro reschedule --date` accepts `today`, `tomorrow`, or `YYYY-MM-DD`.
 
 ---
 
 ### How do priority levels work?
 
-TodoPro uses 4 priority levels:
+TodoPro uses 4 priority levels, where 1 is the most urgent:
 
-- **P1 (Highest):** Urgent & important
-  - `todopro add "Task" --priority 1`
-- **P2 (High):** Important but not urgent
-  - `todopro add "Task" --priority 2`
-- **P3 (Medium):** Default priority
-  - `todopro add "Task" --priority 3`
-- **P4 (Low):** Nice to have, someday/maybe
-  - `todopro add "Task" --priority 4`
+- **P1 (Urgent)**
+- **P2 (High)**
+- **P3 (Medium)**
+- **P4 (Normal):** the default
 
-**Default:** If you don't specify, tasks are created with P3 (medium).
+In quick add, write `p1`-`p4` (or `!!1`-`!!4`) in the text. With the explicit commands, use `--priority`:
+
+```bash
+todopro add "Pay rent p1"
+todopro task create "Pay rent" --priority 1
+todopro task list --priority 1
+```
+
+**Default:** If you don't specify, tasks are created with P4.
 
 ---
 
@@ -234,8 +280,11 @@ TodoPro uses 4 priority levels:
 **JSON Output:**
 
 ```bash
-todopro list tasks --format json | jq '.[]'
+todopro task list --output json | jq '.'
+todopro today --json
 ```
+
+`--json` is an alias for `--output json` on most commands.
 
 **Example Script (Daily Report):**
 
@@ -243,19 +292,21 @@ todopro list tasks --format json | jq '.[]'
 #!/bin/bash
 # Generate daily task report
 
-TODAY=$(todopro list tasks --filter=today --format json)
+TODAY=$(todopro today --json)
 COUNT=$(echo "$TODAY" | jq 'length')
 
 echo "📋 You have $COUNT tasks today:"
 echo "$TODAY" | jq -r '.[] | "- [\(.priority)] \(.content)"'
 ```
 
+Check the JSON shape of your version first, since the top-level structure may differ per command.
+
 **Exit Codes:**
 
 - `0` = Success
-- `1` = General error
-- `2` = Invalid arguments
-- `5` = Resource not found
+- non-zero = Error
+
+Use `--yes` / `-y` where a command asks for confirmation.
 
 ---
 
@@ -263,97 +314,53 @@ echo "$TODAY" | jq -r '.[] | "- [\(.priority)] \(.content)"'
 
 ### How do I sync my data?
 
+`sync push` and `sync pull` move data between a **local** context and a **remote** one. Name the remote context with `--context`.
+
 **First-time setup:**
 
 ```bash
-# 1. Sign up for account
-todopro signup
+# 1. Sign up for an account in the cloud context
+todopro context use cloud
+todopro auth signup
 
-# 2. Set up encryption
-todopro encryption setup
-
-# 3. Push your data
-todopro sync push
+# 2. Go back to your local data and push it
+todopro context use local
+todopro sync push --context cloud
 ```
+
+New accounts must confirm their email address. If the email did not arrive, run `todopro auth resend-verification`.
 
 **On another device:**
 
 ```bash
 # 1. Login
-todopro login
+todopro context use cloud
+todopro auth login
 
-# 2. Set up encryption (use same recovery phrase)
-todopro encryption recover
-
-# 3. Pull data
-todopro sync pull
+# 2. Pull data into the local context
+todopro context use local
+todopro sync pull --context cloud
 ```
 
 **Regular sync:**
 
 ```bash
-todopro sync push  # Upload changes
-todopro sync pull  # Download changes
+todopro sync push --context cloud  # Upload changes
+todopro sync pull --context cloud  # Download changes
+todopro sync status                # Last sync times
 ```
+
+You can preview a sync with `--dry-run`, ignore the last sync timestamp with `--full`, and choose how conflicts resolve with `--strategy local-wins|remote-wins`.
 
 ---
 
 ### Is my data encrypted?
 
-**Yes!** TodoPro uses **end-to-end encryption (E2EE)** with AES-256-GCM.
+Data you sync to the cloud is protected in transit (HTTPS) and at rest by the server. **End-to-end (client-side) encryption was discontinued** (ADR-0024), so the server can read what you sync.
 
-**What's encrypted:**
+If you need your data to stay entirely under your control, use the `local` context: it never leaves your machine.
 
-- ✅ Task content
-- ✅ Task descriptions
-- ✅ All sensitive data
-
-**What's NOT encrypted (needed for server-side operations):**
-
-- Task IDs (random UUIDs)
-- Timestamps
-- Project names
-- Label names
-
-**How it works:**
-
-1. Data encrypted on your device before upload
-2. Server stores only ciphertext
-3. Server never has decryption key
-4. Data decrypted on your device after download
-
-**Setup:**
-
-```bash
-todopro encryption setup
-# Save your 24-word recovery phrase!
-```
-
----
-
-### What happens if I lose my encryption key?
-
-**Recovery phrase is your backup!**
-
-If you lose your encryption key (e.g., new device, reinstall OS):
-
-```bash
-todopro encryption recover
-# Enter your 24-word recovery phrase
-```
-
-**⚠️ CRITICAL:** If you lose BOTH your key AND recovery phrase:
-
-- Your encrypted data is **permanently unrecoverable**
-- Not even TodoPro staff can decrypt it (zero-knowledge encryption)
-- You'll need to start fresh
-
-**Best practices:**
-
-- ✅ Write down recovery phrase on paper
-- ✅ Store in password manager (e.g., 1Password, Bitwarden)
-- ✅ Keep multiple secure copies
-- ❌ Don't screenshot or email it
+The `todopro encryption` command group still exists, but every subcommand is a discontinued stub. There is no key, recovery phrase, or rotation to manage.
 
 ---
 
@@ -364,32 +371,36 @@ todopro encryption recover
 **Device 1 (First device):**
 
 ```bash
-todopro signup
-todopro encryption setup
-todopro sync push
+todopro context use cloud
+todopro auth signup
+todopro context use local
+todopro sync push --context cloud
 ```
 
 **Device 2 (Additional device):**
 
 ```bash
-todopro login
-todopro encryption recover  # Enter same recovery phrase
-todopro sync pull
+todopro context use cloud
+todopro auth login
+todopro context use local
+todopro sync pull --context cloud
 ```
 
 **Keep devices in sync:**
 
 ```bash
-todopro sync push  # After making changes
-todopro sync pull  # Before starting work
+todopro sync push --context cloud  # After making changes
+todopro sync pull --context cloud  # Before starting work
 ```
 
 **Tip:** Set up a cron job for auto-sync:
 
 ```bash
-# Sync every hour
-0 * * * * todopro sync push && todopro sync pull
+# Sync every hour (run from the local context)
+0 * * * * todopro sync pull --context cloud && todopro sync push --context cloud
 ```
+
+Alternatively, stay in the `cloud` context on every device and skip sync entirely; the API is then the single source of truth.
 
 ---
 
@@ -407,6 +418,12 @@ todopro data export --output ~/backups/todopro-$(date +%Y%m%d).json
 
 ```bash
 todopro data export --compress --output ~/backups/todopro.json.gz
+```
+
+**Complete export with attachments (cloud context only):**
+
+```bash
+todopro data export --archive --output my-todopro-data.zip
 ```
 
 **Automated weekly backup:**
@@ -428,7 +445,7 @@ todopro data import ~/backups/todopro-20260217.json
 
 **Import handles:**
 
-- ✅ Duplicate detection (skips existing items)
+- ✅ Duplicate detection (skips existing items with the same name)
 - ✅ Compressed files (.json.gz)
 - ✅ Confirmation prompt (use `--yes` to skip)
 
@@ -444,6 +461,16 @@ todopro data import backup.json --yes
 
 ---
 
+### How do I delete all my data?
+
+```bash
+todopro data export --output backup.json   # export first
+todopro data purge --dry-run               # preview
+todopro data purge                         # delete everything; cannot be undone
+```
+
+---
+
 ### Can I export to CSV?
 
 **Not yet.** CSV export is planned for a future release.
@@ -452,6 +479,7 @@ todopro data import backup.json --yes
 
 - ✅ JSON (full data)
 - ✅ Gzip compressed JSON
+- ✅ ZIP archive with attachments (`--archive`, cloud context)
 
 **Workaround (convert JSON to CSV):**
 
@@ -460,75 +488,21 @@ todopro data export --output export.json
 jq -r '.data.tasks[] | [.content, .priority, .due_date] | @csv' export.json > tasks.csv
 ```
 
----
-
-## Encryption
-
-### What encryption does TodoPro use?
-
-**Algorithm:** AES-256-GCM (Galois/Counter Mode)
-
-**Key Details:**
-
-- **Key Size:** 256 bits (32 bytes)
-- **IV Size:** 96 bits (12 bytes, unique per operation)
-- **Auth Tag:** 128 bits (16 bytes, for integrity)
-- **Recovery Phrase:** 24 words (BIP39 standard)
-
-**Industry Standard:** AES-256-GCM is used by:
-
-- Signal (messaging)
-- 1Password (password manager)
-- TLS 1.3 (web encryption)
-- Google Cloud, AWS (cloud storage)
+Inspect the file first, since the exact JSON layout may differ between versions.
 
 ---
 
-### How do I check my encryption status?
+### Can I import from Todoist?
+
+**Yes.** You need a Todoist personal API token.
 
 ```bash
-todopro encryption status
+todopro import todoist --api-key YOUR_TOKEN
+todopro import todoist --dry-run --api-key YOUR_TOKEN     # preview counts only
+todopro import todoist --include-completed --api-key YOUR_TOKEN
 ```
 
-**Output:**
-
-```
-Encryption Status: ✅ Enabled
-Key Location: ~/.config/todopro_cli/encryption.key
-Key Fingerprint: a1b2c3d4...
-Recovery Phrase: Hidden (use 'show-recovery' to display)
-```
-
----
-
-### Can I view my recovery phrase again?
-
-**Yes:**
-
-```bash
-todopro encryption show-recovery
-```
-
-**⚠️ Security Warning:** Only run this on your trusted device. The 24-word phrase will be displayed on screen.
-
----
-
-### Can I change my encryption key?
-
-**Yes (key rotation):**
-
-```bash
-todopro encryption rotate-key
-```
-
-**What happens:**
-
-1. Generates new encryption key
-2. Generates new 24-word recovery phrase
-3. Re-encrypts all local data with new key
-4. Pushes re-encrypted data to server (if syncing)
-
-**Note:** Old recovery phrase won't work anymore. Save the new one!
+In a cloud context the import runs on the TodoPro backend and brings sections, subtasks, recurrence, and comments. In a local context it runs client-side and imports projects, labels, tasks, and due dates.
 
 ---
 
@@ -551,14 +525,15 @@ source ~/.bashrc
 
 ---
 
-### "Not logged in" error
+### "Login is only available for remote contexts"
 
-**Cause:** Trying to sync without authentication.
+**Cause:** `auth login`, `auth signup`, and `auth logout` only work in a remote context, and you are in `local`.
 
 **Fix:**
 
 ```bash
-todopro login
+todopro context use cloud
+todopro auth login
 # Enter your email and password
 ```
 
@@ -574,17 +549,17 @@ todopro login
 # Check sync status
 todopro sync status
 
-# Pull latest from server (server wins)
-todopro sync pull
+# Pull latest from the cloud (cloud wins by default)
+todopro sync pull --context cloud
 
-# Push your changes (local wins)
-todopro sync push
+# Push your changes (local wins by default)
+todopro sync push --context cloud
 ```
 
 **Best Practice:** Always pull before push:
 
 ```bash
-todopro sync pull && todopro sync push
+todopro sync pull --context cloud && todopro sync push --context cloud
 ```
 
 ---
@@ -599,39 +574,12 @@ todopro sync pull && todopro sync push
 # Check for running processes
 ps aux | grep todopro
 
-# Kill if necessary
-pkill todopro
+# Stop it by PID if necessary
+kill <pid>
 
 # Try again
-todopro list tasks
+todopro task list
 ```
-
----
-
-### Forgot encryption recovery phrase
-
-**Unfortunately:** If you lost your recovery phrase AND encryption key:
-
-- Your encrypted data is **unrecoverable**
-- This is by design (zero-knowledge encryption)
-- No one can decrypt it, including TodoPro staff
-
-**Options:**
-
-1. **If you have local unencrypted data:**
-
-   ```bash
-   # Export local data
-   todopro data export --output backup.json
-
-   # Disable E2EE, start fresh
-   todopro encryption setup  # New key
-   todopro data import backup.json
-   ```
-
-2. **If everything is encrypted:**
-   - You'll need to start fresh
-   - This is why we emphasize saving recovery phrase!
 
 ---
 
@@ -643,22 +591,85 @@ todopro list tasks
 
 ```bash
 # List contexts
-todopro list contexts
+todopro context list
 
 # Create local context
-todopro create context local-work \
+todopro context create local-work \
   --type local \
   --source ~/.todopro-work.db
 
 # Switch contexts
-todopro use local-work
+todopro context use local-work
 
 # Your data is now in a separate database
 todopro add "Work task"
 
 # Switch back to default
-todopro use local
+todopro context use local
+
+# Rename or remove a context
+todopro context rename local-work work
+todopro context delete work
 ```
+
+To add another cloud server, create a remote context with `todopro context create <name> --type remote --source <api-url>`.
+
+---
+
+### Does TodoPro support recurring tasks?
+
+**Yes**, in a cloud context. Quick add understands recurrence:
+
+```bash
+todopro add "Weekly review every monday at 9am #Work"
+todopro add "Water plants every! 3 days"
+```
+
+`every!` re-anchors the next occurrence to when you complete the task. To skip one occurrence of a recurring task, run `todopro task skip <id>`. Task templates can also carry a recurrence (`todopro template create --recur`).
+
+---
+
+### Can I add subtasks or dependencies?
+
+Task dependencies are available through `task link`:
+
+```bash
+todopro task link add <task-id> --blocked-by <other-task-id>
+todopro task link list <task-id>
+```
+
+For sub-steps inside a single task, use the description field:
+
+```bash
+todopro task create "Project X" --description "1. Research
+2. Design
+3. Implement
+4. Test"
+```
+
+---
+
+### Can I share a project?
+
+**Yes**, in a cloud context:
+
+```bash
+todopro project share share <project-id> --email teammate@example.com
+todopro project share collaborators <project-id>
+todopro project share unshare <project-id> --email teammate@example.com
+todopro project share leave <project-id>
+```
+
+---
+
+### What integrations are available?
+
+All of them need a cloud context.
+
+- **GitHub:** `todopro github connect --pat <token>`, then `github projects`, `github link`, `github sync`, `github import`, and `github push`
+- **Hub (Pro):** `todopro hub list` shows items from your linked providers in one feed
+- **Google Calendar:** `todopro calendar connect`, `calendar push`, `calendar pull`
+- **Voice:** `todopro dictate` turns a spoken recording into tasks; `--text "..."` skips the microphone
 
 ---
 
@@ -684,12 +695,12 @@ jobs:
 
       - name: Login
         run: |
-          echo "${{ secrets.TODOPRO_EMAIL }}" | todopro login --password "${{ secrets.TODOPRO_PASSWORD }}"
+          todopro context use cloud
+          todopro auth login --email "${{ secrets.TODOPRO_EMAIL }}" --password "${{ secrets.TODOPRO_PASSWORD }}"
 
-      - name: Sync and Report
+      - name: Report
         run: |
-          todopro sync pull
-          todopro today --format json | jq '.[] | .content'
+          todopro today --json | jq '.[] | .content'
 ```
 
 ---
@@ -706,13 +717,12 @@ jobs:
 **Development:**
 
 ```bash
-git clone https://github.com/minhdqdev/todopro.git
-cd todopro/todopro-cli
-uv pip install -e ".[dev]"
-pytest tests/
+git clone https://github.com/minhdqdev-org/todopro-cli.git
+cd todopro-cli
+mise install
+mise run install
+mise run test
 ```
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
 
 ---
 
@@ -755,12 +765,12 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
 **Bug:** Sync fails with "connection timeout"
 
 **Environment:**
-- TodoPro: v1.0.0
-- OS: Ubuntu 22.04
-- Python: 3.12
+- TodoPro: <output of `todopro version`>
+- OS: Ubuntu 24.04
+- Python: 3.14
 
 **Steps:**
-1. Run `todopro sync push`
+1. Run `todopro sync push --context cloud`
 2. Wait 30 seconds
 3. Get timeout error
 
@@ -768,73 +778,14 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
 **Actual:** Connection timeout after 30s
 
 **Error:**
+Error: Connection timeout
 ```
 
-Error: Connection timeout
-
-````
-
 ---
 
-### Is there a web interface?
+### Is there a web interface or a mobile app?
 
-**Not yet for MVP1.** TodoPro MVP1 focuses on CLI excellence.
-
-**Coming Soon:**
-- Web interface (in development)
-- Mobile apps (planned)
-
-**Current Workaround:**
-- Use SSH to access CLI from anywhere
-- Terminal apps on mobile (Termux, iSH)
-
----
-
-## Feature Requests
-
-### Does TodoPro support recurring tasks?
-
-**Not yet.** Recurring tasks are planned for a future release.
-
-**Workaround:**
-```bash
-# Create template
-todopro add "Weekly review" --due "next monday"
-
-# Clone task when complete
-todopro complete <id>
-todopro add "Weekly review" --due "next monday"
-````
-
----
-
-### Can I add subtasks?
-
-**Not in MVP1.** Subtasks/dependencies are planned for future releases.
-
-**Workaround:**
-
-- Use projects to group related tasks
-- Use description field for sub-steps:
-  ```bash
-  todopro add "Project X" --description "
-  1. Research
-  2. Design
-  3. Implement
-  4. Test
-  "
-  ```
-
----
-
-### Does TodoPro have a mobile app?
-
-**Not yet.** Mobile apps are planned after MVP1 stabilizes.
-
-**Workaround:**
-
-- Access via SSH + terminal app (Termux, iSH)
-- Web interface (coming soon)
+**Yes.** TodoPro also has a web app at https://app.todopro.xyz and a mobile app, backed by the same service the `cloud` context talks to. Log in with the same account to see the tasks you synced from the CLI.
 
 ---
 
