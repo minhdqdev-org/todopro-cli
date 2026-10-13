@@ -10,6 +10,7 @@ from todopro_cli.services.api.templates import TemplatesAPI
 from todopro_cli.utils.recurrence import resolve_rrule
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
+from todopro_cli.utils.uuid_utils import shorten_uuid
 
 app = typer.Typer(cls=SuggestingGroup, help="Manage task templates")
 console = get_console()
@@ -95,7 +96,7 @@ def list_templates() -> None:
                 t["content"],
                 priority_labels.get(t["priority"], str(t["priority"])),
                 t.get("recurrence_rule") or "-",
-                t["id"][:8] + "…",
+                shorten_uuid(t["id"]),
             )
         console.print(table)
 

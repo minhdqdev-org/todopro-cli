@@ -20,6 +20,7 @@ from todopro_cli.services.api.client import APIClient
 from todopro_cli.services.api.goals import AchievementsAPI, GoalsAPI
 from todopro_cli.services.config_service import get_config_service
 from todopro_cli.utils.ui.console import get_console
+from todopro_cli.utils.uuid_utils import shorten_uuid
 
 console = get_console()
 
@@ -109,7 +110,7 @@ def list_remote_goals(include_archived: bool = False) -> None:
     table.add_column("Status")
     for goal in goals:
         table.add_row(
-            str(goal["id"])[:8],
+            shorten_uuid(str(goal["id"])),
             goal["period"],
             f"{goal['target_value']} tasks",
             "active" if goal["is_active"] else "archived",

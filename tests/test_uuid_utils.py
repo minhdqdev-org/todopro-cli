@@ -60,13 +60,14 @@ def test_full_uuid_detection():
 
 
 def test_uuid_shortening():
-    """Test UUID shortening functions."""
+    """Test UUID shortening returns the random tail, not the timestamp head."""
     uuid = "550e8400-e29b-41d4-a716-446655440000"
 
-    assert shorten_uuid(uuid, 8) == "550e8400"
-    assert shorten_uuid(uuid, 4) == "550e"
-    assert shorten_uuid(uuid, 12) == "550e8400-e29"
-    assert format_uuid_short(uuid) == "550e8400"
+    assert shorten_uuid(uuid, 8) == "55440000"
+    assert shorten_uuid(uuid, 4) == "0000"
+    assert shorten_uuid(uuid, 13) == "-446655440000"
+    assert format_uuid_short(uuid) == "55440000"
+    assert shorten_uuid(uuid, 0) == ""
 
 
 def test_uuid_field_validation():

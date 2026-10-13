@@ -30,6 +30,7 @@ from todopro_cli.services.config_service import (
 # Import strategy context and service layer
 from todopro_cli.services.task_service import TaskService
 from todopro_cli.utils.ui.console import get_console
+from todopro_cli.utils.uuid_utils import shorten_uuid
 
 console = get_console()
 app = typer.Typer(help="Focus mode with Pomodoro timer")
@@ -98,7 +99,7 @@ def start_focus(
     existing = state_manager.load()
     if existing and existing.status in ("active", "paused"):
         console.print("[red]Error: Another focus session is already active[/red]")
-        console.print(f"Task: {existing.task_title} (#{existing.task_id[:8]})")
+        console.print(f"Task: {existing.task_title} (#{shorten_uuid(existing.task_id)})")
         console.print(f"Status: {existing.status}")
         console.print(
             "\nUse 'todopro focus resume' to continue or 'todopro focus stop' to cancel it."
@@ -141,7 +142,7 @@ def start_focus(
 
     # Show confirmation
     console.print("\n[bold green]🍅 Focus session started[/bold green]")
-    console.print(f"Task: {task_title} (#{task_id[:8]})")
+    console.print(f"Task: {task_title} (#{shorten_uuid(task_id)})")
     console.print(f"Duration: {duration} minutes")
     console.print(f"End time: {end_time.strftime('%I:%M %p')}")
     console.print("\nStarting fullscreen timer...\n")
@@ -250,7 +251,7 @@ def resume_focus():
     remaining = session.time_remaining()
     if remaining <= 0:
         console.print("[yellow]Session has expired[/yellow]")
-        console.print(f"Task: {session.task_title} (#{session.task_id[:8]})")
+        console.print(f"Task: {session.task_title} (#{shorten_uuid(session.task_id)})")
 
         if Confirm.ask("Did you complete this task?", default=False):
             # Mark as completed using TaskService
@@ -266,7 +267,7 @@ def resume_focus():
 
     # Resume session
     console.print("\n[bold cyan]Resuming focus session[/bold cyan]")
-    console.print(f"Task: {session.task_title} (#{session.task_id[:8]})")
+    console.print(f"Task: {session.task_title} (#{shorten_uuid(session.task_id)})")
     console.print(f"Time remaining: {remaining // 60}:{remaining % 60:02d}")
     console.print()
 
@@ -375,7 +376,7 @@ def stop_focus():
         raise typer.Exit(0)
 
     console.print("\n[yellow]Stopping focus session[/yellow]")
-    console.print(f"Task: {session.task_title} (#{session.task_id[:8]})")
+    console.print(f"Task: {session.task_title} (#{shorten_uuid(session.task_id)})")
 
     # Mark as cancelled
     session.status = "cancelled"
@@ -405,7 +406,7 @@ def focus_status():
 
     console.print("\n[bold cyan]Current Focus Session[/bold cyan]\n")
     console.print(f"Task: {session.task_title}")
-    console.print(f"ID: #{session.task_id[:8]}")
+    console.print(f"ID: #{shorten_uuid(session.task_id)}")
     console.print(f"Status: {session.status}")
     console.print(f"Duration: {session.duration_minutes} minutes")
 

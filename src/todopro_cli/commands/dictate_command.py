@@ -9,6 +9,7 @@ from rich.table import Table
 from todopro_cli.services.audio.recorder import check_dependencies
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
+from todopro_cli.utils.uuid_utils import shorten_uuid
 
 app = typer.Typer(
     cls=SuggestingGroup, help="Dictate — voice-to-tasks", invoke_without_command=True
@@ -292,7 +293,7 @@ def history() -> None:
         table.add_column("Updated", style="blue")
         table.add_column("Source")
         for s in sessions:
-            sid = str(s.get("id", ""))[:8]
+            sid = shorten_uuid(str(s.get("id", "")))
             started = str(s.get("started_at", ""))[:19]
             dur = (
                 f"{s.get('duration_seconds', 0):.1f}s"

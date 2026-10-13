@@ -10,6 +10,8 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.text import Text
 
+from todopro_cli.utils.uuid_utils import shorten_uuid
+
 from .state import SessionState
 
 
@@ -65,7 +67,7 @@ class TimerDisplay:
                 session.task_title[:50], style="bold white", justify="center"
             )
             if session.task_id:
-                task_id_short = session.task_id[:8]
+                task_id_short = shorten_uuid(session.task_id)
                 task_text.append(f" (#{task_id_short})", style="dim")
             components.append(task_text)
             components.append(Text(""))  # Spacer

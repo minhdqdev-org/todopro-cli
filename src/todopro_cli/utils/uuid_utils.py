@@ -52,18 +52,24 @@ def is_full_uuid(value: str) -> bool:
 def shorten_uuid(uuid: str, length: int = 8) -> str:
     """Get shortened version of UUID.
 
+    Returns the tail, not the head: ids are UUIDv7, whose leading 32 bits are a
+    timestamp that changes only about every minute, so ids created together
+    share their first 8 characters. The tail is random and tells them apart.
+
     Args:
         uuid: Full UUID string
         length: Number of characters to return (default 8)
 
     Returns:
-        First N characters of UUID
+        Last N characters of UUID
     """
-    return uuid[:length]
+    if length <= 0:
+        return ""
+    return uuid[-length:]
 
 
 def format_uuid_short(uuid: str) -> str:
-    """Format UUID for display in lists (first 8 chars).
+    """Format UUID for display in lists (last 8 chars).
 
     Args:
         uuid: Full UUID string
@@ -74,13 +80,27 @@ def format_uuid_short(uuid: str) -> str:
     return shorten_uuid(uuid, 8)
 
 
+def _ambiguous_message(kind: str, given: str, ids: list[str]) -> str:
+    """Build an "ambiguous ID" error whose listed values tell the matches apart."""
+    length = 8
+    while length < 36 and len({shorten_uuid(i, length) for i in ids}) < len(ids):
+        length += 1
+    shown = ", ".join(shorten_uuid(i, length) for i in ids[:5])
+    if len(ids) > 5:
+        shown += f", ... ({len(ids)} total)"
+    return (
+        f"Ambiguous ID '{given}' matches {len(ids)} {kind}: {shown}. "
+        "Use a longer value to narrow it."
+    )
+
+
 async def resolve_task_uuid(
     short_or_full_id: str, repository: TaskRepository, min_length: int = 8
 ) -> str:
     """Resolve a short or full UUID to a full UUID for tasks.
 
     Args:
-        short_or_full_id: Either full UUID or prefix (min 8 chars)
+        short_or_full_id: Full UUID, prefix, or tail (min 8 chars); prefix is tried first
         repository: TaskRepository instance
         min_length: Minimum length for short UUIDs (default 8)
 
@@ -114,15 +134,18 @@ async def resolve_task_uuid(
     tasks = await repository.list_all(TaskFilters(id_prefix=short_or_full_id))
 
     if len(tasks) == 0:
+        # Ids are shown as their tail, so fall back to a suffix match
+        tasks = await repository.list_all(
+            TaskFilters(id_suffix=short_or_full_id, status="all")
+        )
+        tasks = [t for t in tasks if t.id.lower().endswith(short_or_full_id)]
+
+    if len(tasks) == 0:
         raise ValueError(f"Task not found: {short_or_full_id}")
 
     if len(tasks) > 1:
-        # Show first few matches
-        matches = ", ".join([shorten_uuid(t.id) for t in tasks[:5]])
-        if len(tasks) > 5:
-            matches += f", ... ({len(tasks)} total)"
         raise ValueError(
-            f"Ambiguous ID '{short_or_full_id}' matches {len(tasks)} tasks: {matches}"
+            _ambiguous_message("tasks", short_or_full_id, [t.id for t in tasks])
         )
 
     return tasks[0].id
@@ -133,7 +156,7 @@ async def resolve_project_uuid(
 ) -> str:
     """Resolve a short UUID, full UUID, ID suffix, or project name to a full UUID.
 
-    Tries in order: full UUID → cached suffix → UUID prefix → case-insensitive name match.
+    Tries in order: full UUID → cached suffix → UUID prefix → ID suffix → case-insensitive name match.
 
     Args:
         short_or_full_id: Full UUID, ID suffix (from ``tp project list``), UUID prefix, or project name
@@ -163,40 +186,35 @@ async def resolve_project_uuid(
     if short_or_full_id_stripped in suffix_mapping:
         return suffix_mapping[short_or_full_id_stripped]
 
-    # Looks like a UUID prefix (only hex digits and dashes) — try prefix search
+    # Hex digits and dashes could be a UUID prefix, or the tail shown in lists
+    # and error messages. Try the prefix first, then fall back to the tail.
     uuid_prefix_re = re.compile(r"^[0-9a-f\-]+$", re.IGNORECASE)
-    if uuid_prefix_re.match(normalized) and len(normalized) >= min_length:
+    if uuid_prefix_re.match(normalized):
         from todopro_cli.models import ProjectFilters
 
-        projects = await repository.list_all(ProjectFilters(id_prefix=normalized))
-        if len(projects) == 1:
-            return projects[0].id
-        if len(projects) > 1:
-            matches = ", ".join([shorten_uuid(p.id) for p in projects[:5]])
-            if len(projects) > 5:
-                matches += f", ... ({len(projects)} total)"
-            raise ValueError(
-                f"Ambiguous ID '{short_or_full_id_stripped}' matches {len(projects)} projects: {matches}"
-            )
-        # No UUID prefix match — fall through to name search
+        if len(normalized) >= min_length:
+            projects = await repository.list_all(ProjectFilters(id_prefix=normalized))
+            if len(projects) == 1:
+                return projects[0].id
+            if len(projects) > 1:
+                raise ValueError(
+                    _ambiguous_message(
+                        "projects", short_or_full_id_stripped, [p.id for p in projects]
+                    )
+                )
 
-    # Short hex string could be a UUID suffix displayed by `tp project list` (e.g. `#8`).
-    # This handles cache misses (suffix cache TTL expired) by searching all projects.
-    if uuid_prefix_re.match(normalized) and len(normalized) < min_length:
-        from todopro_cli.models import ProjectFilters
-
+        # Also covers a stale suffix cache (TTL expired) by searching all projects
         all_projects = await repository.list_all(ProjectFilters())
-        suffix_matches = [p for p in all_projects if p.id.endswith(normalized)]
+        suffix_matches = [p for p in all_projects if p.id.lower().endswith(normalized)]
         if len(suffix_matches) == 1:
             return suffix_matches[0].id
         if len(suffix_matches) > 1:
-            matches = ", ".join([shorten_uuid(p.id) for p in suffix_matches[:5]])
-            if len(suffix_matches) > 5:
-                matches += f", ... ({len(suffix_matches)} total)"
             raise ValueError(
-                f"Ambiguous ID '{short_or_full_id_stripped}' matches {len(suffix_matches)} projects: {matches}"
+                _ambiguous_message(
+                    "projects", short_or_full_id_stripped, [p.id for p in suffix_matches]
+                )
             )
-        # No suffix match — fall through to name search
+        # No UUID match — fall through to name search
 
     # Try case-insensitive name search
     from todopro_cli.models import ProjectFilters
@@ -212,7 +230,7 @@ async def resolve_project_uuid(
             f"Ambiguous name '{short_or_full_id_stripped}' matches {len(name_matches)} projects: {matches}"
         )
 
-    raise ValueError(f"Project not found: '{short_or_full_id_stripped}' (tried UUID, suffix cache, UUID prefix, and name)")
+    raise ValueError(f"Project not found: '{short_or_full_id_stripped}' (tried UUID, suffix cache, UUID prefix, ID suffix, and name)")
 
 
 def validate_uuid_field(value: str | None, field_name: str = "id") -> str | None:

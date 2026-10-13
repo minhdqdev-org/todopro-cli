@@ -9,6 +9,7 @@ from todopro_cli.services.api.client import get_client
 from todopro_cli.services.api.tasks import TasksAPI
 from todopro_cli.utils.typer_helpers import SuggestingGroup
 from todopro_cli.utils.ui.console import get_console
+from todopro_cli.utils.uuid_utils import shorten_uuid
 
 app = typer.Typer(cls=SuggestingGroup, help="Manage task dependencies")
 console = get_console()
@@ -42,7 +43,7 @@ def link_task(
                     blocks, task_id, dependency_type="blocks"
                 )
                 console.print(
-                    f"[green]✓[/green] Task {task_id[:8]}… now blocks task {blocks[:8]}…"
+                    f"[green]✓[/green] Task {shorten_uuid(task_id)} now blocks task {shorten_uuid(blocks)}"
                 )
             else:
                 # task_id is blocked_by another task → task_id depends_on blocked_by
@@ -50,7 +51,7 @@ def link_task(
                     task_id, blocked_by, dependency_type="blocks"
                 )
                 console.print(
-                    f"[green]✓[/green] Task {task_id[:8]}… is now blocked by task {blocked_by[:8]}…"
+                    f"[green]✓[/green] Task {shorten_uuid(task_id)} is now blocked by task {shorten_uuid(blocked_by)}"
                 )
             console.print(f"  Dependency ID: {dep['id']}")
         except Exception as exc:
@@ -75,7 +76,7 @@ def unlink_task(
         try:
             await api.remove_dependency(task_id, dep_id)
             console.print(
-                f"[green]✓[/green] Dependency {dep_id[:8]}… removed from task {task_id[:8]}…"
+                f"[green]✓[/green] Dependency {shorten_uuid(dep_id)} removed from task {shorten_uuid(task_id)}"
             )
         except Exception as exc:
             console.print(f"[red]Error:[/red] {exc}")
@@ -105,18 +106,18 @@ def list_dependencies(
 
         if not deps:
             console.print(
-                f"[yellow]No dependencies found for task {task_id[:8]}…[/yellow]"
+                f"[yellow]No dependencies found for task {shorten_uuid(task_id)}[/yellow]"
             )
             return
 
-        table = Table(title=f"Dependencies of {task_id[:8]}…")
+        table = Table(title=f"Dependencies of {shorten_uuid(task_id)}")
         table.add_column("Dep ID", style="dim")
         table.add_column("Depends On", style="cyan")
         table.add_column("Type")
 
         for dep in deps:
             table.add_row(
-                dep["id"][:8] + "…",
+                shorten_uuid(dep["id"]),
                 dep.get("depends_on_content", dep.get("depends_on_id", ""))[:50],
                 dep.get("dependency_type", "blocks"),
             )
