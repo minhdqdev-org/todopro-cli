@@ -281,17 +281,17 @@ def format_pretty(
         if data and isinstance(data[0], dict):
             first_item = data[0]
             if "content" in first_item or "is_completed" in first_item:
-                format_tasks_pretty(data, all_task_ids=all_task_ids)
+                format_tasks_pretty(data, compact, all_task_ids=all_task_ids)
             elif "name" in first_item and "color" in first_item:
                 format_projects_pretty(data, compact)
             else:
-                format_generic_list_pretty(data, compact)
+                format_generic_list_pretty(data)
     elif isinstance(data, dict):
         # Check for paginated response
         if "items" in data:
             format_pretty(data["items"], compact, all_task_ids=all_task_ids)
         elif "tasks" in data:
-            format_tasks_pretty(data["tasks"], all_task_ids=all_task_ids)
+            format_tasks_pretty(data["tasks"], compact, all_task_ids=all_task_ids)
         elif "projects" in data:
             format_projects_pretty(data["projects"], compact)
         elif "labels" in data:
@@ -306,9 +306,11 @@ def format_pretty(
 
 
 def format_tasks_pretty(
-    tasks: list[dict], all_task_ids: list[str] | None = None
+    tasks: list[dict],
+    compact: bool = False,
+    all_task_ids: list[str] | None = None,
 ) -> None:
-    """Format tasks in pretty format."""
+    """Format tasks in pretty format (``compact``: one line per task)."""
 
     # Calculate unique suffix lengths against all task IDs (globally unique)
     displayed_ids = [task["id"] for task in tasks if task.get("id")]
@@ -344,7 +346,7 @@ def format_tasks_pretty(
 
         # Display tasks
         for task in priority_tasks:
-            format_task_item(task, suffix_map=suffix_map)
+            format_task_item(task, suffix_map=suffix_map, compact=compact)
         console.print()
 
     # Display overdue tasks separately
@@ -353,7 +355,7 @@ def format_tasks_pretty(
             f"[bold red]Overdue ({len(overdue_tasks)})[/bold red]", style=None
         )
         for task in overdue_tasks:
-            format_task_item(task, suffix_map=suffix_map)
+            format_task_item(task, suffix_map=suffix_map, compact=compact)
         console.print()
 
 
@@ -391,9 +393,13 @@ def format_task_item(
     task: dict,
     indent: str = "",
     suffix_map: dict[str, int] | None = None,
-    compact: bool = False,  # noqa: ARG001
+    compact: bool = False,
 ) -> None:
-    """Format a single task item."""
+    """Format a single task item.
+
+    With ``compact`` the metadata (due date, project, id, ...) is appended to the
+    task's own line instead of being printed on a second line below it.
+    """
     # Status icon
     is_completed = task.get("is_completed", False)
     is_recurring = task.get("is_recurring", False)
@@ -418,8 +424,6 @@ def format_task_item(
             # Handle both string labels and dict labels
             label_name = label.get("name", "") if isinstance(label, dict) else label
             line.append(f"#{label_name} ", style="blue")
-
-    console.print(line)
 
     # Metadata line
     meta = []
@@ -459,6 +463,14 @@ def format_task_item(
         next_str = format_due_date(task["next_occurrence"])
         meta.append((f"Next: {next_str}", "cyan"))
 
+    if compact:
+        for i, (text, style) in enumerate(meta):
+            line.append("  " if i == 0 else " \u00b7 ", style="dim")
+            line.append(text, style=style)
+        console.print(line)
+        return
+
+    console.print(line)
     if meta:
         meta_line = Text()
         meta_line.append(f"{indent}   └─ ", style="dim")
@@ -698,10 +710,7 @@ def format_project_item(
                 console.print(meta_line)
 
 
-def format_generic_list_pretty(
-    items: list[dict],
-    compact: bool = False,  # noqa: ARG001
-) -> None:
+def format_generic_list_pretty(items: list[dict]) -> None:
     """Format generic list of items."""
     for item in items:
         if "name" in item:

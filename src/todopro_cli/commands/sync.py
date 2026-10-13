@@ -183,11 +183,6 @@ def push_command(
         "--dry-run",
         help="Preview changes without applying them",
     ),
-    full: bool = typer.Option(
-        False,
-        "--full",
-        help="Perform full sync, ignoring last sync timestamp",
-    ),
     strategy: Literal["local-wins", "remote-wins"] = typer.Option(
         "local-wins",
         "--strategy",
@@ -202,15 +197,13 @@ def push_command(
     Examples:
         todopro sync push --context=company-cloud
         todopro sync push --context=backup --dry-run
-        todopro sync push --context=work --full
     """
-    asyncio.run(_push(context, dry_run, full, strategy))
+    asyncio.run(_push(context, dry_run, strategy))
 
 
 async def _push(
     context: str | None,
     dry_run: bool,
-    full: bool,
     strategy: Literal["local-wins", "remote-wins"],
 ):
     """Internal async push implementation."""
@@ -298,7 +291,6 @@ async def _push(
             source_context=source_context_name,
             target_context=target_context_name,
             dry_run=dry_run,
-            full_sync=full,
             strategy=strategy_internal,
         )
 

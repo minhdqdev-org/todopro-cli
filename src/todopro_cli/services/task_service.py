@@ -6,10 +6,9 @@ a clean API for task-related business logic.
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from todopro_cli.models import Task, TaskCreate, TaskFilters, TaskUpdate
 from todopro_cli.repositories import TaskRepository
+from todopro_cli.utils.nlp_parser import parse_due_input
 
 
 class TaskService:
@@ -104,7 +103,7 @@ class TaskService:
             content: Task description (required)
             description: Detailed description
             project_id: Parent project ID
-            due_date: Due date (ISO format or datetime)
+            due_date: Due date (ISO format or natural language, e.g. 'tomorrow')
             priority: Priority level (1-4)
             labels: List of label IDs
             contexts: List of context IDs
@@ -116,13 +115,11 @@ class TaskService:
         Returns:
             Created Task object
         """
-        from datetime import datetime
-
         # Parse due_date if provided as string
         parsed_due_date = None
         if due_date:
             if isinstance(due_date, str):
-                parsed_due_date = datetime.fromisoformat(due_date)
+                parsed_due_date = parse_due_input(due_date)
             else:
                 parsed_due_date = due_date
 
@@ -161,7 +158,7 @@ class TaskService:
             content: Updated task description
             description: Updated detailed description
             project_id: Updated parent project ID
-            due_date: Updated due date
+            due_date: Updated due date (ISO format or natural language)
             priority: Updated priority level
             is_completed: Updated completion status
             labels: Updated list of label IDs
@@ -174,7 +171,7 @@ class TaskService:
         # Parse due_date if provided as string
         parsed_due_date = None
         if due_date:
-            parsed_due_date = datetime.fromisoformat(due_date)
+            parsed_due_date = parse_due_input(due_date)
 
         updates = TaskUpdate(
             content=content,

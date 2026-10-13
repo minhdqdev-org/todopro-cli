@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:25:17+07:00
+updated_at: 2026-10-14T00:30:14+07:00
 ---
 
 # TodoPro CLI - Frequently Asked Questions (FAQ)
@@ -350,7 +350,8 @@ todopro sync pull --context cloud  # Download changes
 todopro sync status                # Last sync times
 ```
 
-You can preview a sync with `--dry-run`, ignore the last sync timestamp with `--full`, and choose how conflicts resolve with `--strategy local-wins|remote-wins`.
+You can preview a sync with `--dry-run` and choose how conflicts resolve with `--strategy local-wins|remote-wins`.
+`sync pull` also takes `--full` to ignore the last sync timestamp; `sync push` always sends every local record.
 
 ---
 

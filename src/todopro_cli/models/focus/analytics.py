@@ -365,14 +365,14 @@ class FocusAnalytics:
             "longest_streak_end": longest_end.isoformat() if longest_end else None,
         }
 
-    def get_productivity_score(self, days: int = 7) -> dict[str, Any]:  # noqa: ARG002
+    def get_productivity_score(self) -> dict[str, Any]:
         """
         Calculate productivity score (0-100) based on multiple factors.
 
         Score = (sessions/10 * 30) + (hours/5 * 25) + (completion_rate * 25) + (streak/7 * 20)
 
-        Args:
-            days: Number of days to analyze (default 7)
+        The score is always computed over the last 7 days: its targets
+        (10 sessions, 5 hours, a 7-day streak) are weekly figures.
 
         Returns:
             Dict with score and component breakdown

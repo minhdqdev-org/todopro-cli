@@ -1385,7 +1385,7 @@ class TestProductivityScoreGrades:
                 )
                 _insert_simple_session(db_conn, dt.isoformat(), "completed", 25)
 
-        result = analytics.get_productivity_score(days=7)
+        result = analytics.get_productivity_score()
         # We just verify the method runs and returns a grade character
         assert result["grade"] in ("A", "B", "C", "D", "F")
         assert "score" in result
@@ -1398,12 +1398,12 @@ class TestProductivityScoreGrades:
         )
         _insert_simple_session(db_conn, dt.isoformat(), "completed", 25)
 
-        result = analytics.get_productivity_score(days=7)
+        result = analytics.get_productivity_score()
         assert result["grade"] in ("C", "D", "F")
 
     def test_grade_f_no_sessions(self, analytics: FocusAnalytics):
         """No sessions at all yields grade F."""
-        result = analytics.get_productivity_score(days=7)
+        result = analytics.get_productivity_score()
         assert result["grade"] == "F"
         assert result["score"] == 0
 

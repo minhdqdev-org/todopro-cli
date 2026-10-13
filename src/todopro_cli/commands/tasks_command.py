@@ -49,7 +49,9 @@ async def list_tasks(
     json_opt: bool = typer.Option(
         False, "--json", help="Output as JSON (alias for --output json)"
     ),
-    compact: bool = typer.Option(False, "--compact", help="Compact output"),
+    compact: bool = typer.Option(
+        False, "--compact", help="Compact output (one line per task)"
+    ),
 ) -> None:
     """List tasks. Completed tasks are hidden by default."""
     if json_opt:
@@ -116,8 +118,12 @@ async def create_task(
     content: str = typer.Argument(..., help="Task content"),
     description: str | None = typer.Option(None, "--description", help="Description"),
     project: str | None = typer.Option(None, "--project", help="Project ID"),
-    due: str | None = typer.Option(None, "--due", help="Due date"),
-    priority: int | None = typer.Option(None, "--priority", help="Priority (1-4)"),
+    due: str | None = typer.Option(
+        None, "--due", help="Due date (YYYY-MM-DD, or e.g. 'tomorrow', 'next monday')"
+    ),
+    priority: int | None = typer.Option(
+        None, "--priority", help="Priority (1=urgent … 4=lowest, the default)"
+    ),
     labels: str | None = typer.Option(None, "--labels", help="Comma-separated labels"),
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
@@ -150,8 +156,12 @@ async def update_task(
     content: str | None = typer.Option(None, "--content", help="Task content"),
     description: str | None = typer.Option(None, "--description", help="Description"),
     project: str | None = typer.Option(None, "--project", help="Project ID"),
-    due: str | None = typer.Option(None, "--due", help="Due date"),
-    priority: int | None = typer.Option(None, "--priority", help="Priority (1-4)"),
+    due: str | None = typer.Option(
+        None, "--due", help="Due date (YYYY-MM-DD, or e.g. 'tomorrow', 'next monday')"
+    ),
+    priority: int | None = typer.Option(
+        None, "--priority", help="Priority (1=urgent … 4=lowest, the default)"
+    ),
     output: str = typer.Option("table", "--output", "-o", help="Output format"),
 ) -> None:
     """Update a task."""
@@ -223,7 +233,10 @@ async def reschedule(
         None, help="Task ID/suffix (omit to reschedule all overdue tasks)"
     ),
     date: str | None = typer.Option(
-        None, "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"
+        None,
+        "--date",
+        "-d",
+        help="New due date (YYYY-MM-DD, or e.g. today, tomorrow, next monday)",
     ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:

@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:25:17+07:00
+updated_at: 2026-10-14T00:30:14+07:00
 ---
 
 # Getting Started with TodoPro CLI
@@ -158,7 +158,7 @@ todopro add "Read productivity book" --project Personal
 todopro task create "Call dentist for appointment" --project <project-id> --priority 2 --due 2026-03-01
 ```
 
-`task create` takes `--project` as an ID, `--priority` from 1 (highest) to 4 (lowest, the default), and `--due` as an ISO date such as `2026-03-01`.
+`task create` takes `--project` as an ID, `--priority` from 1 (highest) to 4 (lowest, the default), and `--due` as an ISO date such as `2026-03-01` or a phrase such as `tomorrow` or `next monday`.
 
 ### Step 3: View Your Tasks
 
@@ -327,7 +327,8 @@ todopro sync pull --context cloud
 todopro sync status
 ```
 
-Useful flags are `--dry-run` (preview), `--full` (ignore the last sync time) and `--strategy local-wins|remote-wins` (conflict resolution).
+Useful flags are `--dry-run` (preview) and `--strategy local-wins|remote-wins` (conflict resolution).
+`sync pull` also takes `--full` (ignore the last sync time); `sync push` always sends every local record.
 You must be signed in to the cloud context before you sync.
 
 ---
@@ -467,7 +468,7 @@ todopro data import backup.json
    todopro add "Water plants every monday"
    todopro add "File taxes" --deadline "April 15"
    ```
-   In the local context, pass dates to `task create --due` as ISO dates (`2026-03-01`).
+   In the local context, pass dates to `task create --due` as an ISO date (`2026-03-01`) or a phrase such as `tomorrow`.
 
 3. **Priority Levels:**
    - P1 = Highest (urgent)

@@ -89,6 +89,11 @@ class TestSyncHelp:
         result = runner.invoke(app, ["pull", "--help"])
         assert "--full" in result.output
 
+    def test_push_has_no_full_option(self):
+        """Push always sends every local record, so --full would be a dead flag."""
+        result = runner.invoke(app, ["push", "--help"])
+        assert "--full" not in result.output
+
     def test_pull_strategy_option_in_help(self):
         result = runner.invoke(app, ["pull", "--help"])
         assert "--strategy" in result.output

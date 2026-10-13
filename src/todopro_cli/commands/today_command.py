@@ -27,7 +27,9 @@ async def today_command(
     json_opt: bool = typer.Option(
         False, "--json", help="Output as JSON (alias for --output json)"
     ),
-    compact: bool = typer.Option(False, "--compact", help="Compact output"),
+    compact: bool = typer.Option(
+        False, "--compact", help="Compact output (one line per task)"
+    ),
 ) -> None:
     """Show tasks for today (overdue + today's tasks)."""
     if json_opt:

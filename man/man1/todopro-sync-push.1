@@ -13,7 +13,6 @@ to a remote context.
 Examples:
     todopro sync push --context=company-cloud
     todopro sync push --context=backup --dry-run
-    todopro sync push --context=work --full
 .SH OPTIONS
 .TP
 \fB\-c,\fP \-\-context TEXT
@@ -21,9 +20,6 @@ Remote context to push to (defaults to current if remote)
 .TP
 \fB\-\-dry\-run\fP
 Preview changes without applying them
-.TP
-\fB\-\-full\fP
-Perform full sync, ignoring last sync timestamp
 .TP
 \fB\-\-strategy\fP [local\-wins|remote\-wins]
 Conflict resolution strategy  [default: local-wins]

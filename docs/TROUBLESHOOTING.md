@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:25:17+07:00
+updated_at: 2026-10-14T00:30:03+07:00
 ---
 
 # TodoPro CLI - Troubleshooting Guide
@@ -732,27 +732,24 @@ todopro task create "Task content"
 
 ---
 
-### Problem: "Invalid isoformat string: 'tomorrow'"
+### Problem: "Could not understand date"
 
 **Symptoms:**
 
 ```bash
-$ todopro task create "Call dentist" --due tomorrow
-Error: An unexpected error occurred: Invalid isoformat string: 'tomorrow'
+$ todopro task create "Call dentist" --due whenever
+Error: Could not understand date 'whenever'. Use YYYY-MM-DD or a phrase like 'tomorrow', 'next monday', 'jan 5 3pm'.
 ```
 
-**Cause:** In the local context, `--due` on `task create`, `task update` and `edit` only accepts ISO dates.
-Words like `tomorrow` or `next friday` are understood by `todopro add` in the **cloud** context.
+**Cause:** `--due` on `task create`, `task update` and `edit`, and `--date` on `reschedule`, accept an ISO date or a natural-language phrase in every context.
+The text you gave is neither.
 
 **Solution:**
 
 ```bash
-# Local context: use an ISO date
 todopro task create "Call dentist" --due 2026-03-01
-
-# Cloud context: natural language works in add
-todopro context use cloud
-todopro add "Call dentist tomorrow at 2pm"
+todopro task create "Call dentist" --due "next friday"
+todopro edit <id> --due "tomorrow 3pm"
 ```
 
 ---
@@ -983,7 +980,7 @@ todopro task list --json
 | "Your email address isn't confirmed yet"        | Confirmation link not clicked      | `todopro auth resend-verification`               |
 | "Your session has expired"                      | Token rejected by the server       | `todopro auth login`                             |
 | "No such command 'list'"                        | Old verb-first command             | `todopro task list`, see the table above         |
-| "Invalid isoformat string"                      | Natural-language date in local ctx | Use `YYYY-MM-DD`, or `add` in the cloud context  |
+| "Could not understand date"                     | Unrecognised `--due` / `--date`    | Use `YYYY-MM-DD` or e.g. `tomorrow`, `next monday` |
 | "--context is required ..."                     | `sync` without a remote context    | `todopro sync push --context cloud`              |
 | "Missing argument"                              | Missing required args              | Check `todopro <command> --help`                 |
 | "database disk image is malformed"              | File corruption                    | Restore from backup                              |

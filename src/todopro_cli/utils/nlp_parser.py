@@ -1404,3 +1404,26 @@ def parse_natural_language(text: str) -> dict[str, Any]:
     """
     parser = LocalNLPParser()
     return parser.parse(text)
+
+
+def parse_due_input(text: str) -> datetime:
+    """Parse a user-supplied due date: an ISO 8601 date/datetime, else natural language.
+
+    ISO is tried first so an explicit "2026-03-01 14:00" keeps its exact time;
+    phrases like "tomorrow" or "next monday" fall through to the NLP parser.
+
+    Raises:
+        ValueError: if the text is neither ISO nor a recognisable date phrase.
+    """
+    text = text.strip()
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        pass
+    parsed = LocalNLPParser()._parse_date(text)
+    if parsed is None:
+        raise ValueError(
+            f"Could not understand date '{text}'. "
+            "Use YYYY-MM-DD or a phrase like 'tomorrow', 'next monday', 'jan 5 3pm'."
+        )
+    return parsed

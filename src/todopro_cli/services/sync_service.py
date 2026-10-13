@@ -415,7 +415,6 @@ class SyncPushService(SyncService):
         source_context: str,
         target_context: str,
         dry_run: bool = False,
-        full_sync: bool = False,  # noqa: ARG002
         strategy: Literal["local_wins", "remote_wins"] = "local_wins",
     ) -> SyncResult:
         """Push data from source to target.
@@ -424,11 +423,11 @@ class SyncPushService(SyncService):
             source_context: Source context name (typically local)
             target_context: Target context name (typically remote)
             dry_run: If True, preview changes without applying
-            full_sync: If True, ignore last sync timestamp
             strategy: Conflict resolution strategy
 
         Returns:
-            SyncResult with operation details
+            SyncResult with operation details. Push always sends every local
+            record (there is no incremental push), so it has no ``full`` mode.
         """
         result = SyncResult()
         start_time = datetime.now()

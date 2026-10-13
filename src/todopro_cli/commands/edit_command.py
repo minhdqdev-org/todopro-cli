@@ -118,7 +118,7 @@ async def edit_command(
         None,
         "--priority",
         "-p",
-        help="New priority (1=low, 2=medium, 3=high, 4=urgent)",
+        help="New priority (1=urgent, 2=high, 3=medium, 4=lowest)",
     ),
     project: str | None = typer.Option(
         None, "--project", help="New project (name or ID, fuzzy search supported)"

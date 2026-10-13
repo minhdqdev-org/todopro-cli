@@ -18,7 +18,10 @@ def reschedule_command(
         None, help="Task ID or suffix (omit to reschedule all overdue tasks)"
     ),
     date: str | None = typer.Option(
-        None, "--date", "-d", help="New due date (today/tomorrow/YYYY-MM-DD)"
+        None,
+        "--date",
+        "-d",
+        help="New due date (YYYY-MM-DD, or e.g. today, tomorrow, next monday)",
     ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ) -> None:

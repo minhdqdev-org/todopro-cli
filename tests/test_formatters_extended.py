@@ -338,7 +338,7 @@ def test_format_generic_list_pretty():
         {"other": "value"},
     ]
     with patch("sys.stdout", new=StringIO()):
-        format_generic_list_pretty(items, compact=False)
+        format_generic_list_pretty(items)
 
 
 def test_format_single_item_pretty_task():
@@ -585,3 +585,40 @@ def test_format_next_task_no_id():
     with patch("todopro_cli.utils.ui.formatters.console") as mock_console:
         format_next_task(task)
     assert mock_console.print.called
+
+
+def _printed_lines(capsys, **kwargs):
+    from todopro_cli.utils.ui.formatters import format_output
+
+    tasks = [
+        {
+            "id": "0190aaaa-bbbb-cccc-dddd-eeeeeeabc123",
+            "content": "Write report",
+            "is_completed": False,
+            "priority": 4,
+            "labels": [],
+            "due_date": (datetime.now() + timedelta(days=2)).isoformat(),
+            "project_name": "Work",
+        }
+    ]
+    format_output({"tasks": tasks}, "pretty", **kwargs)
+    return [ln for ln in capsys.readouterr().out.splitlines() if ln.strip()]
+
+
+def test_task_list_compact_is_one_line_per_task(capsys):
+    lines = _printed_lines(capsys, compact=True)
+
+    assert len(lines) == 1
+    assert "Write report" in lines[0]
+    assert "Project: Work" in lines[0]
+    assert lines[0].endswith("#3")
+
+
+def test_task_list_default_keeps_metadata_on_second_line(capsys):
+    lines = _printed_lines(capsys)
+
+    assert len(lines) == 2
+    assert "Write report" in lines[0]
+    assert "Project:" not in lines[0]
+    assert "Project: Work" in lines[1]
+    assert lines[1].endswith("#3")
