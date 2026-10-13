@@ -110,7 +110,9 @@ async def _pull(
         source_task_repo = source_storage_strategy_context.task_repository
         source_project_repo = source_storage_strategy_context.project_repository
         source_label_repo = source_storage_strategy_context.label_repository
-        source_context_repo = source_storage_strategy_context.context_repository
+        source_context_repo = (
+            source_storage_strategy_context.location_context_repository
+        )
 
         # Switch back to target context and get target repositories
         ctx_manager.use_context(target_context_name)
@@ -119,7 +121,9 @@ async def _pull(
         target_task_repo = target_storage_strategy_context.task_repository
         target_project_repo = target_storage_strategy_context.project_repository
         target_label_repo = target_storage_strategy_context.label_repository
-        target_context_repo = target_storage_strategy_context.context_repository
+        target_context_repo = (
+            target_storage_strategy_context.location_context_repository
+        )
 
         # Create pull service
         pull_service = SyncPullService(
@@ -251,7 +255,9 @@ async def _push(
         source_task_repo = source_storage_strategy_context.task_repository
         source_project_repo = source_storage_strategy_context.project_repository
         source_label_repo = source_storage_strategy_context.label_repository
-        source_context_repo = source_storage_strategy_context.context_repository
+        source_context_repo = (
+            source_storage_strategy_context.location_context_repository
+        )
 
         # Switch to target context for target repos
         original_context = ctx_manager.get_current_context().name
@@ -261,7 +267,9 @@ async def _push(
         target_task_repo = target_storage_strategy_context.task_repository
         target_project_repo = target_storage_strategy_context.project_repository
         target_label_repo = target_storage_strategy_context.label_repository
-        target_context_repo = target_storage_strategy_context.context_repository
+        target_context_repo = (
+            target_storage_strategy_context.location_context_repository
+        )
 
         # Restore source context
         ctx_manager.use_context(source_context_name)

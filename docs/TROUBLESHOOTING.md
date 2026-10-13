@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:12:13+07:00
+updated_at: 2026-10-14T00:17:43+07:00
 ---
 
 # TodoPro CLI - Troubleshooting Guide
@@ -433,36 +433,6 @@ todopro context use local
 todopro sync push --context cloud
 todopro sync pull --context cloud
 ```
-
-### Problem: `'StorageStrategyContext' object has no attribute 'context_repository'`
-
-**Symptoms:**
-
-```bash
-$ todopro sync push --context cloud
-Error: 'StorageStrategyContext' object has no attribute 'context_repository'
-```
-
-**Cause:** A known bug in the current release.
-`sync push` and `sync pull` fail before any network request is made, so nothing is sent or changed.
-
-**Workaround:** Move data with an export and an import instead.
-`data export` and `data import` both act on the *current* context:
-
-```bash
-# Export from the context that has the data
-todopro data export --compress --output ~/backup.json.gz
-
-# Switch to the destination context and import
-todopro context use cloud
-todopro data import ~/backup.json.gz
-```
-
-Imports skip items whose name already exists, so re-running one does not create duplicates.
-
-**Check your context afterwards.** A failed `sync pull` can leave the active context switched, so confirm with `todopro context list` and switch back with `todopro context use local` if needed.
-
----
 
 ### Problem: "Connection timeout"
 

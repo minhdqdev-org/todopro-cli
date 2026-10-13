@@ -1,5 +1,5 @@
 ---
-updated_at: 2026-10-14T00:12:13+07:00
+updated_at: 2026-10-14T00:17:43+07:00
 ---
 
 # Getting Started with TodoPro CLI
@@ -326,9 +326,6 @@ todopro sync status
 
 Useful flags are `--dry-run` (preview), `--full` (ignore the last sync time) and `--strategy local-wins|remote-wins` (conflict resolution).
 You must be signed in to the cloud context before you sync.
-
-> **Known issue:** in the current release `sync push` and `sync pull` stop with `'StorageStrategyContext' object has no attribute 'context_repository'`.
-> Until that is fixed, move data with `todopro data export` and `todopro data import` (see [Data Management](#data-management)).
 
 ---
 
