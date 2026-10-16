@@ -1,0 +1,14 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  pr-check:
+    uses: minhdqdev-org/github-actions-workflows/.github/workflows/pr-check.yml@main
+    with:
+      install_command: uv sync --frozen --all-extras
+      check_command: uv run ruff check src tests
+      checks_fail: false
+      dependency_scan_fail: false
